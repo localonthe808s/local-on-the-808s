@@ -283,15 +283,15 @@
   }
 
   .weather-moon-block .moon-img{
-    width:250px;
-    height:250px;
-    border-radius:50%;
-    object-fit:cover;
-    transform:scale(1.15);
-    clip-path:circle(42%) !important;
-    -webkit-clip-path:circle(42%) !important;
-    filter: drop-shadow(0 0 15px rgba(255,255,255,.45)) drop-shadow(0 0 35px rgba(200,210,255,.25));
-  }
+  width:250px;
+  height:250px;
+  border-radius:50%;
+  object-fit:cover;
+  transform:scale(1.15) scaleX(-1);
+  clip-path:circle(42%) !important;
+  -webkit-clip-path:circle(42%) !important;
+  filter: drop-shadow(0 0 15px rgba(255,255,255,.45)) drop-shadow(0 0 35px rgba(200,210,255,.25));
+}
 
   .weather-moon-block .moon-text{
     font-size:.82rem;
@@ -4755,12 +4755,12 @@
   }
 
   function approximateMoonPhase(date){
-    var lp = 2551443; // seconds
-    var newMoon = new Date(Date.UTC(1970,0,7,20,35,0));
-    var phaseSec = ((date.getTime() - newMoon.getTime())/1000) % lp;
-    if (phaseSec < 0) phaseSec += lp;
-    return phaseSec / lp;
-  }
+  var lp = 2551442.8; // lunar period in seconds (29.53059 days)
+  var newMoon = new Date(Date.UTC(2025,0,29,12,36,0)); // Jan 29, 2025 new moon
+  var phaseSec = ((date.getTime() - newMoon.getTime())/1000) % lp;
+  if (phaseSec < 0) phaseSec += lp;
+  return phaseSec / lp;
+}
 
   function findNextMoonEvent(now, targetPhase, daysAhead){
     var best = null;
@@ -6840,18 +6840,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             // - Frame 600 = ~20-25%
             // - Frame 4380 = full moon (100%)
             //
-            // For 2026, use dataset a005587 and calculate current hour of year
-            var now = new Date();
-            var startOf2026 = new Date(Date.UTC(2026, 0, 1, 0, 0, 0));
-            var hoursSinceStart = Math.floor((now.getTime() - startOf2026.getTime()) / (1000 * 60 * 60));
-            var frameNum = hoursSinceStart + 1; // Frames are 1-indexed
-            
-            // Clamp to valid range
-            if (frameNum < 1) frameNum = 1;
-            if (frameNum > 8760) frameNum = 8760;
-            
-            var frameStr = String(frameNum).padStart(4, '0');
-            var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005587/frames/730x730_1x1_30p/moon." + frameStr + ".jpg";
+            // Use 2025 dataset (a005187) - 2026 dataset has issues
+// Calculate frame based on lunar phase cycle
+var lunarCycleHours = 29.53059 * 24;
+var refNewMoon = new Date(Date.UTC(2026, 0, 29, 12, 36, 0));
+var hoursSinceNewMoon = (now.getTime() - refNewMoon.getTime()) / (1000 * 60 * 60);
+var cyclePosition = ((hoursSinceNewMoon % lunarCycleHours) + lunarCycleHours) % lunarCycleHours;
+
+// In 2025 dataset, new moon is around frame 696
+var newMoonFrame = 696;
+var frameNum = Math.round(newMoonFrame + cyclePosition);
+if (frameNum > 8760) frameNum -= 8760;
+
+var frameStr = String(frameNum).padStart(4, '0');
+var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x730_1x1_30p/moon." + frameStr + ".jpg";
             
             moonImgEl.src = moonUrl;
             moonImgEl.onerror = function(){
