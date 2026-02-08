@@ -6,7 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+</body>
+</html>
 
 <style>
   @import url('https://api.fontshare.com/v2/css?f[]=neue-montreal@200,300,400,500,600,700&display=swap');
@@ -95,34 +99,21 @@
     filter:none !important;
     perspective:none !important;
     contain:none !important;
+    will-change:auto !important;
   }
-  
+
   html{
     height:100%;
-    transform: none !important;
-    perspective: none !important;
-    filter: none !important;
-    will-change: auto !important;
-  }
-  
-  body{
-    transform: none !important;
-    perspective: none !important;
-    filter: none !important;
-    will-change: auto !important;
-  }
-  
-  body{
-    min-height:100%;
   }
 
   body{
+    min-height:100%;
     font-family:'Neue Montreal',system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
     color:var(--ink);
   }
 
 
-  #cloud-soundscape-root{position:relative;min-height:100%;width:100%;transform:none !important;filter:none !important;will-change:auto !important;perspective:none !important;}
+  #cloud-soundscape-root{position:relative;min-height:100%;width:100%;transform:none !important;filter:none !important;will-change:auto !important;perspective:none !important;isolation:isolate;contain:layout style;}
 
   /* =========================
      Layout shell
@@ -553,78 +544,6 @@
     letter-spacing:.04em;
   }
 
-  /* Earthquake geology popup */
-  .quake-geo-popup .leaflet-popup-content-wrapper {
-    background: rgba(255,255,255,.95);
-    backdrop-filter: blur(8px);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-    padding: 0;
-  }
-  .quake-geo-popup .leaflet-popup-content {
-    margin: 8px 10px;
-  }
-  .quake-geo-popup .leaflet-popup-tip {
-    background: rgba(255,255,255,.95);
-  }
-
-  /* Earthquake dropdown */
-  .quake-status-wrap:hover #quake-dropdown,
-  .quake-status-wrap #quake-dropdown:hover{
-    opacity:1 !important;
-    visibility:visible !important;
-    pointer-events:auto !important;
-  }
-
-  /* Wildfire dropdown */
-  .fire-status-wrap:hover #fire-dropdown,
-  .fire-status-wrap #fire-dropdown:hover{
-    opacity:1 !important;
-    visibility:visible !important;
-    pointer-events:auto !important;
-  }
-
-  .fire-item:hover{
-    background:rgba(255,255,255,.15);
-  }
-
-  .quake-option{
-    padding:8px 10px;
-    border-radius:8px;
-    font-size:.72rem;
-    font-weight:600;
-    color:var(--ink);
-    cursor:pointer;
-    transition:background .15s ease;
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-  }
-
-  .quake-option:hover,
-  .quake-item:hover{
-    background:rgba(255,255,255,.15);
-  }
-
-  .quake-mag{
-    font-weight:800;
-    font-size:.78rem;
-  }
-
-  .quake-place{
-    font-size:.68rem;
-    color:var(--ink-dim);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .quake-time{
-    font-size:.58rem;
-    color:rgba(43,34,244,.5);
-    text-transform:uppercase;
-    letter-spacing:.04em;
-  }
   .loc-meta{font-size:.82rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em}
 
   .weather-alerts-block{
@@ -3541,12 +3460,9 @@
 
 .widget-modal-overlay{
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.94);
     z-index: 99999;
     display: flex;
@@ -3557,6 +3473,7 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    overflow: auto;
   }
 
   .widget-modal-overlay.active {
@@ -3906,6 +3823,8 @@ body > #dynamic-alert-modal {
   overflow: auto !important;
 }
 </style>
+</head>
+<body>
 
 <!-- Alert Detail Modal -->
 <div class="alert-modal-overlay" id="alert-modal">
@@ -4562,14 +4481,6 @@ body > #dynamic-alert-modal {
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
   function setText(el, txt){ if (el) el.textContent = (txt == null ? "" : String(txt)); }
 
-  function announceToScreenReader(message){
-    var el = document.getElementById("sr-announcements");
-    if (el) {
-      el.textContent = "";
-      setTimeout(function(){ el.textContent = message; }, 100);
-    }
-  }
-
   /* =========================================================
      TIME HELPERS (12-hour, no AM/PM)
      ========================================================= */
@@ -4581,12 +4492,7 @@ body > #dynamic-alert-modal {
     return String(hh) + ":" + (m < 10 ? "0"+m : m);
   }
   function fmt12NoSuffix(iso){ return fmt12NoSuffixFromDate(new Date(iso)); }
-  function addMinutesISO(iso, mins){
-    var d = new Date(iso);
-    if (!isFinite(d.getTime())) return iso;
-    d.setMinutes(d.getMinutes() + mins);
-    return d.toISOString();
-  }
+  
   function fmtMonthDay(d){
     if (!d || !isFinite(d.getTime())) return "--";
     var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -5058,25 +4964,6 @@ function dayRangeAround(d, days){
     }
   }
 
-  function kpColor(kp){
-    // Round to nearest level for color selection
-    var level = Math.round(kp);
-    
-    switch(level){
-      case 0:  return "rgba(0,153,51,0.90)";        // Dark green - Kp 0
-      case 1:  return "rgba(51,204,51,0.90)";       // Green - Kp 1
-      case 2:  return "rgba(102,204,51,0.90)";      // Light green - Kp 2
-      case 3:  return "rgba(153,204,51,0.90)";      // Yellow-green - Kp 3
-      case 4:  return "rgba(204,204,51,0.90)";      // Yellow - Kp 4
-      case 5:  return "rgba(255,255,0,0.90)";       // Bright yellow - Kp 5 (G1)
-      case 6:  return "rgba(255,204,0,0.90)";       // Gold/Orange - Kp 6 (G2)
-      case 7:  return "rgba(255,153,0,0.90)";       // Orange - Kp 7 (G3)
-      case 8:  return "rgba(255,51,51,0.90)";       // Red - Kp 8 (G4)
-      case 9:  return "rgba(204,0,51,0.90)";        // Dark red - Kp 9 (G5)
-      default: return "rgba(102,204,51,0.90)";      // Default green
-    }
-  }
-
   function drawNightSkyBar(svg, legendEl, sunsetLocal, sunriseLocal, windowsByBody, cloudSeries, kpSeries){
     if (!svg) return;
 
@@ -5137,7 +5024,7 @@ function dayRangeAround(d, days){
         seg.setAttribute("y", String(kpBarY));
         seg.setAttribute("width", String(xb - xa));
         seg.setAttribute("height", String(kpBarH));
-        seg.setAttribute("fill", kpColor(kp));
+        seg.setAttribute("fill", getKpColor(kp));
         seg.setAttribute("fill-opacity", "1");
         seg.setAttribute("shape-rendering", "crispEdges");
         svg.appendChild(seg);
@@ -5204,9 +5091,7 @@ function dayRangeAround(d, days){
         if (cc < 80) return "rgba(90,90,90,0.60)";      // Dark grey
         return "rgba(45,45,45,0.55)";                    // Dark dark grey
       }
-      function cloudOpacity(cc){
-        return 1;
-      }
+    
 
       for (var c=0; c<cloudSeries.length; c++){
         var a = cloudSeries[c];
@@ -5224,7 +5109,6 @@ function dayRangeAround(d, days){
         seg.setAttribute("width", String(xb - xa));
         seg.setAttribute("height", String(barH));
         seg.setAttribute("fill", cloudColor(cc));
-        seg.setAttribute("fill-opacity", String(cloudOpacity(cc)));
         seg.setAttribute("shape-rendering", "crispEdges");
         svg.appendChild(seg);
       }
@@ -5642,9 +5526,7 @@ function dayRangeAround(d, days){
   /* =========================================================
      SOLAR MATH (NOAA-style approx) for sunbar
      ========================================================= */
-  function _degToRad(x){ return x * Math.PI / 180; }
-  function _radToDeg(x){ return x * 180 / Math.PI; }
-  function _clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+  
 
   function _dayOfYearLocal(d){
     var start = new Date(d.getFullYear(), 0, 1);
@@ -5696,8 +5578,8 @@ function dayRangeAround(d, days){
     var terms = _solarTerms(dayLocal);
     var decl = terms.decl;
 
-    var lat = _degToRad(latDeg);
-    var alt = _degToRad(altitudeDeg);
+    var lat = rad(latDeg);
+    var alt = rad(altitudeDeg);
 
     var cosH =
       (Math.sin(alt) - Math.sin(lat)*Math.sin(decl)) /
@@ -5705,10 +5587,10 @@ function dayRangeAround(d, days){
 
     if (!isFinite(cosH) || cosH < -1 || cosH > 1) return null;
 
-    cosH = _clamp(cosH, -1, 1);
+    cosH = clamp(cosH, -1, 1);
     var H = Math.acos(cosH);
 
-    var Hdeg = _radToDeg(H);
+    var Hdeg = deg(H);
     var deltaMin = 4 * Hdeg;
 
     var noon = solarNoonLocal(dayLocal, latDeg, lonDeg);
@@ -7731,23 +7613,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   }
   
   // Load static/GIF images with periodic refresh (for sources without JSON)
-  function loadStaticWithRefresh(url, key){
-    var anim = animations[key];
-    if (!anim || !anim.imgEl) return;
-    
-    if (anim.liveEl) anim.liveEl.textContent = "• LOADING";
-    if (anim.btnEl) anim.btnEl.style.display = "none"; // Hide play/pause for GIFs
-    
-    function refresh(){
-      anim.imgEl.src = url + "?cb=" + Date.now();
-      anim.imgEl.onload = function(){ if (anim.liveEl) anim.liveEl.textContent = "• LIVE"; };
-      anim.imgEl.onerror = function(){ if (anim.liveEl) anim.liveEl.textContent = "• OFFLINE"; };
-    }
-    
-    refresh();
-    // Refresh every 5 minutes
-    setInterval(refresh, 5 * 60 * 1000);
-  }
+  
     function initSpaceWeatherAnimations(){
     // Bind DOM elements
     animations.enlil.imgEl = document.getElementById("enlil-img");
@@ -7861,26 +7727,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
      SUVI (static with refresh - not animated)
      ========================================================= */
   var suviTimer = null;
-  
-  function initSuvi(){
-    var suviImg = document.getElementById("suvi-img");
-    var suviLive = document.getElementById("suvi-live");
-    
-    if (!suviImg) return;
-    
-    var SUVI_URL = "https://services.swpc.noaa.gov/images/animations/suvi/primary/304/latest.png";
-    
-    function refresh(){
-      if (suviLive) suviLive.textContent = "• LOADING";
-      suviImg.src = SUVI_URL + "?cb=" + Date.now();
-      suviImg.onload = function(){ if (suviLive) suviLive.textContent = "• LIVE"; };
-      suviImg.onerror = function(){ if (suviLive) suviLive.textContent = "• OFFLINE"; };
-    }
-    
-    refresh();
-    if (suviTimer) clearInterval(suviTimer);
-    suviTimer = setInterval(refresh, 5 * 60 * 1000);
-  }
+
 
   /* =========================================================
      LOCATION SWITCHER
@@ -8330,23 +8177,6 @@ function initNowMicroTabs(){
     }
   }
 
-  function useIEMFallback(){
-    var radarUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?_=' + Date.now();
-    if (nationalRadarLayer){
-      nationalRadarMap.removeLayer(nationalRadarLayer);
-    }
-    nationalRadarLayer = L.tileLayer(radarUrl, {
-      opacity: 0.75,
-      maxZoom: 10
-    }).addTo(nationalRadarMap);
-    
-    var tsEl = document.getElementById("national-radar-timestamp");
-    if (tsEl) tsEl.textContent = "LIVE";
-    
-    var scrubber = document.getElementById("national-radar-scrubber");
-    if (scrubber) scrubber.style.display = "none";
-  }
-
 
   function initHazardMaps(){
     initLightningMap();
@@ -8379,12 +8209,7 @@ function initNowMicroTabs(){
   }
 
   // Global toggle function called by buttons
-  function toggleAnim(key){
-    var anim = animations[key];
-    if (!anim) return;
-    anim.playing = !anim.playing;
-    if (anim.btnEl) anim.btnEl.textContent = anim.playing ? "⏸" : "▶";
-  }
+  
 
   // ============ FIRE MAP ============
   var smokeLayer = null;
@@ -8663,7 +8488,7 @@ function initNowMicroTabs(){
     aqiBlobMarkers = [];
     
     // Fetch AQI station data and create heatmap blobs
-    fetchAQIHeatmap();
+  
   }
   
   function createSmokeHeatmap(){
@@ -8880,137 +8705,6 @@ function initNowMicroTabs(){
     console.log("Created wind-aware smoke heatmap: " + smokePoints.length + " points, avg wind " + avgSpeed.toFixed(1) + " mph from " + avgDir.toFixed(0) + "°");
   }
   
-  function fetchAQIHeatmap(){
-    // Don't add tiles - we'll use createSmokeHeatmap() after fire data loads
-    console.log("Skipping WAQI tiles - using smoke heatmap instead");
-    return;
-    
-    // Try to create heatmap from fire locations as smoke proxy
-    // Fires = smoke source, so we'll create heat blobs around fire locations
-    if (typeof L.heatLayer === "function" && fireMarkers.length > 0) {
-      var smokePoints = [];
-      
-      fireMarkers.forEach(function(marker) {
-        var latlng = marker.getLatLng();
-        // Larger fires = more smoke intensity
-        var radius = marker.options.radius || 3;
-        var intensity = (radius <= 2.5) ? 0.05 : Math.min(radius / 10, 0.7); // Normalize to 0-1
-        
-        // Add the fire point
-        smokePoints.push([latlng.lat, latlng.lng, intensity]);
-        
-        // Add surrounding points to create spread effect (smoke drifts)
-        for (var i = 0; i < 8; i++) {
-          var angle = (i / 8) * Math.PI * 2;
-          var spread = 0.5 + (Math.random() * 0.5); // Random spread 0.5-1 degree
-          var spreadLat = latlng.lat + Math.sin(angle) * spread;
-          var spreadLng = latlng.lng + Math.cos(angle) * spread;
-          smokePoints.push([spreadLat, spreadLng, intensity * 0.4]);
-        }
-      });
-      
-      aqiHeatLayer = L.heatLayer(smokePoints, {
-        radius: 50,
-        blur: 40,
-        maxZoom: 8,
-        max: 1.0,
-        gradient: {
-          0.0: 'rgba(128,128,128,0)',
-          0.2: 'rgba(160,160,140,0.3)',
-          0.4: 'rgba(180,170,130,0.5)',
-          0.6: 'rgba(200,180,120,0.6)',
-          0.8: 'rgba(180,140,100,0.7)',
-          1.0: 'rgba(139,90,43,0.8)'
-        }
-      }).addTo(fireMap);
-      
-      console.log("Created smoke heatmap from " + fireMarkers.length + " fire locations");
-    } else {
-      // Fallback to WAQI tiles
-      goesOverlay = L.tileLayer('https://tiles.aqicn.org/tiles/usepa-pm25/{z}/{x}/{y}.png', {
-        opacity: 0.5,
-        attribution: 'WAQI/AirNow'
-      });
-      goesOverlay.addTo(fireMap);
-      console.log("Using WAQI tiles (heatmap not available)");
-    }
-  }
-  
-  function useTileFallback(){
-    goesOverlay = L.tileLayer('https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png', {
-      opacity: 0.4,
-      attribution: 'WAQI/AirNow'
-    });
-    goesOverlay.addTo(fireMap);
-  }
-  
-  function createAQIHeatmap(stations){
-    var heatPoints = [];
-    
-    stations.forEach(function(station){
-      var lat = station.lat;
-      var lon = station.lon;
-      var aqi = parseInt(station.aqi);
-      
-      if (isNaN(aqi) || aqi < 0) return;
-      
-      // Intensity: higher AQI = more intense
-      var intensity = Math.min(aqi / 150, 1);
-      heatPoints.push([lat, lon, intensity]);
-    });
-    
-    // Use Leaflet.heat plugin if available
-    if (typeof L.heatLayer === "function"){
-      aqiHeatLayer = L.heatLayer(heatPoints, {
-        radius: 40,
-        blur: 30,
-        maxZoom: 8,
-        max: 1.0,
-        gradient: {
-          0.0: '#00e400',
-          0.25: '#ffff00',
-          0.5: '#ff7e00',
-          0.75: '#ff0000',
-          0.9: '#8f3f97',
-          1.0: '#7e0023'
-        }
-      }).addTo(fireMap);
-      console.log("Created AQI heatmap with " + heatPoints.length + " points");
-    } else {
-      // Fallback: create soft blob circles
-      stations.forEach(function(station){
-        var lat = station.lat;
-        var lon = station.lon;
-        var aqi = parseInt(station.aqi);
-        
-        if (isNaN(aqi) || aqi < 0) return;
-        
-        var color = getAQIColor(aqi);
-        var radius = Math.max(12, Math.min(35, aqi / 5));
-        
-        var blob = L.circleMarker([lat, lon], {
-          radius: radius,
-          fillColor: color,
-          fillOpacity: 0.5,
-          color: color,
-          weight: 0
-        }).addTo(fireMap);
-        
-        aqiBlobMarkers.push(blob);
-      });
-      console.log("Created " + aqiBlobMarkers.length + " AQI blobs (heat plugin not available)");
-    }
-  }
-  
-  function getAQIColor(aqi){
-    if (aqi <= 50) return '#00e400';
-    if (aqi <= 100) return '#ffff00';
-    if (aqi <= 150) return '#ff7e00';
-    if (aqi <= 200) return '#ff0000';
-    if (aqi <= 300) return '#8f3f97';
-    return '#7e0023';
-  }
-  
   // ============ CITY/STATE LABELS TOGGLE ============
   function toggleFireLabels(){
     var btn = document.getElementById("fire-labels-toggle");
@@ -9046,195 +8740,11 @@ function initNowMicroTabs(){
   window.toggleFireLabels = toggleFireLabels;
   
   // ============ AQI CURSOR TRACKING ============
-  function fetchAQIStations(){
-    // PurpleAir API - get outdoor sensors in a regional bounding box
-    var nwlat = LOCATION.lat + 5;
-    var selat = LOCATION.lat - 5;
-    var nwlng = LOCATION.lon - 5;
-    var selng = LOCATION.lon + 5;
-    var url = "https://api.purpleair.com/v1/sensors?fields=latitude,longitude,pm2.5,name&location_type=0&max_age=3600&nwlat=" + nwlat + "&nwlng=" + nwlng + "&selat=" + selat + "&selng=" + selng;
-    
-    fetch(url, {
-      headers: {
-        "X-API-Key": "EAA95AF0-F75B-11F0-B596-4201AC1DC123"
-      }
-    })
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        console.log("PurpleAir response:", data);
-        
-        if (!data || !data.data || data.data.length === 0){
-          console.log("No PurpleAir data");
-          return;
-        }
-        
-        // Fields order: sensor_index, latitude, longitude, pm2.5, name
-        var fields = data.fields;
-        var latIdx = fields.indexOf("latitude");
-        var lonIdx = fields.indexOf("longitude");
-        var pmIdx = fields.indexOf("pm2.5");
-        var nameIdx = fields.indexOf("name");
-        
-        aqiStations = [];
-        data.data.forEach(function(sensor){
-          var lat = sensor[latIdx];
-          var lon = sensor[lonIdx];
-          var pm25 = sensor[pmIdx];
-          var name = sensor[nameIdx];
-          
-          if (!lat || !lon || pm25 === null || pm25 === undefined) return;
-          
-          // Convert PM2.5 to AQI
-          var aqi = pm25ToAQI(pm25);
-          
-          aqiStations.push({
-            lat: lat,
-            lon: lon,
-            aqi: aqi,
-            pm25: pm25,
-            location: name || "PurpleAir Sensor"
-          });
-        });
-        
-        console.log("Loaded " + aqiStations.length + " PurpleAir sensors");
-        
-        if (aqiStations.length > 0){
-          setupAQICursorTracking();
-        }
-      })
-      .catch(function(err){
-        console.log("PurpleAir fetch error:", err);
-      });
-  }
-  
-  function pm25ToAQI(pm){
-    // EPA PM2.5 to AQI conversion
-    if (pm <= 12) return Math.round((50 / 12) * pm);
-    if (pm <= 35.4) return Math.round(50 + (50 / 23.4) * (pm - 12));
-    if (pm <= 55.4) return Math.round(100 + (50 / 20) * (pm - 35.4));
-    if (pm <= 150.4) return Math.round(150 + (50 / 95) * (pm - 55.4));
-    if (pm <= 250.4) return Math.round(200 + (100 / 100) * (pm - 150.4));
-    if (pm <= 350.4) return Math.round(300 + (100 / 100) * (pm - 250.4));
-    return Math.round(400 + (100 / 150) * (pm - 350.4));
-  }
-  
-  function setupAQICursorTracking(){
-    var pill = document.getElementById("fire-aqi-pill");
-    var valueEl = document.getElementById("fire-aqi-value");
-    if (!pill || !fireMap) return;
-    
-    fireMap.on('mousemove', function(e){
-      var lat = e.latlng.lat;
-      var lon = e.latlng.lng;
-      
-      var nearest = findNearestStation(lat, lon);
-      if (nearest){
-        pill.style.display = "block";
-        var color = getSmokeColor(nearest.aqi);
-        pill.style.background = color;
-        pill.style.color = nearest.aqi > 100 ? "#fff" : "#000";
-        valueEl.textContent = nearest.aqi;
-        pill.title = nearest.location + " (" + nearest.distance.toFixed(0) + " mi) - " + nearest.parameter;
-      } else {
-        pill.style.display = "none";
-      }
-    });
-    
-    fireMap.on('mouseout', function(){
-      pill.style.display = "none";
-    });
-    
-    console.log("AQI cursor tracking enabled with real data");
-  }
-  
-  function findNearestStation(lat, lon){
-    var nearest = null;
-    var minDist = Infinity;
-    
-    aqiStations.forEach(function(s){
-      var dLat = s.lat - lat;
-      var dLon = s.lon - lon;
-      var dist = Math.sqrt(dLat * dLat + dLon * dLon) * 69;
-      if (dist < minDist){
-        minDist = dist;
-        nearest = Object.assign({}, s, { distance: dist });
-      }
-    });
-    
-    return nearest;
-  }
-  
-  function setupSmokeIntensityTracking(){
-    var pill = document.getElementById("fire-aqi-pill");
-    var valueEl = document.getElementById("fire-aqi-value");
-    if (!pill || !fireMap) return;
-    
-    fireMap.on('mousemove', function(e){
-      var lat = e.latlng.lat;
-      var lon = e.latlng.lng;
-      
-      // Calculate smoke intensity based on proximity to fires and wind
-      var smokeIndex = calculateSmokeIndex(lat, lon);
-      
-      if (smokeIndex > 0){
-        pill.style.display = "block";
-        var color = getSmokeColor(smokeIndex);
-        pill.style.background = color;
-        pill.style.color = smokeIndex > 100 ? "#fff" : "#000";
-        valueEl.textContent = smokeIndex;
-      } else {
-        pill.style.display = "none";
-      }
-    });
-    
-    fireMap.on('mouseout', function(){
-      pill.style.display = "none";
-    });
-    
-    console.log("Smoke intensity tracking enabled");
-  }
-  
-  function calculateSmokeIndex(lat, lon){
-    var totalIntensity = 0;
-    
-    fireMarkers.forEach(function(marker){
-      var fireLat = marker.getLatLng().lat;
-      var fireLon = marker.getLatLng().lng;
-      var radius = marker.options.radius || 2.5;
-      
-      // Distance in degrees
-      var dLat = lat - fireLat;
-      var dLon = lon - fireLon;
-      var dist = Math.sqrt(dLat * dLat + dLon * dLon);
-      
-      // Fire intensity based on size
-      var fireIntensity = (radius <= 2.5) ? 0.2 : (radius / 7);
-      
-      // Smoke disperses with distance (inverse square-ish)
-      // Max effect within ~5 degrees (~350 miles)
-      if (dist < 5){
-        var contribution = fireIntensity * Math.pow(1 - (dist / 5), 1.5);
-        totalIntensity += contribution;
-      }
-    });
-    
-    // Convert to 0-500 AQI-like scale
-    var smokeIndex = Math.round(totalIntensity * 200);
-    return Math.min(smokeIndex, 500);
-  }
-  
-  function getSmokeColor(index){
-    if (index <= 50) return "#22c55e";   // Good - green
-    if (index <= 100) return "#eab308";  // Moderate - yellow
-    if (index <= 150) return "#f97316";  // USG - orange
-    if (index <= 200) return "#ef4444";  // Unhealthy - red
-    if (index <= 300) return "#a855f7";  // Very Unhealthy - purple
-    return "#7f1d1d";                     // Hazardous - maroon
-  }
   
   
-  // Fetch AQI stations when fire map initializes
-  setTimeout(fetchAQIStations, 2000);
+  
+  
+  
 
   // ============ MACROSTRAT GEOLOGY MAPS ============
   var bedrockMap = null;
@@ -9552,11 +9062,6 @@ function initNowMicroTabs(){
       return div;
     };
     legend.addTo(quakeMap);
-
-    // Click handler for geology info - shows popup at click location
-    quakeMap.on('click', function(e){
-      fetchGeologyForQuakeMap(e.latlng.lat, e.latlng.lng, e.latlng);
-    });
 
     // USGS earthquakes - GLOBAL, past 24 hours, ALL magnitudes (M0.5+)
     var url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
@@ -9901,10 +9406,7 @@ function initNowMicroTabs(){
           if (onset && expires && onset > expires) {
             onset = effective || expires;
           }
-          console.log("Alert:", event);
-          console.log("  Raw onset:", alert.onset, "Parsed:", onset);
-          console.log("  Raw expires:", alert.expires, "Parsed:", expires);
-          console.log("  Raw effective:", alert.effective);
+        
           var description = alert.description || "";
           var instruction = alert.instruction || "";
           var areaDesc = alert.areaDesc || "";
@@ -10299,6 +9801,11 @@ function initNowMicroTabs(){
     if (subtitleEl) subtitleEl.textContent = typeof subtitle === 'function' ? subtitle() : (subtitle || '');
   }
 
+  function positionModalAtViewport(el){
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    el.style.cssText = 'position:absolute;top:' + scrollY + 'px;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+  }
+
   function openImageModal(config, imgId){
     if (!widgetModal || !widgetModalBody) return;
     clearModalAnimations();
@@ -10307,7 +9814,7 @@ function initNowMicroTabs(){
     widgetModalBody.className = 'widget-modal-body content-image is-loading';
     widgetModalBody.innerHTML = '';
     
-    widgetModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+    positionModalAtViewport(widgetModal);
     document.body.appendChild(widgetModal);
     widgetModal.classList.add("active");
     document.body.style.overflow = "hidden";
@@ -10352,7 +9859,7 @@ function initNowMicroTabs(){
     widgetModalBody.className = 'widget-modal-body content-card';
     widgetModalBody.innerHTML = '';
     
-    widgetModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+    positionModalAtViewport(widgetModal);
     
     var clone = cardEl.cloneNode(true);
     clone.classList.remove('clickable-card');
@@ -10377,7 +9884,7 @@ function initNowMicroTabs(){
     widgetModalBody.className = 'widget-modal-body content-map';
     widgetModalBody.innerHTML = '<div class="modal-map-container" id="modal-map-container" style="position:relative;"></div>';
     
-    widgetModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+    positionModalAtViewport(widgetModal);
     document.body.appendChild(widgetModal);
     widgetModal.classList.add("active");
     document.body.style.overflow = "hidden";
@@ -10600,6 +10107,12 @@ function initNowMicroTabs(){
   initNowMicroTabs();
   initLocationSwitcher();
 
+  // Ensure modals are direct children of body, after all other content
+  var alertM = document.getElementById('alert-modal');
+  var widgetM = document.getElementById('widget-modal');
+  if (alertM) document.body.appendChild(alertM);
+  if (widgetM) document.body.appendChild(widgetM);
+
 })();
 
 // Global alert modal functions (outside IIFE for click handler access)
@@ -10681,3 +10194,5 @@ function closeAlertModal(){
 
 document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeAlertModal(); });
 </script>
+</body>
+</html>
