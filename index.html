@@ -3428,7 +3428,7 @@
 /* =========================================================
      UNIFIED WIDGET POPUP MODAL SYSTEM
      ========================================================= */
-  .alert-modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;opacity:0;visibility:hidden;transition:opacity 0.3s ease,visibility 0.3s ease;overflow:auto;}
+  .alert-modal-overlay{position:absolute;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;opacity:0;visibility:hidden;transition:opacity 0.3s ease,visibility 0.3s ease;overflow:auto;}
 .alert-modal-overlay.active{opacity:1;visibility:visible;}
 .alert-modal-content{position:relative;background:linear-gradient(145deg,rgba(30,30,35,0.98),rgba(20,20,25,0.98));border:1px solid rgba(255,255,255,0.1);border-radius:16px;max-width:600px;width:90vw;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 80px rgba(0,0,0,0.7);transform:scale(0.92);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);}
 .alert-modal-overlay.active .alert-modal-content{transform:scale(1);}
@@ -3459,7 +3459,7 @@
 .alert-severity-badge.minor{background:rgba(234,179,8,0.25);color:#fde047;}
 
 .widget-modal-overlay{
-    position: fixed;
+    position: absolute;
     inset: 0;
     width: 100vw;
     height: 100vh;
@@ -3748,13 +3748,6 @@
   #widget-modal,
   #alert-modal,
   #dynamic-alert-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
     transform: none !important;
     contain: none !important;
     display: flex !important;
@@ -3794,11 +3787,6 @@
   /* Force modals to viewport center */
   #alert-modal,
   #widget-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
     transform: none !important;
     contain: none !important;
     filter: none !important;
@@ -3813,10 +3801,8 @@
     -webkit-backdrop-filter: none !important;
   }
 body > #dynamic-alert-modal {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  transform: none !important;
+  contain: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -9802,8 +9788,12 @@ function initNowMicroTabs(){
   }
 
   function positionModalAtViewport(el){
+    document.body.style.overflow = '';
     var scrollY = window.scrollY || window.pageYOffset || 0;
-    el.style.cssText = 'position:absolute;top:' + scrollY + 'px;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+    el.style.cssText = 'position:absolute;top:' + scrollY + 'px;left:0;width:100%;height:' + window.innerHeight + 'px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:99999;padding:24px;box-sizing:border-box;overflow:auto;';
+    document.body.appendChild(el);
+    window.scrollTo(0, scrollY);
+    document.body.style.overflow = 'hidden';
   }
 
   function openImageModal(config, imgId){
@@ -9817,6 +9807,8 @@ function initNowMicroTabs(){
     positionModalAtViewport(widgetModal);
     document.body.appendChild(widgetModal);
     widgetModal.classList.add("active");
+    document.body.style.overflow = "";
+    window.scrollTo(0, parseInt(widgetModal.style.top) || 0);
     document.body.style.overflow = "hidden";
     
     var frames = config.getFrames ? config.getFrames() : [];
@@ -9860,6 +9852,9 @@ function initNowMicroTabs(){
     widgetModalBody.innerHTML = '';
     
     positionModalAtViewport(widgetModal);
+    document.body.style.overflow = "";
+    window.scrollTo(0, parseInt(widgetModal.style.top) || 0);
+    document.body.style.overflow = "hidden";
     
     var clone = cardEl.cloneNode(true);
     clone.classList.remove('clickable-card');
@@ -9871,9 +9866,7 @@ function initNowMicroTabs(){
     btns.forEach(function(btn){ if (btn.textContent === '⏸' || btn.textContent === '▶') btn.style.display = 'none'; });
     
     widgetModalBody.appendChild(clone);
-    document.body.appendChild(widgetModal);
     widgetModal.classList.add("active");
-    document.body.style.overflow = "hidden";
   }
 
   function openMapModal(config, containerId){
@@ -9887,6 +9880,8 @@ function initNowMicroTabs(){
     positionModalAtViewport(widgetModal);
     document.body.appendChild(widgetModal);
     widgetModal.classList.add("active");
+    document.body.style.overflow = "";
+    window.scrollTo(0, parseInt(widgetModal.style.top) || 0);
     document.body.style.overflow = "hidden";
     
     setTimeout(function(){
