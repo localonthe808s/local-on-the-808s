@@ -7008,6 +7008,112 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
             })();
 
             spaceEventsBulletsEl.innerHTML = bullets;
+            
+            // ISS LIVE TRACKER with next pass estimation
+            (function(){
+              var issApiUrl = "https://api.wheretheiss.at/v1/satellites/25544";
+              
+              function haversineMi(lat1, lon1, lat2, lon2){
+                var R = 3959;
+                var dLat = (lat2-lat1)*Math.PI/180;
+                var dLon = (lon2-lon1)*Math.PI/180;
+                var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                        Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+                        Math.sin(dLon/2)*Math.sin(dLon/2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+              }
+              
+              function bearingDir(lat1, lon1, lat2, lon2){
+                var y = Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180);
+                var x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) -
+                        Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
+                var b = Math.atan2(y,x)*180/Math.PI;
+                if(b<0)b+=360;
+                var dirs=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+                return dirs[Math.round(b/22.5)%16];
+              }
+              
+              var ORBIT_PERIOD_MIN = 92.68;
+              var ISS_INCL = 51.6;
+              
+              fetch(issApiUrl)
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                  var issLat = data.latitude;
+                  var issLon = data.longitude;
+                  var issAlt = Math.round(data.altitude * 0.621371); // km to miles
+                  var issSpeed = Math.round(data.velocity * 0.621371); // km/h to mph
+                  var visibility = data.visibility; // "daylight", "eclipsed", "penumbra"
+                  
+                  var groundDist = Math.round(haversineMi(LOCATION.lat, LOCATION.lon, issLat, issLon));
+                  var totalDist = Math.round(Math.sqrt(groundDist*groundDist + issAlt*issAlt));
+                  var dirStr = bearingDir(LOCATION.lat, LOCATION.lon, issLat, issLon);
+                  
+                  // Estimate next close pass using orbital mechanics
+                  var userLat = LOCATION.lat;
+                  var userLon = LOCATION.lon;
+                  var bestPassMin = null;
+                  var bestPassDist = Infinity;
+                  
+                  for(var orbit = 0; orbit < 48; orbit++){
+                    var tMin = orbit * ORBIT_PERIOD_MIN;
+                    var lonShiftPerOrbit = -22.5;
+                    var currentPhase = Math.asin(Math.max(-1, Math.min(1, issLat / ISS_INCL)));
+                    
+                    for(var frac = 0; frac < 1; frac += 0.05){
+                      var tCheck = tMin + frac * ORBIT_PERIOD_MIN;
+                      var futLat = ISS_INCL * Math.sin(currentPhase + 2 * Math.PI * tCheck / ORBIT_PERIOD_MIN);
+                      var futLon = issLon + (lonShiftPerOrbit * tCheck / ORBIT_PERIOD_MIN);
+                      while(futLon > 180) futLon -= 360;
+                      while(futLon < -180) futLon += 360;
+                      
+                      var dist = haversineMi(userLat, userLon, futLat, futLon);
+                      if(dist < bestPassDist && tCheck > 5){
+                        bestPassDist = dist;
+                        bestPassMin = tCheck;
+                      }
+                    }
+                  }
+                  
+                  // Format next pass estimate
+                  var passStr = "";
+                  if(bestPassMin !== null && bestPassDist < 800){
+                    var passTime = new Date(Date.now() + bestPassMin * 60000);
+                    var h = passTime.getHours();
+                    var m = passTime.getMinutes();
+                    var ampm = h >= 12 ? "PM" : "AM";
+                    var hh = h % 12; if(hh === 0) hh = 12;
+                    var timeStr = hh + ":" + (m < 10 ? "0"+m : m) + " " + ampm;
+                    
+                    var hoursUntil = Math.floor(bestPassMin / 60);
+                    var minsUntil = Math.round(bestPassMin % 60);
+                    var untilStr = hoursUntil > 0 ? (hoursUntil + "h " + minsUntil + "m") : (minsUntil + "m");
+                    
+                    passStr = " • NEXT PASS ~" + timeStr + " (in ~" + untilStr + ")";
+                  } else if(bestPassMin !== null){
+                    var hoursUntil2 = Math.floor(bestPassMin / 60);
+                    var minsUntil2 = Math.round(bestPassMin % 60);
+                    var untilStr2 = hoursUntil2 > 0 ? (hoursUntil2 + "h " + minsUntil2 + "m") : (minsUntil2 + "m");
+                    passStr = " • NEXT PASS in ~" + untilStr2;
+                  }
+                  
+                  var isNearby = groundDist < 500;
+                  var statusStr = isNearby ? "🟢 NEARBY — LOOK UP!" : (totalDist.toLocaleString() + " mi " + dirStr);
+                  
+                  var issBullet = bulletHtml(
+                    "ISS TRACKER",
+                    statusStr,
+                    "Alt " + issAlt + " mi • " + issSpeed.toLocaleString() + " mph • " + visibility + passStr
+                  );
+                  
+                  if(spaceEventsBulletsEl){
+                    spaceEventsBulletsEl.innerHTML += issBullet;
+                  }
+                })
+                .catch(function(err){
+                  console.log("ISS tracker error:", err);
+                });
+            })();
           }
 
           // Night sky SVG (windows + cloud series)
@@ -7832,6 +7938,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     img.onload = function(){ if(liveEl) liveEl.textContent = '• LIVE'; };
     img.onerror = function(){ if(liveEl) liveEl.textContent = '• OFFLINE'; };
     img.src = url;
+    img.style.filter = "invert(1) hue-rotate(180deg) contrast(1.3) saturate(1.2)";
     var label = document.getElementById('gfs-fhr-label');
     if(label) label.textContent = getFhrLabel(tab, gfsState.fhrIndex);
   }
