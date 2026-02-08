@@ -329,6 +329,16 @@
     margin-bottom:12px;
   }
 
+  .feels-inline{
+    color:var(--ink);
+    opacity:.7;
+  }
+
+  .hilo-sep{
+    opacity:.3;
+    margin:0 2px;
+  }
+
   .weather-stats-grid{
     display:flex;
     flex-wrap:wrap;
@@ -400,13 +410,46 @@
     gap:2px;
   }
 
-  .loc-name-wrap{
-    position:relative;
+  .loc-cycler{
     display:inline-flex;
     align-items:center;
-    gap:6px;
-    cursor:pointer;
+    gap:8px;
     z-index:100;
+  }
+
+  .loc-arrow{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    border:1px solid rgba(43,34,244,.15);
+    background:rgba(43,34,244,.06);
+    color:var(--ink);
+    font-size:1.1rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    padding:0;
+    line-height:1;
+    flex-shrink:0;
+    font-family:system-ui,sans-serif;
+    opacity:.5;
+  }
+
+  .loc-arrow:hover{
+    background:rgba(43,34,244,.12);
+    border-color:rgba(43,34,244,.3);
+    opacity:1;
+  }
+
+  .loc-arrow:active{
+    transform:scale(0.9);
+  }
+
+  .loc-cycler-center{
+    text-align:center;
+    min-width:120px;
   }
 
   .loc-name{
@@ -414,61 +457,28 @@
     font-size:1.2rem;
     text-transform:uppercase;
     letter-spacing:.08em;
-    transition:opacity .2s ease;
+    transition:opacity .15s ease;
   }
 
-  .loc-name-wrap:hover .loc-name{
-    opacity:0.6;
+  .loc-dots{
+    display:flex;
+    justify-content:center;
+    gap:4px;
+    margin-top:4px;
   }
 
-  .loc-dropdown{
-    position:absolute;
-    top:0;
-    right:100%;
-    padding-right:16px;
-    z-index:1000;
-    opacity:0;
-    visibility:hidden;
-    transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
-    pointer-events:none;
+  .loc-dot{
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    background:rgba(43,34,244,.15);
+    transition:all .25s ease;
   }
 
-  .loc-name-wrap:hover .loc-dropdown{
-    opacity:1;
-    visibility:visible;
-    transform:translateX(0);
-    pointer-events:auto;
-  }
-
-  .loc-dropdown-inner{
-    min-width:180px;
-    background:rgba(255,255,255,.06);
-    border-radius:12px;
-    box-shadow:var(--glow-mid);
-    backdrop-filter:blur(18px) saturate(120%);
-    -webkit-backdrop-filter:blur(18px) saturate(120%);
-    padding:8px;
-  }
-
-  .loc-option{
-    padding:10px 14px;
-    border-radius:8px;
-    font-size:.78rem;
-    font-weight:700;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--ink);
-    cursor:pointer;
-    transition:background .15s ease;
-  }
-
-  .loc-option:hover{
-    background:rgba(43,34,244,.08);
-  }
-
-  .loc-option.is-active{
-    background:rgba(43,34,244,.12);
-    color:var(--ink);
+  .loc-dot.active{
+    background:rgba(43,34,244,.5);
+    width:14px;
+    border-radius:2px;
   }
 
   /* Earthquake geology popup */
@@ -677,7 +687,6 @@
   }
 
   .temp{font-size:4rem;font-weight:740;letter-spacing:-.04em;line-height:1;text-transform:uppercase}
-  .feels-inline{font-size:.78rem;color:var(--ink-dim);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
 
   .cond{display:flex;gap:10px;align-items:center}
   .cond-icon{
@@ -2219,8 +2228,8 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:4px;
-    padding:10px 8px;
+    gap:2px;
+    padding:8px 8px;
     border-radius:14px;
     background:rgba(255,255,255,.06);
     box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
@@ -2229,7 +2238,7 @@
   }
 
   .forecast7-chip .day{
-    font-size:.62rem;
+    font-size:.74rem;
     font-weight:850;
     letter-spacing:.08em;
     text-transform:uppercase;
@@ -2237,44 +2246,70 @@
   }
 
   .forecast7-chip .forecast7-date{
-    font-size:.58rem;
+    font-size:.64rem;
     font-weight:600;
     color:rgba(100,100,140,.8);
     margin-top:-2px;
   }
 
   .forecast7-chip .icon{
-    width:42px;
-    height:42px;
+    width:52px;
+    height:52px;
     object-fit:contain;
   }
 
   .forecast7-chip .temps{
-    font-size:.72rem;
+    font-size:.85rem;
     font-weight:800;
     color:var(--ink);
     text-transform:uppercase;
   }
 
+  .forecast7-bar-wrap{
+    width:80%;
+    height:4px;
+    background:rgba(43,34,244,.06);
+    border-radius:3px;
+    position:relative;
+    margin:1px 0;
+  }
+
+  .forecast7-bar{
+    position:absolute;
+    top:0;
+    height:100%;
+    border-radius:3px;
+    transition:width .3s ease, left .3s ease;
+  }
+
+  .forecast7-chip .forecast7-lo{
+    font-size:.68rem;
+    font-weight:600;
+    color:var(--ink-dim);
+  }
+
   .forecast7-chip .precip{
-    font-size:.58rem;
+    font-size:.65rem;
     font-weight:700;
     color:rgba(70,130,220,.90);
     text-transform:uppercase;
+    text-align:center;
   }
 
   .forecast7-chip .forecast7-wind{
-    font-size:.52rem;
+    font-size:.60rem;
     font-weight:600;
     color:var(--ink-dim);
     margin-top:2px;
+    text-align:center;
   }
 
   .forecast7-chip .forecast7-accum{
-    font-size:.52rem;
+    font-size:.60rem;
     font-weight:700;
     color:var(--ink);
     margin-top:2px;
+    text-align:center;
   }
 
   @media (max-width:600px){
@@ -3174,40 +3209,18 @@
       font-size: 0.74rem;
     }
     
-    .loc-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      padding-top: 8px;
-      z-index: 9999;
+    .loc-cycler {
+      gap: 6px;
     }
-    
-    .loc-dropdown-inner {
-      border-radius: 10px;
-      min-width: 200px;
-      padding: 6px;
-      background: rgba(255,255,255,.85);
-      box-shadow: 0 8px 32px rgba(43,34,244,0.15);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(43,34,244,0.1);
+
+    .loc-arrow {
+      width: 32px;
+      height: 32px;
+      opacity: .7;
     }
-    
-    .loc-option {
-      padding: 14px 16px;
-      font-size: 0.88rem;
-      color: var(--ink);
-      border-radius: 8px;
-      font-weight: 600;
-    }
-    
-    .loc-option:active {
-      background: rgba(43,34,244,0.12);
-    }
-    
-    .loc-option.is-active {
-      background: rgba(43,34,244,0.15);
-      color: var(--ink);
+
+    .loc-cycler-center {
+      min-width: 100px;
     }
 
     /* Hazard map status pills mobile */
@@ -3330,10 +3343,9 @@
 
   /* Touch-friendly tap targets */
   @media (hover: none) and (pointer: coarse) {
-    .loc-option {
-      min-height: 48px;
-      display: flex;
-      align-items: center;
+    .loc-arrow {
+      min-height: 44px;
+      min-width: 44px;
     }
     
     .forecast7-chip {
@@ -3353,19 +3365,7 @@
       min-height: 48px;
     }
     
-    /* Prevent hover states on touch */
-    .loc-name-wrap:hover .loc-dropdown {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
     }
-    
-    .loc-dropdown.is-open {
-      opacity: 1 !important;
-      visibility: visible !important;
-      pointer-events: auto !important;
-    }
-  }
 
   /* Landscape mobile */
   @media (max-width: 900px) and (orientation: landscape) {
@@ -3762,7 +3762,6 @@
   @media (prefers-reduced-motion: reduce) {
     .tl-now-line,
     .spectrum-bar,
-    .loc-dropdown,
     * {
       transition: none !important;
       animation: none !important;
@@ -3858,28 +3857,18 @@ body > #dynamic-alert-modal {
   <!-- Top Row: Location, Temp, Condition, Moon -->
   <div class="weather-top-row">
     <div class="weather-left-stack">
-      <div class="loc-name-wrap">
-        <div class="loc-name" id="loc-name">Pleasant Valley</div>
-        <div class="loc-dropdown" id="loc-dropdown">
-          <div class="loc-dropdown-inner">
-            <div class="loc-option" data-loc="pv">Pleasant Valley</div>
-            <div class="loc-option" data-loc="nyc">NYC</div>
-            <div class="loc-option" data-loc="charleston">Charleston</div>
-            <div class="loc-option" data-loc="rockford">Rockford</div>
-            <div class="loc-option" data-loc="la">LA</div>
-            <div class="loc-option" data-loc="sf">SF</div>
-            <div class="loc-option" data-loc="stephenson">Stephenson</div>
-            <div class="loc-option" data-loc="gore">Gore Mountain</div>
-          </div>
+      <div class="loc-cycler" id="loc-cycler">
+        <button class="loc-arrow" id="loc-prev" aria-label="Previous location">‹</button>
+        <div class="loc-cycler-center">
+          <div class="loc-name" id="loc-name">Pleasant Valley</div>
+          <div class="loc-dots" id="loc-dots"></div>
         </div>
+        <button class="loc-arrow" id="loc-next" aria-label="Next location">›</button>
       </div>
-      <div class="loc-meta" id="loc-meta">---</div>
-      
     
       <div class="weather-main">
         <div class="weather-temp-block">
           <div class="temp" id="temp">--°</div>
-          <div class="feels" id="feels-inline">Feels --°</div>
         </div>
         <div class="weather-cond-block">
           <img class="cond-icon-img" id="cond-icon" src="https://basmilius.github.io/weather-icons/production/fill/all/clear-day.svg" alt="Weather condition" />
@@ -3897,7 +3886,7 @@ body > #dynamic-alert-modal {
 
   <!-- Details Row -->
   <div class="weather-details-row">
-    <div class="weather-hilo" id="today-hi-lo">High --° | Low --°</div>
+    <div class="weather-hilo" id="today-hi-lo"><span class="feels-inline" id="feels-inline">Feels --°</span> <span class="hilo-sep">·</span> <span id="hilo-text">High --° | Low --°</span></div>
     <div class="weather-stats-grid">
       <div class="weather-stat"><span class="k">Rain</span><span class="v" id="precip-amt">--</span></div>
       <div class="weather-stat"><span class="k">Next hrs</span><span class="v" id="forecast-row">--</span></div>
@@ -3906,6 +3895,7 @@ body > #dynamic-alert-modal {
       <div class="weather-stat"><span class="k">Humidity</span><span class="v" id="humidity">--</span></div>
       <div class="weather-stat"><span class="k">Pressure</span><span class="v" id="pressure">--</span></div>
       <div class="weather-stat"><span class="k">UV</span><span class="v" id="uv">--</span></div>
+      <div class="weather-stat loc-meta-stat"><span class="v" id="loc-meta" style="opacity:.45;font-size:.58rem;">---</span></div>
     </div>
   </div>
 
@@ -4214,11 +4204,11 @@ body > #dynamic-alert-modal {
                 <div class="widget-title">GFS UPPER AIR <span class="live-tag" id="gfs-live">• LIVE</span></div>
                 <a href="https://mag.ncep.noaa.gov/model-guidance-model-parameter.php?group=Model+Guidance&model=gfs&area=namer" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">NOAA NCEP MAG</a>
               </div>
-              <div class="widget-body" style="background:#000;position:relative;overflow:hidden;">
+              <div class="widget-body" style="background:#0a0a1a;position:relative;overflow:hidden;">
                 <!-- Tab bar -->
                 <div id="gfs-tabs" style="position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:4px;">
                   <button onclick="switchGfsTab('500mb')" id="gfs-tab-500mb" class="gfs-tab-btn gfs-tab-active" style="padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.15);backdrop-filter:blur(8px);color:#fff;font-size:.6rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">500mb N.America</button>
-                  <button onclick="switchGfsTab('10mb')" id="gfs-tab-10mb" class="gfs-tab-btn" style="padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.6rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">500mb Polar View</button>
+                  <button onclick="switchGfsTab('10mb')" id="gfs-tab-10mb" class="gfs-tab-btn" style="padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.6rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">10mb Stratosphere</button>
                 </div>
                 <!-- Forecast hour stepper -->
                 <div id="gfs-fhr-controls" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:10;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);">
@@ -4230,8 +4220,8 @@ body > #dynamic-alert-modal {
                 <!-- Cycle info -->
                 <div id="gfs-cycle-label" style="position:absolute;top:10px;right:10px;z-index:10;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);font-size:.55rem;font-weight:600;color:rgba(255,255,255,.6);font-family:system-ui,sans-serif;">Cycle: --Z</div>
                 <!-- Images -->
-                <img id="gfs-500mb-img" alt="GFS 500mb Vorticity & Heights - North America" style="width:100%;height:100%;object-fit:contain;filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1);" />
-                <img id="gfs-10mb-img" alt="CPC 10mb Stratospheric Analysis" style="width:100%;height:100%;object-fit:contain;display:none;filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1);" />
+                <img id="gfs-500mb-img" alt="GFS 500mb Vorticity & Heights - North America" style="width:100%;height:100%;object-fit:contain;" />
+                <img id="gfs-10mb-img" alt="CPC 10mb Stratospheric Analysis" style="width:100%;height:100%;object-fit:contain;display:none;" />
                 <div class="badge">NCEP MAG / CPC</div>
               </div>
             </div>
@@ -6670,7 +6660,8 @@ function dayRangeAround(d, days){
           // Today hi/lo
           var hi = daily.temperature_2m_max[0];
           var lo = daily.temperature_2m_min[0];
-          setText(hiLoEl, "High " + Math.round(hi) + "° | Low " + Math.round(lo) + "°");
+          var hiLoTextEl = document.getElementById("hilo-text");
+          if (hiLoTextEl) hiLoTextEl.textContent = "High " + Math.round(hi) + "° | Low " + Math.round(lo) + "°";
 
           // Precip
           var precipProb = daily.precipitation_probability_max[0];
@@ -6727,12 +6718,34 @@ function dayRangeAround(d, days){
               }
             }
             
+            // Find week min/max for bar normalization
+            var weekMin = Infinity, weekMax = -Infinity;
+            for (var wi = startIdx; wi < startIdx + 7 && wi < daily.time.length; wi++){
+              var wHi = daily.temperature_2m_max[wi];
+              var wLo = daily.temperature_2m_min[wi];
+              if (wLo < weekMin) weekMin = wLo;
+              if (wHi > weekMax) weekMax = wHi;
+            }
+            var weekRange = weekMax - weekMin || 1;
+            
             for (var dIdx = startIdx; dIdx < startIdx + 7 && dIdx < daily.time.length; dIdx++){
               var dayDate = new Date(daily.time[dIdx]);
 var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() + " | " + dayDate.getDate();
               var maxT = Math.round(daily.temperature_2m_max[dIdx]);
               var minT = Math.round(daily.temperature_2m_min[dIdx]);
               var icUrl = iconUrlForDaily(daily.weathercode[dIdx]);
+              
+              // Bar position: left% = where lo sits in week range, width% = day's range
+              var barLeft = ((daily.temperature_2m_min[dIdx] - weekMin) / weekRange * 100).toFixed(1);
+              var barWidth = (((daily.temperature_2m_max[dIdx] - daily.temperature_2m_min[dIdx]) / weekRange) * 100).toFixed(1);
+              if (parseFloat(barWidth) < 8) barWidth = "8"; // minimum visible width
+              
+              // Color: cold=blue, warm=amber
+              var midTemp = (daily.temperature_2m_max[dIdx] + daily.temperature_2m_min[dIdx]) / 2;
+              var warmth = (midTemp - weekMin) / weekRange; // 0=coldest, 1=warmest
+              var barColor = warmth < 0.3 ? 'rgba(80,140,240,.6), rgba(120,170,255,.5)' :
+                             warmth < 0.6 ? 'rgba(80,150,240,.5), rgba(220,170,60,.5)' :
+                             'rgba(200,160,50,.5), rgba(230,120,50,.5)';
               
               // Wind data
               var windMax = daily.windspeed_10m_max ? Math.round(daily.windspeed_10m_max[dIdx]) : null;
@@ -6762,7 +6775,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 '<div class="forecast7-chip">' +
                   '<div class="day">'+dayName+'</div>' +
                   '<img class="icon" src="'+icUrl+'" alt="weather" />' +
-                  '<div class="temps">'+maxT+'° | '+minT+'°</div>' +
+                  '<div class="temps">'+maxT+'°</div>' +
+                  '<div class="forecast7-bar-wrap"><div class="forecast7-bar" style="left:'+barLeft+'%;width:'+barWidth+'%;background:linear-gradient(90deg,'+barColor+');"></div></div>' +
+                  '<div class="forecast7-lo">'+minT+'°</div>' +
                   (windStr ? '<div class="forecast7-wind">💨 '+windStr+'</div>' : '') +
                   (accumStr ? '<div class="forecast7-accum">'+accumStr+'</div>' : '') +
                 '</div>';
@@ -7762,11 +7777,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       for(var i=0; i<=384; i+=6) arr.push(i.toString().padStart(3,'0'));
       return arr;
     })(),
-    fhrs10: (function(){
-      var arr = [];
-      for(var i=0; i<=384; i+=6) arr.push(i.toString().padStart(3,'0'));
-      return arr;
-    })()
+    fhrs10: ['f00','f24','f48','f72','f96','f120','f144','f168','f192','f216','f240']
   };
 
   function getGfsCycle(){
@@ -7789,8 +7800,8 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       var fhr = gfsState.fhrs500[fhrIndex] || '000';
       return 'https://mag.ncep.noaa.gov/data/gfs/' + gfsState.cycle + '/namer/500_vort_ht/gfs_namer_' + fhr + '_500_vort_ht.gif';
     } else {
-      var fhr = gfsState.fhrs10[fhrIndex] || '000';
-      return 'https://mag.ncep.noaa.gov/data/gfs/' + gfsState.cycle + '/polar/500_vort_ht/gfs_polar_' + fhr + '_500_vort_ht.gif';
+      var code = gfsState.fhrs10[fhrIndex] || 'f00';
+      return 'https://www.cpc.ncep.noaa.gov/products/stratosphere/strat_a_f/gif_files/n10hgt_' + code + '.gif';
     }
   }
 
@@ -7803,12 +7814,11 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       if(d === 0) return 'F' + gfsState.fhrs500[fhrIndex] + ' · +' + h + 'h';
       return 'F' + gfsState.fhrs500[fhrIndex] + ' · Day ' + d + (rem ? '+' + rem + 'h' : '');
     } else {
-      var h = parseInt(gfsState.fhrs10[fhrIndex], 10);
-      if(h === 0) return 'F000 · Analysis';
-      var d = Math.floor(h / 24);
-      var rem = h % 24;
-      if(d === 0) return 'F' + gfsState.fhrs10[fhrIndex] + ' · +' + h + 'h';
-      return 'F' + gfsState.fhrs10[fhrIndex] + ' · Day ' + d + (rem ? '+' + rem + 'h' : '');
+      var code = gfsState.fhrs10[fhrIndex];
+      var hrs = parseInt(code.replace('f',''), 10);
+      if(hrs === 0) return 'Analysis';
+      var days = hrs / 24;
+      return '+' + hrs + 'h · Day ' + days;
     }
   }
 
@@ -7847,8 +7857,6 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       btn10.style.borderColor = tab === '10mb' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.15)';
     }
     loadGfsFrame();
-    // Auto-start animation on tab switch
-    gfsTogglePlay();
   }
 
   function gfsStepFhr(dir){
@@ -7882,14 +7890,8 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     var cycleLabel = document.getElementById('gfs-cycle-label');
     if(cycleLabel) cycleLabel.textContent = 'Cycle: ' + gfsState.cycle + 'Z';
     loadGfsFrame();
-    // Auto-start animation after first frame loads
-    var gfsFirstImg = document.getElementById('gfs-500mb-img');
-    if(gfsFirstImg){
-      gfsFirstImg.onload = function(){
-        gfsFirstImg.onload = null;
-        gfsTogglePlay();
-      };
-    }
+    // Auto-start animation
+    setTimeout(function(){ gfsTogglePlay(); }, 1500);
     setInterval(function(){
       var newCycle = getGfsCycle();
       if(newCycle !== gfsState.cycle){
@@ -7901,68 +7903,58 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   }
 
 
-  // Expose GFS functions to window for onclick handlers
-  window.switchGfsTab = switchGfsTab;
-  window.gfsStepFhr = gfsStepFhr;
-  window.gfsTogglePlay = gfsTogglePlay;
-
   /* =========================================================
      LOCATION SWITCHER
      ========================================================= */
   function initLocationSwitcher(){
-    var wrap = document.querySelector(".loc-name-wrap");
-    var dropdown = document.getElementById("loc-dropdown");
-    var options = document.querySelectorAll(".loc-option");
+    var locIndex = 0;
+    var dotsEl = document.getElementById("loc-dots");
+    var prevBtn = document.getElementById("loc-prev");
+    var nextBtn = document.getElementById("loc-next");
     
-    if (!wrap || !options.length) return;
+    if (!dotsEl || !prevBtn || !nextBtn) return;
     
-    // Mobile touch support - toggle dropdown on tap
-    var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    
-    if (isTouchDevice && dropdown){
-      wrap.addEventListener("click", function(e){
-        e.stopPropagation();
-        dropdown.classList.toggle("is-open");
-      });
-      
-      // Close dropdown when tapping outside
-      document.addEventListener("click", function(e){
-        if (!wrap.contains(e.target)){
-          dropdown.classList.remove("is-open");
-        }
-      });
-      
-      // Close dropdown after selection
-      options.forEach(function(opt){
-        opt.addEventListener("click", function(){
-          setTimeout(function(){
-            dropdown.classList.remove("is-open");
-          }, 100);
-        });
-      });
+    // Find current location index
+    for (var i = 0; i < LOCATIONS.length; i++){
+      if (LOCATIONS[i].id === LOCATION.id){ locIndex = i; break; }
     }
     
-    // Set initial active
-    updateActiveOption(LOCATION.id);
+    // Build dots
+    function renderDots(){
+      dotsEl.innerHTML = "";
+      for (var i = 0; i < LOCATIONS.length; i++){
+        var dot = document.createElement("div");
+        dot.className = "loc-dot" + (i === locIndex ? " active" : "");
+        dotsEl.appendChild(dot);
+      }
+    }
+    renderDots();
     
-    // Handle option selection
-    options.forEach(function(opt){
-      opt.addEventListener("click", function(){
-        var locId = this.getAttribute("data-loc");
-        switchLocation(locId);
-      });
-    });
+    function cycleTo(newIndex){
+      if (window.locationSwitching) return;
+      locIndex = (newIndex + LOCATIONS.length) % LOCATIONS.length;
+      var newLoc = LOCATIONS[locIndex];
+      
+      renderDots();
+      switchLocation(newLoc.id);
+    }
     
-    function updateActiveOption(id){
-      options.forEach(function(opt){
-        if (opt.getAttribute("data-loc") === id){
-          opt.classList.add("is-active");
-          opt.style.display = "none";
-        } else {
-          opt.classList.remove("is-active");
-          opt.style.display = "block";
+    prevBtn.addEventListener("click", function(){ cycleTo(locIndex - 1); });
+    nextBtn.addEventListener("click", function(){ cycleTo(locIndex + 1); });
+    
+    // Swipe support
+    var startX = null;
+    var cyclerEl = document.getElementById("loc-cycler");
+    if (cyclerEl){
+      cyclerEl.addEventListener("touchstart", function(e){ startX = e.touches[0].clientX; }, {passive:true});
+      cyclerEl.addEventListener("touchend", function(e){
+        if (startX === null) return;
+        var diff = e.changedTouches[0].clientX - startX;
+        if (Math.abs(diff) > 40){
+          cycleTo(locIndex + (diff < 0 ? 1 : -1));
         }
-      });
+        startX = null;
+      }, {passive:true});
     }
     
     function switchLocation(id){
@@ -7980,11 +7972,6 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       if (goesTimer) { clearInterval(goesTimer); goesTimer = null; }
       if (goesRefreshTimer) { clearInterval(goesRefreshTimer); goesRefreshTimer = null; }
       
-      // Clear existing timers
-      if (radarRefreshTimer) { clearInterval(radarRefreshTimer); radarRefreshTimer = null; }
-      if (goesTimer) { clearInterval(goesTimer); goesTimer = null; }
-      if (goesRefreshTimer) { clearInterval(goesRefreshTimer); goesRefreshTimer = null; }
-      
       // Prevent rapid switching
       if (window.locationSwitching) return;
       window.locationSwitching = true;
@@ -7992,8 +7979,6 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       
       LOCATION = newLoc;
       TZ = newLoc.tz;
-      
-      updateActiveOption(id);
       
       // Update location name display with loading state
       if (locNameEl) locNameEl.textContent = newLoc.name;
@@ -10063,10 +10048,6 @@ function initNowMicroTabs(){
       };
       img.src = frames[0] + (frames[0].indexOf('?') >= 0 ? '&' : '?') + 'modal=1&cb=' + Date.now();
       img.alt = config.title || 'Enlarged view';
-      // Apply dark invert filter for GFS widget images
-      if (imgId === 'gfs-500mb-img' || imgId === 'gfs-10mb-img') {
-        img.style.filter = 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1)';
-      }
       widgetModalBody.appendChild(img);
       
       if (frames.length > 1 && config.fps) {
@@ -10241,14 +10222,7 @@ function initNowMicroTabs(){
         widget.classList.add("clickable-widget");
         widget.addEventListener("click", function(e){
           if (e.target.closest("button") || e.target.closest("a") || e.target.closest("input")) return;
-          // For GFS widget, use active tab's config
-          var activeImgId = imgId;
-          var activeConfig = config;
-          if (imgId === 'gfs-500mb-img' || imgId === 'gfs-10mb-img') {
-            activeImgId = gfsState.activeTab === '500mb' ? 'gfs-500mb-img' : 'gfs-10mb-img';
-            activeConfig = WIDGET_CONFIG[activeImgId];
-          }
-          openImageModal(activeConfig, activeImgId);
+          openImageModal(config, imgId);
         });
       } else if (img || canvas) {
         widget.classList.add("clickable-widget");
