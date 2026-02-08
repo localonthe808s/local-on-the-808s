@@ -4146,8 +4146,8 @@ body > #dynamic-alert-modal {
 
           <!-- WIDGETS -->
           
-          <!-- ROW 1: RADAR / CLOUDS / NATIONAL RADAR -->
-          <div class="widgets-row">
+          <!-- ROW 1: LOCAL RADAR / CLOUDS -->
+          <div class="widgets-row-two">
 
             <!-- RADAR -->
             <div class="widget">
@@ -4188,6 +4188,11 @@ body > #dynamic-alert-modal {
               </div>
             </div>
 
+          </div>
+
+          <!-- ROW 2: NATIONAL RADAR / GFS UPPER AIR -->
+          <div class="widgets-row-two">
+
             <!-- NATIONAL RADAR -->
             <div class="widget map-widget">
               <div class="widget-head">
@@ -4200,6 +4205,34 @@ body > #dynamic-alert-modal {
                   <div id="national-radar-timestamp" style="padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); font-size:.65rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif; white-space:nowrap;">--:-- --</div>
                 </div>
                 <div class="badge">IEM NEXRAD</div>
+              </div>
+            </div>
+
+            <!-- GFS UPPER AIR / POLAR VORTEX -->
+            <div class="widget">
+              <div class="widget-head">
+                <div class="widget-title">GFS UPPER AIR <span class="live-tag" id="gfs-live">• LIVE</span></div>
+                <a href="https://mag.ncep.noaa.gov/model-guidance-model-parameter.php?group=Model+Guidance&model=gfs&area=namer" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">NOAA NCEP MAG</a>
+              </div>
+              <div class="widget-body" style="background:#0a0a1a;position:relative;overflow:hidden;">
+                <!-- Tab bar -->
+                <div id="gfs-tabs" style="position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:4px;">
+                  <button onclick="switchGfsTab('500mb')" id="gfs-tab-500mb" class="gfs-tab-btn gfs-tab-active" style="padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.15);backdrop-filter:blur(8px);color:#fff;font-size:.6rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">500mb N.America</button>
+                  <button onclick="switchGfsTab('10mb')" id="gfs-tab-10mb" class="gfs-tab-btn" style="padding:3px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.6rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">10mb Stratosphere</button>
+                </div>
+                <!-- Forecast hour stepper -->
+                <div id="gfs-fhr-controls" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:10;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);">
+                  <button onclick="gfsStepFhr(-1)" style="background:none;border:none;color:#fff;font-size:.8rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">◀</button>
+                  <span id="gfs-fhr-label" style="font-size:.6rem;font-weight:700;color:#fff;font-family:system-ui,sans-serif;min-width:60px;text-align:center;">F000 · Analysis</span>
+                  <button onclick="gfsStepFhr(1)" style="background:none;border:none;color:#fff;font-size:.8rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">▶</button>
+                  <button onclick="gfsTogglePlay()" id="gfs-play-btn" style="background:none;border:none;color:#fff;font-size:.65rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">⏵</button>
+                </div>
+                <!-- Cycle info -->
+                <div id="gfs-cycle-label" style="position:absolute;top:10px;right:10px;z-index:10;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);font-size:.55rem;font-weight:600;color:rgba(255,255,255,.6);font-family:system-ui,sans-serif;">Cycle: --Z</div>
+                <!-- Images -->
+                <img id="gfs-500mb-img" alt="GFS 500mb Vorticity & Heights - North America" style="width:100%;height:100%;object-fit:contain;" />
+                <img id="gfs-10mb-img" alt="CPC 10mb Stratospheric Analysis" style="width:100%;height:100%;object-fit:contain;display:none;" />
+                <div class="badge">NCEP MAG / CPC</div>
               </div>
             </div>
 
@@ -4430,14 +4463,14 @@ body > #dynamic-alert-modal {
      CONFIG
      ========================================================= */
   var LOCATIONS = [
-    { id: "pv", name: "Pleasant Valley", lat: 41.7340, lon: -73.8212, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", goes: { sat: "G19", sector: "ne" } },
-    { id: "nyc", name: "NYC", lat: 40.7411, lon: -73.9897, tz: "America/New_York", radar: "KOKX", radarName: "NWS Upton", goes: { sat: "G19", sector: "ne" } },
-    { id: "charleston", name: "Charleston", lat: 32.8141, lon: -79.9295, tz: "America/New_York", radar: "KCLX", radarName: "NWS Charleston", goes: { sat: "G19", sector: "se" } },
-    { id: "rockford", name: "Rockford", lat: 42.3175, lon: -89.0937, tz: "America/Chicago", radar: "KLOT", radarName: "NWS Chicago", goes: { sat: "G19", sector: "umv" } },
-    { id: "la", name: "LA", lat: 34.0195, lon: -118.4912, tz: "America/Los_Angeles", radar: "KVTX", radarName: "NWS Los Angeles", goes: { sat: "G18", sector: "wus" } },
-    { id: "sf", name: "SF", lat: 37.7559, lon: -122.5108, tz: "America/Los_Angeles", radar: "KMUX", radarName: "NWS San Francisco", goes: { sat: "G18", sector: "wus" } },
-    { id: "stephenson", name: "Stephenson", lat: 39.2148, lon: -78.0594, tz: "America/New_York", radar: "KLWX", radarName: "NWS Sterling", goes: { sat: "G19", sector: "ne" } },
-    { id: "gore", name: "Gore Mountain", lat: 43.6695, lon: -74.0060, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", goes: { sat: "G19", sector: "ne" } }
+    { id: "pv", name: "Pleasant Valley", lat: 41.7340, lon: -73.8212, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
+    { id: "nyc", name: "NYC", lat: 40.7411, lon: -73.9897, tz: "America/New_York", radar: "KOKX", radarName: "NWS Upton", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
+    { id: "charleston", name: "Charleston", lat: 32.8141, lon: -79.9295, tz: "America/New_York", radar: "KCLX", radarName: "NWS Charleston", radarRegion: "SOUTHEAST", goes: { sat: "G19", sector: "se" } },
+    { id: "rockford", name: "Rockford", lat: 42.3175, lon: -89.0937, tz: "America/Chicago", radar: "KLOT", radarName: "NWS Chicago", radarRegion: "UPPERMISSVLY", goes: { sat: "G19", sector: "umv" } },
+    { id: "la", name: "LA", lat: 34.0195, lon: -118.4912, tz: "America/Los_Angeles", radar: "KVTX", radarName: "NWS Los Angeles", radarRegion: "PACSOUTHWEST", goes: { sat: "G18", sector: "wus" } },
+    { id: "sf", name: "SF", lat: 37.7559, lon: -122.5108, tz: "America/Los_Angeles", radar: "KMUX", radarName: "NWS San Francisco", radarRegion: "PACNORTHWEST", goes: { sat: "G18", sector: "wus" } },
+    { id: "stephenson", name: "Stephenson", lat: 39.2148, lon: -78.0594, tz: "America/New_York", radar: "KLWX", radarName: "NWS Sterling", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
+    { id: "gore", name: "Gore Mountain", lat: 43.6695, lon: -74.0060, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } }
   ];
   
   var LOCATION = LOCATIONS[0];
@@ -7027,7 +7060,8 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     if (!radarLiveEl || !radarImg) return;
 
     var STATION = LOCATION.radar || "KENX";
-    var base = "https://radar.weather.gov/ridge/standard/NORTHEAST_loop.gif";
+    var region = LOCATION.radarRegion || "NORTHEAST";
+    var base = "https://radar.weather.gov/ridge/standard/" + region + "_loop.gif";
 
     // Update radar subtitle
     var radarSubEl = document.querySelector(".widget:has(#radar-img) .widget-sub");
@@ -7714,6 +7748,145 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
      ========================================================= */
   var suviTimer = null;
 
+  /* =========================================================
+     GFS UPPER AIR / POLAR VORTEX WIDGET
+     ========================================================= */
+  var gfsState = {
+    activeTab: '500mb',
+    fhrIndex: 0,
+    playing: false,
+    playTimer: null,
+    cycle: '00',
+    fhrs500: (function(){
+      var arr = [];
+      for(var i=0; i<=384; i+=6) arr.push(i.toString().padStart(3,'0'));
+      return arr;
+    })(),
+    fhrs10: ['f00','f24','f48','f72','f96','f120','f144','f168','f192','f216','f240']
+  };
+
+  function getGfsCycle(){
+    var now = new Date();
+    var utcH = now.getUTCHours();
+    var cycles = [0, 6, 12, 18];
+    var bestCycle = '00';
+    for(var i = cycles.length - 1; i >= 0; i--){
+      if(utcH >= cycles[i] + 5 || (utcH < cycles[0] + 5 && i === cycles.length - 1)){
+        bestCycle = cycles[i].toString().padStart(2,'0');
+        break;
+      }
+    }
+    if(utcH < 5) bestCycle = '18';
+    return bestCycle;
+  }
+
+  function buildGfsUrl(tab, fhrIndex){
+    if(tab === '500mb'){
+      var fhr = gfsState.fhrs500[fhrIndex] || '000';
+      return 'https://mag.ncep.noaa.gov/data/gfs/' + gfsState.cycle + '/namer/500_vort_ht/gfs_namer_' + fhr + '_500_vort_ht.gif';
+    } else {
+      var code = gfsState.fhrs10[fhrIndex] || 'f00';
+      return 'https://www.cpc.ncep.noaa.gov/products/stratosphere/strat_a_f/gif_files/n10hgt_' + code + '.gif';
+    }
+  }
+
+  function getFhrLabel(tab, fhrIndex){
+    if(tab === '500mb'){
+      var h = parseInt(gfsState.fhrs500[fhrIndex], 10);
+      if(h === 0) return 'F000 · Analysis';
+      var d = Math.floor(h / 24);
+      var rem = h % 24;
+      if(d === 0) return 'F' + gfsState.fhrs500[fhrIndex] + ' · +' + h + 'h';
+      return 'F' + gfsState.fhrs500[fhrIndex] + ' · Day ' + d + (rem ? '+' + rem + 'h' : '');
+    } else {
+      var code = gfsState.fhrs10[fhrIndex];
+      var hrs = parseInt(code.replace('f',''), 10);
+      if(hrs === 0) return 'Analysis';
+      var days = hrs / 24;
+      return '+' + hrs + 'h · Day ' + days;
+    }
+  }
+
+  function loadGfsFrame(){
+    var tab = gfsState.activeTab;
+    var imgId = tab === '500mb' ? 'gfs-500mb-img' : 'gfs-10mb-img';
+    var img = document.getElementById(imgId);
+    var liveEl = document.getElementById('gfs-live');
+    if(!img) return;
+    var url = buildGfsUrl(tab, gfsState.fhrIndex);
+    img.onload = function(){ if(liveEl) liveEl.textContent = '• LIVE'; };
+    img.onerror = function(){ if(liveEl) liveEl.textContent = '• OFFLINE'; };
+    img.src = url;
+    var label = document.getElementById('gfs-fhr-label');
+    if(label) label.textContent = getFhrLabel(tab, gfsState.fhrIndex);
+  }
+
+  function switchGfsTab(tab){
+    gfsState.activeTab = tab;
+    gfsState.fhrIndex = 0;
+    gfsStopPlay();
+    var img500 = document.getElementById('gfs-500mb-img');
+    var img10 = document.getElementById('gfs-10mb-img');
+    if(img500) img500.style.display = tab === '500mb' ? '' : 'none';
+    if(img10) img10.style.display = tab === '10mb' ? '' : 'none';
+    var btn500 = document.getElementById('gfs-tab-500mb');
+    var btn10 = document.getElementById('gfs-tab-10mb');
+    if(btn500){
+      btn500.style.background = tab === '500mb' ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.06)';
+      btn500.style.color = tab === '500mb' ? '#fff' : 'rgba(255,255,255,.5)';
+      btn500.style.borderColor = tab === '500mb' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.15)';
+    }
+    if(btn10){
+      btn10.style.background = tab === '10mb' ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.06)';
+      btn10.style.color = tab === '10mb' ? '#fff' : 'rgba(255,255,255,.5)';
+      btn10.style.borderColor = tab === '10mb' ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.15)';
+    }
+    loadGfsFrame();
+  }
+
+  function gfsStepFhr(dir){
+    var maxIdx = gfsState.activeTab === '500mb' ? gfsState.fhrs500.length - 1 : gfsState.fhrs10.length - 1;
+    gfsState.fhrIndex = Math.max(0, Math.min(maxIdx, gfsState.fhrIndex + dir));
+    loadGfsFrame();
+  }
+
+  function gfsStopPlay(){
+    gfsState.playing = false;
+    if(gfsState.playTimer){ clearInterval(gfsState.playTimer); gfsState.playTimer = null; }
+    var btn = document.getElementById('gfs-play-btn');
+    if(btn) btn.textContent = '⏵';
+  }
+
+  function gfsTogglePlay(){
+    if(gfsState.playing){ gfsStopPlay(); return; }
+    gfsState.playing = true;
+    var btn = document.getElementById('gfs-play-btn');
+    if(btn) btn.textContent = '⏸';
+    gfsState.playTimer = setInterval(function(){
+      var maxIdx = gfsState.activeTab === '500mb' ? gfsState.fhrs500.length - 1 : gfsState.fhrs10.length - 1;
+      gfsState.fhrIndex++;
+      if(gfsState.fhrIndex > maxIdx) gfsState.fhrIndex = 0;
+      loadGfsFrame();
+    }, 600);
+  }
+
+  function initGfsWidget(){
+    gfsState.cycle = getGfsCycle();
+    var cycleLabel = document.getElementById('gfs-cycle-label');
+    if(cycleLabel) cycleLabel.textContent = 'Cycle: ' + gfsState.cycle + 'Z';
+    loadGfsFrame();
+    // Auto-start animation
+    setTimeout(function(){ gfsTogglePlay(); }, 1500);
+    setInterval(function(){
+      var newCycle = getGfsCycle();
+      if(newCycle !== gfsState.cycle){
+        gfsState.cycle = newCycle;
+        if(cycleLabel) cycleLabel.textContent = 'Cycle: ' + gfsState.cycle + 'Z';
+        loadGfsFrame();
+      }
+    }, 30 * 60 * 1000);
+  }
+
 
   /* =========================================================
      LOCATION SWITCHER
@@ -7816,8 +7989,35 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       startRadarNwsLoop();
       startGoesAutoplay();
       updateSolarMini();
-      destroyHazardMaps();
-      setTimeout(initHazardMaps, 100);
+      
+      // Re-center existing maps instead of destroying/recreating
+      if (fireMap) {
+        var fc = [45, -100], fz = 3;
+        if (LOCATION.lon > -85 && LOCATION.lat > 38) { fc = [44, -74]; fz = 5; }
+        else if (LOCATION.lon > -90 && LOCATION.lat <= 38 && LOCATION.lat > 25) { fc = [32, -82]; fz = 5; }
+        else if (LOCATION.lon > -100 && LOCATION.lon <= -85 && LOCATION.lat > 36) { fc = [42, -90]; fz = 5; }
+        else if (LOCATION.lon <= -110 && LOCATION.lat <= 42 && LOCATION.lat > 30) { fc = [36, -118]; fz = 5; }
+        else if (LOCATION.lon <= -115 && LOCATION.lat > 42) { fc = [46, -122]; fz = 5; }
+        else if (LOCATION.lon > -105 && LOCATION.lon <= -90 && LOCATION.lat <= 36) { fc = [31, -98]; fz = 5; }
+        else if (LOCATION.lon <= -100 && LOCATION.lon > -115 && LOCATION.lat > 36) { fc = [42, -110]; fz = 5; }
+        fireMap.setView(fc, fz);
+      }
+      if (quakeMap) quakeMap.setView([LOCATION.lat, LOCATION.lon], 6);
+      if (lightningMap) lightningMap.setView([LOCATION.lat, LOCATION.lon], 7);
+      
+      // Reload lightning iframe
+      var lIframe = document.getElementById("lightning-iframe");
+      if (lIframe) lIframe.src = "https://map.blitzortung.org/#7/" + LOCATION.lat + "/" + LOCATION.lon + "/2";
+      
+      // Update location markers on maps
+      if (fireMap) {
+        fireMap.eachLayer(function(layer){ if (layer.options && layer.options.fillColor === '#2B22F4') fireMap.removeLayer(layer); });
+        L.circleMarker([LOCATION.lat, LOCATION.lon], { radius: 8, fillColor: '#2B22F4', fillOpacity: 0.9, color: '#fff', weight: 2 }).addTo(fireMap).bindTooltip("📍 " + LOCATION.name, { permanent: false });
+      }
+      if (quakeMap) {
+        quakeMap.eachLayer(function(layer){ if (layer.options && layer.options.fillColor === '#2B22F4') quakeMap.removeLayer(layer); });
+        L.circleMarker([LOCATION.lat, LOCATION.lon], { radius: 8, fillColor: '#2B22F4', fillOpacity: 0.9, color: '#fff', weight: 2 }).addTo(quakeMap).bindTooltip("📍 " + LOCATION.name, { permanent: false });
+      }
     }
   }
 
@@ -9760,6 +9960,32 @@ function initNowMicroTabs(){
       title: 'GEOSPACE PRESSURE',
       subtitle: 'SWPC',
       getFrames: function(){ var el = document.getElementById('geo-pre-img'); return el ? [el.src] : []; }
+    },
+    'gfs-500mb-img': { 
+      type: MODAL_CONTENT_TYPES.IMAGE, 
+      title: 'GFS 500mb VORTICITY & HEIGHTS',
+      subtitle: 'NCEP MAG · North America',
+      getFrames: function(){ 
+        var frames = [];
+        for(var i = 0; i < gfsState.fhrs500.length; i += 2){
+          frames.push(buildGfsUrl('500mb', i));
+        }
+        return frames;
+      },
+      fps: 4
+    },
+    'gfs-10mb-img': { 
+      type: MODAL_CONTENT_TYPES.IMAGE, 
+      title: '10mb STRATOSPHERIC ANALYSIS',
+      subtitle: 'CPC · Northern Hemisphere',
+      getFrames: function(){ 
+        var frames = [];
+        for(var i = 0; i < gfsState.fhrs10.length; i++){
+          frames.push(buildGfsUrl('10mb', i));
+        }
+        return frames;
+      },
+      fps: 2
     }
   };
 
@@ -10085,6 +10311,7 @@ function initNowMicroTabs(){
   initPfss();
   initNowMicroTabs();
   initLocationSwitcher();
+  initGfsWidget();
 
   // Ensure modals are direct children of body, after all other content
   var alertM = document.getElementById('alert-modal');
@@ -10174,4 +10401,3 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeA
 </script>
 </body>
 </html>
-
