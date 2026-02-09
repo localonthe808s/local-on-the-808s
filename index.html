@@ -2371,7 +2371,7 @@
     flex-direction:column;
     align-items:center;
     gap:2px;
-    padding:8px 8px;
+    padding:4px 8px 8px 8px;
     border-radius:14px;
     background:rgba(255,255,255,.06);
     box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
@@ -2408,7 +2408,7 @@
   }
 
   .forecast7-bar-wrap{
-    width:80%;
+    width:100%;
     height:5px;
     background:rgba(43,34,244,.08);
     border-radius:3px;
@@ -2425,6 +2425,41 @@
     box-shadow:0 0 6px rgba(255,255,255,.15);
   }
 
+  .forecast7-chip .forecast7-bar-block{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+  }
+  .forecast7-chip .bar-hi{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end;
+    gap:3px;
+    white-space:nowrap;
+    overflow:visible;
+  }
+  .forecast7-chip .bar-lo{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-start;
+    gap:3px;
+    white-space:nowrap;
+    overflow:visible;
+  }
+  .forecast7-chip .bar-lo .forecast7-lo{
+    font-size:.85rem;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .forecast7-chip .feels-hi,
+  .forecast7-chip .feels-lo{
+    font-size:.5rem;
+    font-weight:400;
+    color:var(--ink-dim);
+    letter-spacing:.02em;
+    white-space:nowrap;
+  }
   .forecast7-chip .forecast7-lo{
     font-size:.68rem;
     font-weight:600;
@@ -2454,6 +2489,25 @@
     margin-top:2px;
     text-align:center;
   }
+  .forecast7-chip .forecast7-precip{
+    font-size:.60rem;
+    font-weight:700;
+    color:rgba(70,150,255,.95);
+    margin-top:4px;
+    text-align:center;
+    letter-spacing:.02em;
+  }
+  .forecast7-chip .forecast7-uv{
+    font-size:.55rem;
+    font-weight:600;
+    margin-top:2px;
+    text-align:center;
+  }
+  .forecast7-chip .forecast7-uv.uv-low{ color:rgba(120,180,120,.95); }
+  .forecast7-chip .forecast7-uv.uv-mod{ color:rgba(200,170,60,.95); }
+  .forecast7-chip .forecast7-uv.uv-high{ color:rgba(240,130,40,.95); }
+  .forecast7-chip .forecast7-uv.uv-vhigh{ color:rgba(230,60,60,.95); }
+  .forecast7-chip .forecast7-uv.uv-extreme{ color:rgba(180,50,200,.95); }
 
   @media (max-width:600px){
     .forecast7-chips{
@@ -2471,13 +2525,21 @@
       scroll-snap-align:start;
     }
     .forecast7-chip .icon{
-      width:42px;
-      height:42px;
+    width:90px;
+    height:90px;
+    margin:-10px 0 -10px 0;
+    margin:0;
+    padding:0;
     }
     .forecast7-chip .temps{
       font-size:.78rem;
     }
-    .forecast7-chip .forecast7-lo{
+    .forecast7-chip .feels-hi{
+    font-size:.55rem;
+    font-weight:600;
+    color:var(--ink-dim);
+  }
+  .forecast7-chip .forecast7-lo{
       font-size:.62rem;
     }
     .forecast7-chip .forecast7-wind{
@@ -6766,7 +6828,7 @@ function dayRangeAround(d, days){
       "&windspeed_unit=mph" +
       "&precipitation_unit=inch" +
       "&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,precipitation_probability,precipitation,cloudcover,windspeed_10m,windgusts_10m,visibility,pressure_msl,uv_index,weathercode,snowfall,rain" +
-      "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,windspeed_10m_max,windgusts_10m_max,snowfall_sum,rain_sum" +
+      "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,windspeed_10m_max,windgusts_10m_max,snowfall_sum,rain_sum,wind_direction_10m_dominant,showers_sum" +
       "&forecast_days=10";
 
     fetchWithTimeout(url, null, 12000)
@@ -6900,6 +6962,21 @@ function dayRangeAround(d, days){
 var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() + " | " + dayDate.getDate();
               var maxT = Math.round(daily.temperature_2m_max[dIdx]);
               var minT = Math.round(daily.temperature_2m_min[dIdx]);
+              // Compute daily feels-like high and low from hourly apparent_temperature
+              var feelsLo = null, feelsHi = null;
+              if (hourly && hourly.apparent_temperature && hourly.time) {
+                var dayStr = daily.time[dIdx];
+                var dayFeels = [];
+                for (var hi = 0; hi < hourly.time.length; hi++) {
+                  if (hourly.time[hi].substring(0,10) === dayStr) {
+                    dayFeels.push(hourly.apparent_temperature[hi]);
+                  }
+                }
+                if (dayFeels.length > 0) {
+                  feelsLo = Math.round(Math.min.apply(null, dayFeels));
+                  feelsHi = Math.round(Math.max.apply(null, dayFeels));
+                }
+              }
               var icUrl = iconUrlForDaily(daily.weathercode[dIdx]);
               
               // Bar position: left% = where lo sits in week range, width% = day's range
@@ -6913,10 +6990,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 // t: 0=coldest in week, 1=warmest in week
                 // Color stops: 0=blue, 0.25=cyan, 0.5=green, 0.75=yellow, 1.0=red
                 var stops = [
-                  [0.00, 14,165,233],   // sky blue (cold)
-                  [0.33, 16,185,129],   // emerald
-                  [0.66, 234,179,8],    // gold
-                  [1.00, 239,68,68]     // red (hot)
+                  [0.00, 56,189,248],   // bright sky blue (cold)
+                  [0.33, 52,211,153],   // bright emerald
+                  [0.66, 250,204,21],   // bright gold
+                  [1.00, 248,82,82]     // bright red (hot)
                 ];
                 t = Math.max(0, Math.min(1, t));
                 var i = 0;
@@ -6934,39 +7011,95 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               var hiWarmth = (daily.temperature_2m_max[dIdx] - weekMin) / weekRange;
               var barColor = tempColor(loWarmth) + ', ' + tempColor(hiWarmth);
               
-              // Wind data
-              var windMax = daily.windspeed_10m_max ? Math.round(daily.windspeed_10m_max[dIdx]) : null;
-              var gustMax = daily.windgusts_10m_max ? Math.round(daily.windgusts_10m_max[dIdx]) : null;
-              var windStr = "";
-              if (windMax != null) {
-                windStr = windMax + " MPH";
-                if (gustMax != null && gustMax > windMax) {
-                  windStr += " · " + gustMax + "G";
+              // Precipitation probability & type
+              var precipProb = daily.precipitation_probability_max ? Math.round(daily.precipitation_probability_max[dIdx]) : 0;
+              var precipSum = daily.precipitation_sum ? daily.precipitation_sum[dIdx] : 0;
+              var snowSum = daily.snowfall_sum ? daily.snowfall_sum[dIdx] : 0;
+              var rainSum = daily.rain_sum ? daily.rain_sum[dIdx] : 0;
+              var showersSum = daily.showers_sum ? daily.showers_sum[dIdx] : 0;
+              
+              // Determine precip type and build string
+              var precipStr = "";
+              if (precipProb > 0) {
+                var precipIcon = "💧";
+                var precipType = "";
+                var wcode = daily.weathercode[dIdx];
+                var isThunder = (wcode === 95 || wcode === 96 || wcode === 99);
+                if (isThunder) {
+                  precipIcon = "⛈️"; precipType = "T-STORM";
+                } else if (snowSum > 0 && snowSum >= rainSum) {
+                  precipIcon = "❄️"; precipType = "SNOW";
+                } else if (showersSum > 0 && showersSum >= rainSum * 0.5) {
+                  precipIcon = "🌦️"; precipType = "SHOWERS";
+                } else if (rainSum > 0.01 || precipSum > 0.01) {
+                  precipIcon = "🌧️"; precipType = "RAIN";
+                } else if (snowSum > 0 && rainSum > 0) {
+                  precipIcon = "🌨️"; precipType = "MIX";
+                }
+                precipStr = precipIcon + ' ' + precipProb + '%';
+                if (precipType === "SNOW" && snowSum > 0) {
+                  precipStr += ' · ' + snowSum.toFixed(1) + '" SNOW';
+                } else if (precipType === "MIX" && snowSum > 0) {
+                  precipStr += ' · ' + snowSum.toFixed(1) + '"❄ + ' + rainSum.toFixed(2) + '"🌧️';
+                } else if (precipSum > 0.01) {
+                  precipStr += ' · ' + precipSum.toFixed(2) + '"';
+                  if (precipType) precipStr += ' ' + precipType;
+                } else if (precipType) {
+                  precipStr += ' ' + precipType;
                 }
               }
               
-              // Snow and rain accumulation
-              var snowSum = daily.snowfall_sum ? daily.snowfall_sum[dIdx] : 0;
-              var rainSum = daily.rain_sum ? daily.rain_sum[dIdx] : 0;
-              var accumStr = "";
-              if (snowSum > 0) {
-                accumStr += '❄️ ' + snowSum.toFixed(1) + '"';
-              }
-              if (rainSum > 0.01) {
-                if (accumStr) accumStr += ' · ';
-                accumStr += '🌧️ ' + rainSum.toFixed(2) + '"';
+              // Wind with dominant direction
+              var windMax = daily.windspeed_10m_max ? Math.round(daily.windspeed_10m_max[dIdx]) : null;
+              var gustMax = daily.windgusts_10m_max ? Math.round(daily.windgusts_10m_max[dIdx]) : null;
+              var windDir = daily.wind_direction_10m_dominant ? daily.wind_direction_10m_dominant[dIdx] : null;
+              var windStr = "";
+              if (windMax != null) {
+                // Convert degrees to compass
+                var dirStr = "";
+                if (windDir != null) {
+                  var dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+                  dirStr = dirs[Math.round(windDir / 22.5) % 16] + " ";
+                }
+                windStr = dirStr + windMax;
+                if (gustMax != null && gustMax > windMax) {
+                  windStr += " | " + gustMax;
+                }
+                windStr += " MPH";
               }
               
+              // UV Index
+              var uvMax = daily.uv_index_max ? Math.round(daily.uv_index_max[dIdx]) : null;
+              var uvStr = "";
+              var uvClass = "uv-low";
+              if (uvMax != null && uvMax >= 0) {
+                var uvLabel, uvIcon;
+                if (uvMax <= 2) { uvLabel = "LOW"; uvClass = "uv-low"; uvIcon = "🟢"; }
+                else if (uvMax <= 5) { uvLabel = "MOD"; uvClass = "uv-mod"; uvIcon = "🟡"; }
+                else if (uvMax <= 7) { uvLabel = "HIGH"; uvClass = "uv-high"; uvIcon = "🟠"; }
+                else if (uvMax <= 10) { uvLabel = "V.HIGH"; uvClass = "uv-vhigh"; uvIcon = "🔴"; }
+                else { uvLabel = "EXTREME"; uvClass = "uv-extreme"; uvIcon = "🟣"; }
+                uvStr = uvIcon + " UV " + uvMax + " " + uvLabel;
+              }
               
               daysHtml +=
                 '<div class="forecast7-chip">' +
                   '<div class="day">'+dayName+'</div>' +
                   '<img class="icon" src="'+icUrl+'" alt="weather" />' +
-                  '<div class="temps">'+maxT+'°</div>' +
-                  '<div class="forecast7-bar-wrap"><div class="forecast7-bar" style="left:'+barLeft+'%;width:'+barWidth+'%;background:linear-gradient(90deg,'+barColor+');"></div></div>' +
-                  '<div class="forecast7-lo">'+minT+'°</div>' +
-                  (windStr ? '<div class="forecast7-wind">💨 '+windStr+'</div>' : '') +
-                  (accumStr ? '<div class="forecast7-accum">'+accumStr+'</div>' : '') +
+                  '<div class="forecast7-bar-block">' +
+  '<div class="bar-hi" style="margin-left:'+barLeft+'%; margin-right:'+(100 - parseFloat(barLeft) - parseFloat(barWidth)).toFixed(1)+'%;">' +
+    (feelsHi !== null && feelsHi !== maxT ? '<span class="feels-hi">'+feelsHi+'°</span>' : '') +
+    '<span class="temps">'+maxT+'°</span>' +
+  '</div>' +
+  '<div class="forecast7-bar-wrap"><div class="forecast7-bar" style="left:'+barLeft+'%;width:'+barWidth+'%;background:linear-gradient(90deg,'+barColor+');"></div></div>' +
+  '<div class="bar-lo" style="margin-left:'+barLeft+'%; margin-right:'+(100 - parseFloat(barLeft) - parseFloat(barWidth)).toFixed(1)+'%;">' +
+    '<span class="forecast7-lo">'+minT+'°</span>' +
+    (feelsLo !== null && feelsLo !== minT ? '<span class="feels-lo">'+feelsLo+'°</span>' : '') +
+  '</div>' +
+'</div>' +
+                  (windStr ? '<div class="forecast7-wind">'+windStr+'</div>' : '') +
+                  (uvStr ? '<div class="forecast7-uv '+uvClass+'">'+uvStr+'</div>' : '') +
+                  (precipStr ? '<div class="forecast7-precip">'+precipStr+'</div>' : '') +
                 '</div>';
             }
             forecast7El.innerHTML = daysHtml;
