@@ -6913,11 +6913,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 // t: 0=coldest in week, 1=warmest in week
                 // Color stops: 0=blue, 0.25=cyan, 0.5=green, 0.75=yellow, 1.0=red
                 var stops = [
-                  [0.00, 60,120,230],   // blue
-                  [0.25, 50,180,210],   // cyan
-                  [0.50, 60,195,120],   // green
-                  [0.75, 240,200,40],   // yellow
-                  [1.00, 230,60,50]     // red
+                  [0.00, 14,165,233],   // sky blue (cold)
+                  [0.33, 16,185,129],   // emerald
+                  [0.66, 234,179,8],    // gold
+                  [1.00, 239,68,68]     // red (hot)
                 ];
                 t = Math.max(0, Math.min(1, t));
                 var i = 0;
@@ -8071,7 +8070,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       for(var i=0; i<=384; i+=6) arr.push(i.toString().padStart(3,'0'));
       return arr;
     })(),
-    fhrs10: ['f00','f24','f48','f72','f96','f120','f144','f168','f192','f216','f240']
+    fhrs10: ['f00','f24','f48','f72','f96','f120','f144','f168','f192','f216','f240','f264','f288','f312','f336','f360','f384']
   };
 
   function getGfsCycle(){
@@ -8095,7 +8094,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       return 'https://mag.ncep.noaa.gov/data/gfs/' + gfsState.cycle + '/namer/500_vort_ht/gfs_namer_' + fhr + '_500_vort_ht.gif';
     } else {
       var code = gfsState.fhrs10[fhrIndex] || 'f00';
-      return 'https://www.cpc.ncep.noaa.gov/products/stratosphere/strat_a_f/gif_files/n10hgt_' + code + '.gif';
+      return 'https://www.cpc.ncep.noaa.gov/products/stratosphere/strat_a_f/gif_files/gfs_t10_nh_' + code + '.png';
     }
   }
 
@@ -8126,9 +8125,19 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     img.onload = function(){ if(liveEl) liveEl.textContent = '• LIVE'; };
     img.onerror = function(){ if(liveEl) liveEl.textContent = '• OFFLINE'; };
     img.src = url;
-    img.style.filter = "invert(1) hue-rotate(180deg) contrast(1.3) saturate(1.2)";
+    if(tab === '500mb'){
+      img.style.filter = "invert(1) hue-rotate(180deg) contrast(1.3) saturate(1.2)";
+    } else {
+      img.style.filter = "invert(1) hue-rotate(180deg) contrast(1.3) saturate(1.2)";
+    }
     var label = document.getElementById('gfs-fhr-label');
     if(label) label.textContent = getFhrLabel(tab, gfsState.fhrIndex);
+    // Preload next frame for smoother animation
+    var maxIdx = tab === '500mb' ? gfsState.fhrs500.length - 1 : gfsState.fhrs10.length - 1;
+    var nextIdx = gfsState.fhrIndex + 1;
+    if(nextIdx > maxIdx) nextIdx = 0;
+    var preload = new Image();
+    preload.src = buildGfsUrl(tab, nextIdx);
   }
 
   function switchGfsTab(tab){
@@ -8172,12 +8181,13 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     gfsState.playing = true;
     var btn = document.getElementById('gfs-play-btn');
     if(btn) btn.textContent = '⏸';
+    var speed = gfsState.activeTab === '500mb' ? 900 : 1200;
     gfsState.playTimer = setInterval(function(){
       var maxIdx = gfsState.activeTab === '500mb' ? gfsState.fhrs500.length - 1 : gfsState.fhrs10.length - 1;
       gfsState.fhrIndex++;
       if(gfsState.fhrIndex > maxIdx) gfsState.fhrIndex = 0;
       loadGfsFrame();
-    }, 600);
+    }, speed);
   }
 
   function initGfsWidget(){
@@ -8196,6 +8206,11 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       }
     }, 30 * 60 * 1000);
   }
+
+  // Expose GFS controls to global scope for inline onclick handlers
+  window.switchGfsTab = switchGfsTab;
+  window.gfsStepFhr = gfsStepFhr;
+  window.gfsTogglePlay = gfsTogglePlay;
 
 
   /* =========================================================
@@ -10681,29 +10696,22 @@ function initNowMicroTabs(){
     },
     'gfs-500mb-img': { 
       type: MODAL_CONTENT_TYPES.IMAGE, 
-      title: 'GFS 500mb VORTICITY & HEIGHTS',
-      subtitle: 'NCEP MAG · North America',
+      get title(){ return gfsState.activeTab === '10mb' ? '10mb STRATOSPHERIC TEMPERATURE' : 'GFS 500mb VORTICITY & HEIGHTS'; },
+      get subtitle(){ return gfsState.activeTab === '10mb' ? 'CPC · Northern Hemisphere' : 'NCEP MAG · North America'; },
       getFrames: function(){ 
         var frames = [];
-        for(var i = 0; i < gfsState.fhrs500.length; i += 2){
-          frames.push(buildGfsUrl('500mb', i));
+        if(gfsState.activeTab === '10mb'){
+          for(var i = 0; i < gfsState.fhrs10.length; i++){
+            frames.push(buildGfsUrl('10mb', i));
+          }
+        } else {
+          for(var i = 0; i < gfsState.fhrs500.length; i += 2){
+            frames.push(buildGfsUrl('500mb', i));
+          }
         }
         return frames;
       },
-      fps: 4
-    },
-    'gfs-10mb-img': { 
-      type: MODAL_CONTENT_TYPES.IMAGE, 
-      title: '10mb STRATOSPHERIC ANALYSIS',
-      subtitle: 'CPC · Northern Hemisphere',
-      getFrames: function(){ 
-        var frames = [];
-        for(var i = 0; i < gfsState.fhrs10.length; i++){
-          frames.push(buildGfsUrl('10mb', i));
-        }
-        return frames;
-      },
-      fps: 2
+      get fps(){ return gfsState.activeTab === '10mb' ? 2 : 4; }
     }
   };
 
