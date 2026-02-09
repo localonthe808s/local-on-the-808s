@@ -531,16 +531,13 @@
 
   /* Search toggle button - matches GPS button style */
   .loc-search-toggle{
-    position:absolute;
-    right:-22px;
-    top:50%;
-    transform:translateY(-50%);
-    width:16px;
-    height:16px;
+    position:relative;
+    width:22px;
+    height:22px;
     border-radius:50%;
     border:1px solid rgba(43,34,244,.3);
     background:rgba(43,34,244,.06);
-    font-size:.5rem;
+    font-size:.7rem;
     cursor:pointer;
     display:flex;
     align-items:center;
@@ -570,12 +567,12 @@
     display:flex;
     align-items:center;
     gap:4px;
-    background:rgba(20,20,50,.85);
+    background:rgba(255,255,255,.06);
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
     border-radius:10px;
     padding:5px 8px 5px 12px;
-    box-shadow:0 4px 20px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.08);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
     z-index:200;
     opacity:0;
     pointer-events:none;
@@ -594,13 +591,13 @@
     outline:none;
     font-size:.72rem;
     font-weight:600;
-    color:#e0e0ff;
+    color:rgba(43,34,244,.9);
     width:130px;
     font-family:inherit;
   }
 
   .loc-search-input::placeholder{
-    color:rgba(180,180,255,.4);
+    color:rgba(43,34,244,.35);
     font-weight:500;
   }
 
@@ -609,7 +606,7 @@
     background:none;
     cursor:pointer;
     font-size:.65rem;
-    color:rgba(255,255,255,.35);
+    color:rgba(43,34,244,.4);
     padding:2px 5px;
     line-height:1;
     border-radius:50%;
@@ -617,8 +614,8 @@
   }
 
   .loc-search-close:hover{
-    color:rgba(255,255,255,.7);
-    background:rgba(255,255,255,.1);
+    color:rgba(43,34,244,.8);
+    background:rgba(43,34,244,.08);
   }
 
   /* Earthquake geology popup */
@@ -1734,7 +1731,8 @@
     top:0;
     bottom:-40px;
     width:2px;
-    background:rgba(255,255,255,.85);
+    background:rgba(255,255,255,.06);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
     border-radius:2px;
     z-index:100;
     box-shadow:0 0 8px rgba(255,255,255,.45), 0 0 16px rgba(43,34,244,.20);
@@ -2409,7 +2407,7 @@
 
   .forecast7-bar-wrap{
     width:100%;
-    height:5px;
+    height:7px;
     background:rgba(43,34,244,.08);
     border-radius:3px;
     position:relative;
@@ -4091,12 +4089,12 @@ body > #dynamic-alert-modal {
     <div class="weather-left-stack">
       <div class="loc-cycler" id="loc-cycler">
         <div class="loc-cycler-center">
-          <div class="loc-name" id="loc-name">Pleasant Valley</div>
+          <div class="loc-name" id="loc-name">NYC</div>
           <div class="loc-dots-row">
+            <button class="loc-search-toggle" id="loc-search-toggle" aria-label="Search location" title="Search for a location">⌕</button>
             <button class="loc-arrow" id="loc-prev" aria-label="Previous location">‹</button>
             <div class="loc-dots" id="loc-dots"></div>
             <button class="loc-arrow" id="loc-next" aria-label="Next location">›</button>
-            <button class="loc-search-toggle" id="loc-search-toggle" aria-label="Search location" title="Search for a location">⌕</button>
             <div class="loc-search-box" id="loc-search-box">
               <input type="text" class="loc-search-input" id="loc-search-input" placeholder="City or zip..." maxlength="60" />
               <button class="loc-search-close" id="loc-search-close" aria-label="Close search">✕</button>
@@ -4492,7 +4490,8 @@ body > #dynamic-alert-modal {
                 <div id="fire-labels-toggle" onclick="toggleFireLabels()" style="position:absolute; top:10px; right:10px; z-index:1000; padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.90); backdrop-filter:blur(8px); font-size:.62rem; font-weight:700; color:#888; box-shadow:0 2px 8px rgba(0,0,0,.15); cursor:pointer; user-select:none; border:2px solid #888;">🏙️ OFF</div>
                 <div id="fire-aqi-pill" style="position:absolute; bottom:10px; left:10px; z-index:1000; padding:6px 12px; border-radius:16px; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); font-size:.7rem; font-weight:700; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); display:none; pointer-events:none;"><span id="fire-aqi-value">--</span> AQI</div>
                 <div class="fire-status-wrap" style="position:absolute; top:10px; left:10px; z-index:1000;">
-                  <div id="fire-status-pill" style="padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.85); backdrop-filter:blur(8px); font-size:.68rem; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer;">🔥 Loading...</div>
+                  <div id="fire-status-pill" style="padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.06);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18); backdrop-filter:blur(8px); font-size:.68rem; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer;">🔥 Loading...</div>
                   <div id="fire-dropdown" style="position:absolute; top:100%; left:0; padding-top:6px; opacity:0; visibility:hidden; transition: opacity .2s ease, visibility .2s ease; pointer-events:none;">
                     <div id="fire-list" style="background:rgba(0,0,0,.85); backdrop-filter:blur(12px); border-radius:10px; padding:6px; min-width:220px; max-height:220px; overflow-y:auto;"></div>
                   </div>
@@ -4510,7 +4509,8 @@ body > #dynamic-alert-modal {
               <div class="widget-body" style="position:relative;">
                 <div id="quake-map" style="width:100%; height:100%; background:#f5f5f5;"></div>
                 <div class="quake-status-wrap" style="position:absolute; top:10px; left:10px; z-index:400;">
-                  <div id="quake-status-pill" style="padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.85); backdrop-filter:blur(8px); font-size:.68rem; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer;">🌍 Loading...</div>
+                  <div id="quake-status-pill" style="padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.06);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18); backdrop-filter:blur(8px); font-size:.68rem; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer;">🌍 Loading...</div>
                   <div id="quake-dropdown" style="position:absolute; top:100%; left:0; padding-top:6px; opacity:0; visibility:hidden; transition: opacity .2s ease, visibility .2s ease; pointer-events:none;">
                     <div id="quake-list" style="background:rgba(0,0,0,.85); backdrop-filter:blur(12px); border-radius:10px; padding:6px; min-width:200px; max-height:220px; overflow-y:auto;"></div>
                   </div>
@@ -4692,14 +4692,13 @@ body > #dynamic-alert-modal {
      CONFIG
      ========================================================= */
   var LOCATIONS = [
-    { id: "pv", name: "Pleasant Valley", lat: 41.7340, lon: -73.8212, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
     { id: "nyc", name: "NYC", lat: 40.7411, lon: -73.9897, tz: "America/New_York", radar: "KOKX", radarName: "NWS Upton", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
-    { id: "charleston", name: "Charleston", lat: 32.8141, lon: -79.9295, tz: "America/New_York", radar: "KCLX", radarName: "NWS Charleston", radarRegion: "SOUTHEAST", goes: { sat: "G19", sector: "se" } },
-    { id: "rockford", name: "Rockford", lat: 42.3175, lon: -89.0937, tz: "America/Chicago", radar: "KLOT", radarName: "NWS Chicago", radarRegion: "UPPERMISSVLY", goes: { sat: "G19", sector: "umv" } },
     { id: "la", name: "LA", lat: 34.0195, lon: -118.4912, tz: "America/Los_Angeles", radar: "KVTX", radarName: "NWS Los Angeles", radarRegion: "PACSOUTHWEST", goes: { sat: "G18", sector: "wus" } },
+    { id: "chicago", name: "Chicago", lat: 42.3175, lon: -89.0937, tz: "America/Chicago", radar: "KLOT", radarName: "NWS Chicago", radarRegion: "UPPERMISSVLY", goes: { sat: "G19", sector: "umv" } },
     { id: "sf", name: "SF", lat: 37.7559, lon: -122.5108, tz: "America/Los_Angeles", radar: "KMUX", radarName: "NWS San Francisco", radarRegion: "PACNORTHWEST", goes: { sat: "G18", sector: "wus" } },
-    { id: "stephenson", name: "Stephenson", lat: 39.2148, lon: -78.0594, tz: "America/New_York", radar: "KLWX", radarName: "NWS Sterling", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
-    { id: "gore", name: "Gore Mountain", lat: 43.6695, lon: -74.0060, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } }
+    { id: "charleston", name: "Charleston", lat: 32.8141, lon: -79.9295, tz: "America/New_York", radar: "KCLX", radarName: "NWS Charleston", radarRegion: "SOUTHEAST", goes: { sat: "G19", sector: "se" } },
+    { id: "pv", name: "Pleasant Valley", lat: 41.7340, lon: -73.8212, tz: "America/New_York", radar: "KENX", radarName: "NWS Albany", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } },
+    { id: "stephenson", name: "Stephenson", lat: 39.2148, lon: -78.0594, tz: "America/New_York", radar: "KLWX", radarName: "NWS Sterling", radarRegion: "NORTHEAST", goes: { sat: "G19", sector: "ne" } }
   ];
   
   var LOCATION = LOCATIONS[0];
@@ -6990,10 +6989,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 // t: 0=coldest in week, 1=warmest in week
                 // Color stops: 0=blue, 0.25=cyan, 0.5=green, 0.75=yellow, 1.0=red
                 var stops = [
-                  [0.00, 56,189,248],   // bright sky blue (cold)
-                  [0.33, 52,211,153],   // bright emerald
-                  [0.66, 250,204,21],   // bright gold
-                  [1.00, 248,82,82]     // bright red (hot)
+                  [0.00, 0,200,255],    // vivid cyan
+                  [0.25, 0,255,130],    // vivid green
+                  [0.50, 255,230,0],    // vivid yellow
+                  [0.75, 255,120,0],    // vivid orange
+                  [1.00, 255,30,60]     // vivid red
                 ];
                 t = Math.max(0, Math.min(1, t));
                 var i = 0;
@@ -9343,7 +9343,8 @@ function initNowMicroTabs(){
     var fireLegend = L.control({ position: 'bottomright' });
     fireLegend.onAdd = function(map) {
       var div = L.DomUtil.create('div', 'fire-legend');
-      div.style.cssText = 'background:rgba(255,255,255,.85); padding:4px 6px; border-radius:6px; font-size:9px; font-weight:600; font-family:system-ui,sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.12);';
+      div.style.cssText = 'background:rgba(255,255,255,.06);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18); padding:4px 6px; border-radius:6px; font-size:9px; font-weight:600; font-family:system-ui,sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.12);';
       div.innerHTML = 
         '<div style="display:flex; flex-direction:column; gap:2px;">' +
           '<div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;"><span style="color:#888;">&lt;1K</span><span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;"></span></div>' +
@@ -10099,7 +10100,8 @@ function initNowMicroTabs(){
     var legend = L.control({ position: 'bottomright' });
     legend.onAdd = function(map) {
       var div = L.DomUtil.create('div', 'quake-legend');
-      div.style.cssText = 'background:rgba(255,255,255,.85); padding:4px 6px; border-radius:6px; font-size:9px; font-weight:600; font-family:system-ui,sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.12);';
+      div.style.cssText = 'background:rgba(255,255,255,.06);
+    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18); padding:4px 6px; border-radius:6px; font-size:9px; font-weight:600; font-family:system-ui,sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.12);';
       div.innerHTML = 
         '<div style="display:flex; flex-direction:column; gap:2px;">' +
           '<div style="display:flex; align-items:center; justify-content:flex-end; gap:4px;"><span style="color:#888;">&lt;1.5</span><span style="width:4px;height:4px;border-radius:50%;background:#7dd3fc;"></span></div>' +
