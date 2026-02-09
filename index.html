@@ -584,6 +584,11 @@
     pointer-events:auto;
     transform:translate(-50%,-50%) scale(1);
   }
+  .loc-search-box.open ~ .loc-dots,
+  .loc-search-box.open ~ .loc-arrow{
+    opacity:0;
+    pointer-events:none;
+  }
 
   .loc-search-input{
     border:none;
@@ -1730,12 +1735,11 @@
     position:absolute;
     top:0;
     bottom:-40px;
-    width:2px;
-    background:rgba(255,255,255,.06);
-    box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
+    width:3px;
+    background:rgba(255,140,0,.9);
     border-radius:2px;
     z-index:100;
-    box-shadow:0 0 8px rgba(255,255,255,.45), 0 0 16px rgba(43,34,244,.20);
+    box-shadow:0 0 10px rgba(255,140,0,.6), 0 0 20px rgba(255,100,0,.3);
   }
 
   .today-tl-now-label{
@@ -1747,7 +1751,7 @@
     bottom:0;
     left:50%;
     transform:translateX(-50%);
-    background:#2B22F4;
+    background:rgba(255,140,0,.95);
     color:#fff;
     padding:5px 8px;
     border-radius:8px;
@@ -1755,7 +1759,7 @@
     flex-direction:column;
     align-items:center;
     gap:1px;
-    box-shadow:0 3px 10px rgba(43,34,244,.35);
+    box-shadow:0 3px 10px rgba(255,100,0,.4);
   }
 
   .today-tl-now-temp{
@@ -4141,7 +4145,7 @@ body > #dynamic-alert-modal {
   <div class="weather-details-row">
     <div class="weather-stats-grid">
       <div class="weather-stat"><span class="k">AQI</span><span class="ap-val" id="aqi-val">--</span></div>
-      <div class="weather-stat"><span class="k">💨 Smoke</span><span class="pollen-val" id="smoke-risk">--</span></div>
+      <div class="weather-stat"><span class="k">💨 AIR</span><span class="pollen-val" id="smoke-risk">--</span></div>
       <div class="weather-stat"><span class="k">PM2.5</span><span class="v" id="pm25-val">--</span></div>
       <div class="weather-stat"><span class="k">PM10</span><span class="v" id="pm10-val">--</span></div>
       <div class="weather-stat"><span class="k">🌳 Tree</span><span class="pollen-val" id="pollen-tree">--</span></div>
@@ -6252,10 +6256,16 @@ function dayRangeAround(d, days){
         var precipClass = precip >= 50 ? "active" : "";
         var hourClass = "today-tl-weather-hour" + (isDayHour ? " day-hour" : "");
         
+        var feelsLike = (matchIdx >= 0 && hourly.apparent_temperature) ? Math.round(hourly.apparent_temperature[matchIdx]) + "°" : "";
+        var windSpd = (matchIdx >= 0 && hourly.windspeed_10m) ? Math.round(hourly.windspeed_10m[matchIdx]) : "";
+        var gustSpd = (matchIdx >= 0 && hourly.windgusts_10m) ? Math.round(hourly.windgusts_10m[matchIdx]) : "";
+        var windStr = windSpd !== "" ? windSpd + (gustSpd && gustSpd > windSpd ? "/" + gustSpd : "") + "m" : "";
         weatherHtml += '<div class="' + hourClass + '">' +
           '<span class="today-tl-weather-time">' + timeLabel + '</span>' +
           '<span class="today-tl-weather-icon ' + weatherInfo.animClass + '">' + weatherInfo.emoji + '</span>' +
           '<span class="today-tl-weather-temp">' + temp + '</span>' +
+          '<span style="font-size:.7rem;font-weight:400;color:rgba(255,255,255,.45);display:block;text-align:center;width:100%;">' + feelsLike + '</span>' +
+          '<span style="font-size:.55rem;font-weight:600;color:rgba(255,255,255,.35);display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
           '<span class="today-tl-weather-precip ' + precipClass + '">' + precip + '%</span>' +
         '</div>';
       }
@@ -6748,16 +6758,15 @@ function dayRangeAround(d, days){
           
           if (smokeEl){
             var smokeRisk;
-            if (pm25 >= 55 || co >= 500) {
-              smokeRisk = { label: "High", cls: "very-high" };
-            } else if (pm25 >= 35 || co >= 300) {
-              smokeRisk = { label: "Moderate", cls: "moderate" };
-            } else if (pm25 >= 15 || co >= 150) {
-              smokeRisk = { label: "Low", cls: "low" };
+            if (pm25 >= 55.5) {
+              smokeRisk = { label: "Unhealthy", cls: "very-high" };
+            } else if (pm25 >= 35.5) {
+              smokeRisk = { label: "USG", cls: "moderate" };
+            } else if (pm25 >= 12.1) {
+              smokeRisk = { label: "Moderate", cls: "low" };
             } else {
-              smokeRisk = { label: "None", cls: "none" };
+              smokeRisk = { label: "Good", cls: "none" };
             }
-            
             smokeEl.textContent = smokeRisk.label;
             smokeEl.className = "pollen-val " + smokeRisk.cls;
           }
@@ -8395,12 +8404,26 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     function openSearchBox(){
       if(searchBox) searchBox.classList.add("open");
       if(searchToggle) searchToggle.classList.add("active");
+      var dots = document.getElementById("loc-dots");
+      var prev = document.getElementById("loc-prev");
+      var next = document.getElementById("loc-next");
+      if(dots) dots.style.opacity = "0";
+      if(prev) prev.style.opacity = "0";
+      if(next) next.style.opacity = "0";
+      if(searchToggle) searchToggle.style.opacity = "0";
       setTimeout(function(){ if(searchInput) searchInput.focus(); }, 220);
     }
     function closeSearchBox(){
       if(searchBox) searchBox.classList.remove("open");
       if(searchToggle) searchToggle.classList.remove("active");
       if(searchInput){ searchInput.value = ""; searchInput.blur(); }
+      var dots = document.getElementById("loc-dots");
+      var prev = document.getElementById("loc-prev");
+      var next = document.getElementById("loc-next");
+      if(dots) dots.style.opacity = "1";
+      if(prev) prev.style.opacity = "1";
+      if(next) next.style.opacity = "1";
+      if(searchToggle) searchToggle.style.opacity = "";
     }
 
     if(searchToggle){
@@ -9339,6 +9362,7 @@ function initNowMicroTabs(){
 
     // NWS Smoke Forecast Layer (48-hour surface smoke concentration)
     loadSmokeLayer();
+    loadHRRRSmokeOverlay();
 
     // Add acre legend
     var fireLegend = L.control({ position: 'bottomright' });
@@ -9525,237 +9549,118 @@ function initNowMicroTabs(){
     if (!fireMap) return;
     
     // Remove existing layers
-    if (smokeLayer && fireMap.hasLayer(smokeLayer)){
-      fireMap.removeLayer(smokeLayer);
-    }
     if (smokeGeoJsonLayer && fireMap.hasLayer(smokeGeoJsonLayer)){
       fireMap.removeLayer(smokeGeoJsonLayer);
     }
-    if (goesOverlay && fireMap.hasLayer(goesOverlay)){
-      fireMap.removeLayer(goesOverlay);
-    }
-    if (aqiHeatLayer && fireMap.hasLayer(aqiHeatLayer)){
-      fireMap.removeLayer(aqiHeatLayer);
-    }
-    aqiBlobMarkers.forEach(function(m){ fireMap.removeLayer(m); });
-    aqiBlobMarkers = [];
     
-    // Fetch AQI station data and create heatmap blobs
-  
-  }
-  
-  function createSmokeHeatmap(){
-    if (!fireMap) return;
+    // Fetch real HMS smoke polygons from NOAA via ArcGIS Feature Service
+    var hmsUrl = "https://services9.arcgis.com/RGao6tMQSJKyNRvN/arcgis/rest/services/NOAA_HMS_Smoke_Detection/FeatureServer/0/query?where=1%3D1&outFields=Density&returnGeometry=true&outSR=4326&resultType=tile&f=geojson";
     
-    // Remove existing heat layer
-    if (aqiHeatLayer && fireMap.hasLayer(aqiHeatLayer)){
-      fireMap.removeLayer(aqiHeatLayer);
-    }
-    
-    if (typeof L.heatLayer !== "function") {
-      console.log("Leaflet.heat plugin not loaded");
-      return;
-    }
-    
-    if (fireMarkers.length === 0) {
-      console.log("No fire markers for heatmap");
-      return;
-    }
-    
-    // Fetch wind data and create wind-aware smoke plumes
-    fetchWindDataForFires();
-  }
-  
-  function fetchWindDataForFires(){
-    // Get bounding box of fires
-    var lats = fireMarkers.map(function(m){ return m.getLatLng().lat; });
-    var lons = fireMarkers.map(function(m){ return m.getLatLng().lng; });
-    var minLat = Math.min.apply(null, lats);
-    var maxLat = Math.max.apply(null, lats);
-    var minLon = Math.min.apply(null, lons);
-    var maxLon = Math.max.apply(null, lons);
-    
-    // Get center point for regional wind data
-    var centerLat = (minLat + maxLat) / 2;
-    var centerLon = (minLon + maxLon) / 2;
-    
-    // Fetch current wind from Open-Meteo for multiple grid points
-    var gridPoints = [
-      { lat: Math.max(minLat, 25), lon: Math.max(minLon, -125) },  // SW
-      { lat: Math.max(minLat, 25), lon: Math.min(maxLon, -65) },   // SE
-      { lat: Math.min(maxLat, 50), lon: Math.max(minLon, -125) },  // NW
-      { lat: Math.min(maxLat, 50), lon: Math.min(maxLon, -65) },   // NE
-      { lat: centerLat, lon: centerLon }  // Center
-    ];
-    
-    // Build URL for multiple locations
-    var latStr = gridPoints.map(function(p){ return p.lat.toFixed(2); }).join(',');
-    var lonStr = gridPoints.map(function(p){ return p.lon.toFixed(2); }).join(',');
-    
-    var windUrl = "https://api.open-meteo.com/v1/forecast?latitude=" + latStr + 
-                  "&longitude=" + lonStr + 
-                  "&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=mph";
-    
-    fetchWithTimeout(windUrl, null, 10000)
+    fetchWithTimeout(hmsUrl, null, 15000)
       .then(function(r){ return r.json(); })
       .then(function(data){
-        var windData = [];
-        
-        if (Array.isArray(data)) {
-          // Multiple locations returned
-          data.forEach(function(d, i){
-            if (d && d.current) {
-              windData.push({
-                lat: gridPoints[i].lat,
-                lon: gridPoints[i].lon,
-                speed: d.current.wind_speed_10m || 5,
-                direction: d.current.wind_direction_10m || 270
-              });
-            }
-          });
-        } else if (data && data.current) {
-          // Single location
-          windData.push({
-            lat: centerLat,
-            lon: centerLon,
-            speed: data.current.wind_speed_10m || 5,
-            direction: data.current.wind_direction_10m || 270
-          });
+        if (!data || !data.features || data.features.length === 0){
+          console.log("HMS Smoke: No smoke polygons found");
+          updateSmokePill("clear");
+          return;
         }
         
-        if (windData.length === 0) {
-          // Default westerly wind
-          windData.push({ lat: centerLat, lon: centerLon, speed: 8, direction: 270 });
-        }
+        var densityStyles = {
+          "Light":  { color: "#fbbf24", fillColor: "#fbbf24", fillOpacity: 0.15, weight: 1, opacity: 0.4 },
+          "Medium": { color: "#f97316", fillColor: "#f97316", fillOpacity: 0.25, weight: 1, opacity: 0.5 },
+          "Heavy":  { color: "#dc2626", fillColor: "#dc2626", fillOpacity: 0.40, weight: 1.5, opacity: 0.6 }
+        };
         
-        createWindAwareSmokeHeatmap(windData);
+        smokeGeoJsonLayer = L.geoJSON(data, {
+          style: function(feature){
+            var density = feature.properties.Density || "Light";
+            return densityStyles[density] || densityStyles["Light"];
+          },
+          onEachFeature: function(feature, layer){
+            var d = feature.properties.Density || "Unknown";
+            layer.bindPopup("<b>HMS Smoke</b><br>Density: " + d + "<br><span style='font-size:10px;color:#888;'>Source: NOAA Satellite Analysis Branch</span>");
+          }
+        }).addTo(fireMap);
+        
+        console.log("HMS Smoke: Loaded " + data.features.length + " real smoke polygons");
+        updateSmokePill("hms");
       })
       .catch(function(err){
-        console.log("Wind fetch error, using default wind:", err);
-        // Default: westerly wind at 8 mph
-        createWindAwareSmokeHeatmap([{ lat: 40, lon: -100, speed: 8, direction: 270 }]);
+        console.log("HMS Smoke fetch error:", err);
       });
   }
   
-  function getWindAtLocation(lat, lon, windData){
-    // Find nearest wind data point or interpolate
-    if (windData.length === 1) {
-      return windData[0];
-    }
-    
-    // Simple nearest-neighbor for now
-    var nearest = windData[0];
-    var minDist = 9999;
-    
-    windData.forEach(function(w){
-      var dist = Math.sqrt(Math.pow(lat - w.lat, 2) + Math.pow(lon - w.lon, 2));
-      if (dist < minDist) {
-        minDist = dist;
-        nearest = w;
-      }
-    });
-    
-    return nearest;
+  function createSmokeHeatmap(){
+    // Deprecated — using real NOAA HRRR smoke forecast overlay
   }
   
-  function createWindAwareSmokeHeatmap(windData){
-    var smokePoints = [];
+  var hrrrSmokeLayer = null;
+  var smokePill = null;
+  
+  function loadHRRRSmokeOverlay(){
+    if (!fireMap) return;
+    if (hrrrSmokeLayer && fireMap.hasLayer(hrrrSmokeLayer)){
+      fireMap.removeLayer(hrrrSmokeLayer);
+    }
     
-    fireMarkers.forEach(function(marker) {
-      var latlng = marker.getLatLng();
-      var radius = marker.options.radius || 3;
-      var intensity = (radius <= 2.5) ? 0.05 : Math.min(radius / 10, 0.7);
-      
-      // Get wind at this fire's location
-      var wind = getWindAtLocation(latlng.lat, latlng.lng, windData);
-      var windSpeed = wind.speed || 5;
-      var windDir = wind.direction || 270; // degrees, 270 = from west
-      
-      // Convert wind direction to radians (direction wind is GOING TO)
-      // Meteorological convention: 270° means wind FROM west, so smoke goes EAST
-      var windRad = ((windDir + 180) % 360) * Math.PI / 180;
-      
-      // Add the fire source point
-      smokePoints.push([latlng.lat, latlng.lng, intensity]);
-      
-      // Calculate plume length based on fire size and wind speed
-      // Smoke travels 200-500+ miles over 1-3 days
-      var baseLength = (radius <= 2.5) ? 0.1 : (0.5 + (radius / 7) * 3.0); // 0.2 to 3.7 degrees - small fires shorter, big fires longer
-      var windFactor = Math.min(windSpeed / 10, 3); // Stronger wind = longer plume
-      var plumeLength = baseLength * (1 + windFactor); // Up to ~12 degrees (~800 miles)
-      
-      // Number of points along the plume (more points for longer plumes)
-      var numPoints = Math.floor(25 + (radius / 7) * 40); // 25 to 65 points
-      
-      // Create smoke trail downwind
-      for (var i = 1; i <= numPoints; i++) {
-        var t = i / numPoints;
-        var distance = plumeLength * t;
-        
-        // Smoke disperses and weakens with distance
-        var dispersal = 1 + t * 0.5; // Widens as it travels
-        var pointIntensity = intensity * Math.pow(0.8, t * 2.5); // Fades exponentially
-        
-        // Main plume centerline
-        var plumeLat = latlng.lat + Math.sin(windRad) * distance;
-        var plumeLon = latlng.lng + Math.cos(windRad) * distance;
-        
-        smokePoints.push([plumeLat, plumeLon, pointIntensity]);
-        
-        // Add lateral spread (perpendicular to wind)
-        var perpRad = windRad + Math.PI / 2;
-        var lateralSpread = 0.02 * dispersal * (radius / 4);
-        
-        // Left side of plume
-        smokePoints.push([
-          plumeLat + Math.sin(perpRad) * lateralSpread,
-          plumeLon + Math.cos(perpRad) * lateralSpread,
-          pointIntensity * 0.75
-        ]);
-        
-        // Right side of plume
-        smokePoints.push([
-          plumeLat - Math.sin(perpRad) * lateralSpread,
-          plumeLon - Math.cos(perpRad) * lateralSpread,
-          pointIntensity * 0.75
-        ]);
-      }
-      
-      // Add some turbulent dispersion around the source
-      if (radius >= 4) { // Medium+ fires
-        for (var j = 0; j < 4; j++) {
-          var randAngle = Math.random() * Math.PI * 2;
-          var randDist = 0.03 + Math.random() * 0.05;
-          smokePoints.push([
-            latlng.lat + Math.sin(randAngle) * randDist,
-            latlng.lng + Math.cos(randAngle) * randDist,
-            intensity * 0.3
-          ]);
+    // Check if HRRR smoke service has current data before adding WMS
+    var now = new Date();
+    var checkUrl = "https://mapservices.weather.noaa.gov/raster/rest/services/air_quality/ndgd_smoke_vert_1hr_avg_time/ImageServer?f=json";
+    
+    fetchWithTimeout(checkUrl, null, 10000)
+      .then(function(r){ return r.json(); })
+      .then(function(info){
+        var hasData = false;
+        var timeInfo = info && info.timeInfo;
+        if (timeInfo && timeInfo.timeExtent && timeInfo.timeExtent.length === 2){
+          var endTime = new Date(timeInfo.timeExtent[1]);
+          var ageMins = (now - endTime) / 60000;
+          // Data is current if end time is recent or in the future (forecast)
+          if (ageMins < 1440 || ageMins < 0) hasData = true;
+          console.log("HRRR Smoke: data ends " + endTime.toISOString() + " (" + Math.round(ageMins/60) + "h ago)");
         }
-      }
-    });
+        
+        if (hasData){
+          hrrrSmokeLayer = L.tileLayer.wms("https://mapservices.weather.noaa.gov/raster/services/air_quality/ndgd_smoke_vert_1hr_avg_time/ImageServer/WMSServer?", {
+            layers: "0",
+            format: "image/png",
+            transparent: true,
+            opacity: 0.5,
+            attribution: "NOAA/NWS HRRR-Smoke"
+          }).addTo(fireMap);
+        }
+        // Pill status based on whether actual smoke polygons exist
+        if (!smokePill) updateSmokePill(smokeGeoJsonLayer ? "hms" : "clear");
+      })
+      .catch(function(err){
+        console.log("HRRR Smoke check error:", err);
+        updateSmokePill(smokeGeoJsonLayer ? "hms" : "clear");
+      });
+  }
+  
+  function updateSmokePill(status){
+    if (!fireMap) return;
     
-    aqiHeatLayer = L.heatLayer(smokePoints, {
-      radius: 6,
-      blur: 3,
-      maxZoom: 4,
-      max: 1.0,
-      minOpacity: 0.25,
-      gradient: {
-        0.0: 'rgba(255,255,200,0)',
-        0.15: 'rgba(255,240,150,0.55)',
-        0.3: 'rgba(255,200,80,0.7)',
-        0.5: 'rgba(255,140,40,0.8)',
-        0.7: 'rgba(240,80,20,0.88)',
-        0.85: 'rgba(200,30,30,0.92)',
-        1.0: 'rgba(140,20,60,0.97)'
-      }
-    }).addTo(fireMap);
+    if (!smokePill){
+      smokePill = L.control({ position: 'bottomleft' });
+      smokePill.onAdd = function(){
+        var div = L.DomUtil.create('div', 'smoke-status-pill');
+        div.style.cssText = 'background:rgba(0,0,0,.55);padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600;font-family:system-ui,sans-serif;letter-spacing:.3px;margin-top:4px;';
+        return div;
+      };
+      smokePill.addTo(fireMap);
+    }
     
-    // Log wind info
-    var avgSpeed = windData.reduce(function(a,b){ return a + b.speed; }, 0) / windData.length;
-    var avgDir = windData.reduce(function(a,b){ return a + b.direction; }, 0) / windData.length;
-    console.log("Created wind-aware smoke heatmap: " + smokePoints.length + " points, avg wind " + avgSpeed.toFixed(1) + " mph from " + avgDir.toFixed(0) + "°");
+    var el = smokePill.getContainer();
+    if (!el) return;
+    
+    if (status === "active"){
+      el.innerHTML = '🌫️ <span style="color:#f97316;">SMOKE DETECTED</span>';
+    } else if (status === "hms"){
+      el.innerHTML = '🌫️ <span style="color:#fbbf24;">HMS SMOKE</span>';
+    } else {
+      el.innerHTML = '🌫️ <span style="color:#4ade80;">CLEAR</span>';
+    }
   }
   
   // ============ CITY/STATE LABELS TOGGLE ============
