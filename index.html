@@ -4995,6 +4995,7 @@ if (illum <= 2) illum = 0;
     var bestErr = Infinity;
     var start = now.getTime();
     var end = start + (daysAhead*86400000);
+    var prevErr = null;
     for (var t=start; t<=end; t+=3600000){
       var d = new Date(t);
       var ph = approximateMoonPhase(d);
@@ -5004,6 +5005,11 @@ if (illum <= 2) illum = 0;
         bestErr = err;
         best = d;
       }
+      // If error was decreasing and now increasing, we passed a local minimum — stop
+      if (prevErr !== null && bestErr < 0.02 && err > prevErr){
+        break;
+      }
+      prevErr = err;
     }
     return best;
   }
@@ -6259,13 +6265,17 @@ function dayRangeAround(d, days){
         var feelsLike = (matchIdx >= 0 && hourly.apparent_temperature) ? Math.round(hourly.apparent_temperature[matchIdx]) + "°" : "";
         var windSpd = (matchIdx >= 0 && hourly.windspeed_10m) ? Math.round(hourly.windspeed_10m[matchIdx]) : "";
         var gustSpd = (matchIdx >= 0 && hourly.windgusts_10m) ? Math.round(hourly.windgusts_10m[matchIdx]) : "";
-        var windStr = windSpd !== "" ? windSpd + (gustSpd && gustSpd > windSpd ? "/" + gustSpd : "") + "m" : "";
+        var windStr = windSpd !== "" ? "↑" + windSpd + (gustSpd && gustSpd > windSpd ? " ⬆" + gustSpd : "") : "";
+        var windDeg = (matchIdx >= 0 && hourly.wind_direction_10m) ? (hourly.wind_direction_10m[matchIdx] || 0) : 0;
+        var wDirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+        var windDirStr = windSpd !== "" ? wDirs[Math.round(windDeg / 22.5) % 16] : "";
         weatherHtml += '<div class="' + hourClass + '">' +
           '<span class="today-tl-weather-time">' + timeLabel + '</span>' +
           '<span class="today-tl-weather-icon ' + weatherInfo.animClass + '">' + weatherInfo.emoji + '</span>' +
           '<span class="today-tl-weather-temp">' + temp + '</span>' +
-          '<span style="font-size:.7rem;font-weight:400;color:rgba(255,255,255,.45);display:block;text-align:center;width:100%;">' + feelsLike + '</span>' +
+          '<span style="font-size:.7rem;font-weight:400;color:rgba(255,255,255,.45);">' + feelsLike + '</span>' +
           '<span style="font-size:.55rem;font-weight:600;color:rgba(255,255,255,.35);display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
+          '<span style="font-size:.5rem;font-weight:600;color:rgba(255,255,255,.3);display:block;text-align:center;width:100%;letter-spacing:.3px;">' + windDirStr + '</span>' +
           '<span class="today-tl-weather-precip ' + precipClass + '">' + precip + '%</span>' +
         '</div>';
       }
@@ -6836,7 +6846,7 @@ function dayRangeAround(d, days){
       "&temperature_unit=fahrenheit" +
       "&windspeed_unit=mph" +
       "&precipitation_unit=inch" +
-      "&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,precipitation_probability,precipitation,cloudcover,windspeed_10m,windgusts_10m,visibility,pressure_msl,uv_index,weathercode,snowfall,rain" +
+      "&hourly=temperature_2m,apparent_temperature,relativehumidity_2m,precipitation_probability,precipitation,cloudcover,windspeed_10m,windgusts_10m,wind_direction_10m,visibility,pressure_msl,uv_index,weathercode,snowfall,rain" +
       "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,windspeed_10m_max,windgusts_10m_max,snowfall_sum,rain_sum,wind_direction_10m_dominant,showers_sum" +
       "&forecast_days=10";
 
