@@ -10820,6 +10820,10 @@ function initNowMicroTabs(){
       };
       img.src = frames[0] + (frames[0].indexOf('?') >= 0 ? '&' : '?') + 'modal=1&cb=' + Date.now();
       img.alt = config.title || 'Enlarged view';
+      if (imgId === 'radar-img') {
+        img.style.filter = 'invert(1) hue-rotate(180deg) contrast(1.4) saturate(1.8)';
+        widgetModalBody.style.background = '#000';
+      }
       widgetModalBody.appendChild(img);
       
       if (frames.length > 1 && config.fps) {
@@ -10925,21 +10929,18 @@ function initNowMicroTabs(){
         if (popup) newMarker.bindPopup(popup.getContent(), { closeButton: false });
       });
       
-      // Clone UI overlays (pills, toggles, legends) from the source widget
+      // Move UI overlays (pills, toggles, legends) into modal map — preserves event handlers
       var sourceWidget = document.getElementById(containerId);
+      window._modalOverlaySources = [];
       if (sourceWidget) {
         var parent = sourceWidget.closest('.widget-body');
         if (parent) {
-          var overlays = parent.querySelectorAll('[id$="-pill"], [id$="-status-pill"], [id$="-toggle"], .fire-legend, .radar-legend');
+          var overlays = parent.querySelectorAll('[id$="-pill"], [id$="-status-pill"], [id$="-toggle"], .fire-status-wrap, .quake-status-wrap, .smoke-status-pill, .fire-legend, .radar-legend, [id$="-aqi-pill"], [id$="-labels-toggle"]');
           overlays.forEach(function(overlay) {
-            var clone = overlay.cloneNode(true);
-            clone.id = clone.id ? 'modal-' + clone.id : '';
-            clone.style.position = 'absolute';
-            clone.style.zIndex = '1000';
-            // Disable click handlers on cloned toggles (they won't work on the modal map)
-            clone.style.pointerEvents = 'none';
-            clone.style.opacity = '0.9';
-            mapContainer.appendChild(clone);
+            window._modalOverlaySources.push({ el: overlay, parent: parent, next: overlay.nextSibling });
+            overlay.style.zIndex = '1000';
+            overlay.style.pointerEvents = 'auto';
+            mapContainer.appendChild(overlay);
           });
         }
       }
@@ -10949,8 +10950,21 @@ function initNowMicroTabs(){
     }, 50);
   }
 
+  function restoreModalOverlays(){
+    if (window._modalOverlaySources) {
+      window._modalOverlaySources.forEach(function(item) {
+        if (item.next) {
+          item.parent.insertBefore(item.el, item.next);
+        } else {
+          item.parent.appendChild(item.el);
+        }
+      });
+      window._modalOverlaySources = [];
+    }
+  }
   function closeWidgetModal(){
     if (!widgetModal) return;
+    restoreModalOverlays();
     clearModalAnimations();
     widgetModal.classList.remove("active");
     document.documentElement.style.overflow = '';
@@ -10978,7 +10992,8 @@ function initNowMicroTabs(){
         if (header) {
           header.style.cursor = "pointer";
           var mapContainer = widget.querySelector("[id$='-map']");
-          var mapId = mapContainer ? mapContainer.id : null;
+          if (!mapContainer) mapContainer = widget.querySelector("iframe[id$='-iframe']");
+          var mapId = mapContainer ? mapContainer.id.replace('-iframe', '-map') : null;
           var mapConfig = mapId ? MAP_CONFIG[mapId] : null;
           if (mapConfig) {
             header.addEventListener("click", function(e){
