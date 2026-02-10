@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,11 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</body>
-</html>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-</body>
-</html>
 
 <style>
   @import url('https://api.fontshare.com/v2/css?f[]=neue-montreal@200,300,400,500,600,700&display=swap');
@@ -2097,10 +2093,10 @@
   }
 
   .tl-hour-icon{
-    width:32px;
-    height:32px;
+    max-width:36px;
+    max-height:36px;
     object-fit:contain;
-    margin-bottom:1px;
+    margin:0;
   }
 
   .tl-hour-temp{
@@ -2374,7 +2370,7 @@
     flex-direction:column;
     align-items:center;
     gap:2px;
-    padding:4px 8px 8px 8px;
+    padding:4px 12px 8px 12px;
     border-radius:14px;
     background:rgba(255,255,255,.06);
     box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18);
@@ -6626,7 +6622,7 @@ function dayRangeAround(d, days){
         
         hoursHtml += '<div class="' + hourClass + '">' +
           '<span class="tl-hour-time">' + timeLabel + '</span>' +
-          '<img class="tl-hour-icon" src="' + icon + '" alt="" />' +
+          '<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><img class="tl-hour-icon" src="' + icon + '" alt="" /></div>' +
           '<span class="tl-hour-temp">' + temp + '</span>' +
           (precip > 0 ? '<span class="tl-hour-precip ' + precipClass + '">' + precip + '%</span>' : '') +
         '</div>';;
@@ -6768,6 +6764,7 @@ function dayRangeAround(d, days){
           }
 
           // PM2.5
+          var pm25 = current.pm2_5 || 0;
           if (pm25El){
             pm25El.textContent = (pm25 != null ? Math.round(pm25) + " µg/m³" : "--");
           }
@@ -6909,6 +6906,58 @@ function dayRangeAround(d, days){
     h+='<div style="text-align:center;"><div style="font-size:.38rem;color:#777;font-weight:700;">VIS</div><div style="font-size:.55rem;font-weight:700;color:#ccc;">'+sVis+'</div></div>';
     h+='</div>';
 
+    // Smoke source from active fires + wind direction
+    if(window._activeFires&&window._activeFires.length>0&&pm25>=12){
+      var wDirsAll=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      var windFrom=wDir; // wind blows FROM this direction
+      // Find fires that are upwind (in the direction wind comes from)
+      var upwindFires=[];
+      window._activeFires.forEach(function(fire){
+        var coords=fire.geometry&&fire.geometry.coordinates;
+        var props=fire.properties||{};
+        if(!coords)return;
+        var fLat=coords[1],fLon=coords[0];
+        var dLat=fLat-lat,dLon=fLon-lon;
+        var dist=Math.sqrt(dLat*dLat+dLon*dLon)*69;
+        if(dist>500||dist<5)return; // skip fires >500mi or <5mi
+        var angle=Math.atan2(dLon,dLat)*180/Math.PI;
+        if(angle<0)angle+=360;
+        var fireDir=wDirsAll[Math.round(angle/22.5)%16];
+        // Check if fire direction roughly matches wind-from direction (within 45°)
+        var wIdx=wDirsAll.indexOf(windFrom);
+        var fIdx=wDirsAll.indexOf(fireDir);
+        if(wIdx<0)return;
+        var diff=Math.abs(fIdx-wIdx);if(diff>8)diff=16-diff;
+        var isUpwind=diff<=2; // within ~45°
+        var acres=props.DailyAcres||props.GISAcres||props.CalculatedAcres||0;
+        var name=props.IncidentName||props.FireName||'Unknown';
+        upwindFires.push({name:name,dist:Math.round(dist),acres:acres,dir:fireDir,upwind:isUpwind,contained:props.PercentContained||0});
+      });
+      // Sort by relevance: upwind first, then by size
+      upwindFires.sort(function(a,b){
+        if(a.upwind&&!b.upwind)return-1;if(!a.upwind&&b.upwind)return 1;
+        return b.acres-a.acres;
+      });
+      var topFires=upwindFires.slice(0,3);
+      if(topFires.length>0){
+        h+='<div style="padding:6px 10px;background:rgba(239,68,68,.06);border-radius:8px;margin-top:6px;border:1px solid rgba(239,68,68,.1);">';
+        h+='<div style="font-size:.48rem;color:#ef4444;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">🔥 LIKELY SMOKE SOURCES</div>';
+        topFires.forEach(function(f){
+          var acStr=f.acres>0?(f.acres>=1000?(Math.round(f.acres/1000)+'k'):f.acres)+' acres':'size unknown';
+          var contStr=f.contained>0?' · '+f.contained+'% contained':'';
+          h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">';
+          h+='<span style="font-size:.58rem;color:#eee;font-weight:700;">'+f.name+'</span>';
+          h+='<span style="font-size:.48rem;color:#aaa;">'+f.dist+'mi '+f.dir+(f.upwind?' 💨':'')+'</span>';
+          h+='</div>';
+          h+='<div style="font-size:.45rem;color:#999;margin-bottom:4px;">'+acStr+contStr+'</div>';
+        });
+        if(topFires.some(function(f){return f.upwind;})){
+          h+='<div style="font-size:.45rem;color:#f97316;margin-top:2px;">💨 = upwind of you (wind from '+windFrom+')</div>';
+        }
+        h+='</div>';
+      }
+    }
+
     // === POLLUTANTS — compact 2-col grid ===
     h+='<div style="font-size:.5rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">POLLUTANTS</div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">';
@@ -6939,20 +6988,14 @@ function dayRangeAround(d, days){
     // === COMPARISON — nearby + reference ===
     var compId='aqi-cmp-'+Date.now();
     h+='<div id="'+compId+'">';
-    h+='<div style="font-size:.5rem;color:#666;text-align:center;padding:8px;">Loading nearby & reference data...</div>';
+    h+='<div style="font-size:.5rem;color:#666;text-align:center;padding:8px;">Loading comparisons...</div>';
     h+='</div>';
 
     setTimeout(function(){
       var compEl=document.getElementById(compId);if(!compEl)return;
-      var lat=LOCATION.lat,lon=LOCATION.lon,off=1.45;
-      var pts=[
-        {lat:lat+off,lon:lon,dir:'N ~100mi'},{lat:lat+off*.7,lon:lon+off*.7,dir:'NE ~100mi'},
-        {lat:lat,lon:lon+off,dir:'E ~100mi'},{lat:lat-off*.7,lon:lon+off*.7,dir:'SE ~100mi'},
-        {lat:lat-off,lon:lon,dir:'S ~100mi'},{lat:lat-off*.7,lon:lon-off*.7,dir:'SW ~100mi'},
-        {lat:lat,lon:lon-off,dir:'W ~100mi'},{lat:lat+off*.7,lon:lon-off*.7,dir:'NW ~100mi'},
-        {lat:lat+off*.5,lon:lon,dir:'N ~50mi'},{lat:lat,lon:lon+off*.5,dir:'E ~50mi'},
-        {lat:lat-off*.5,lon:lon,dir:'S ~50mi'},{lat:lat,lon:lon-off*.5,dir:'W ~50mi'}
-      ];
+      var lat=LOCATION.lat,lon=LOCATION.lon;
+
+      // Reference cities (always shown)
       var refs=[
         {lat:40.71,lon:-74.01,name:'New York City',t:'urban'},{lat:34.05,lon:-118.24,name:'Los Angeles',t:'urban'},
         {lat:41.88,lon:-87.63,name:'Chicago',t:'urban'},{lat:35.37,lon:-119.02,name:'Bakersfield',t:'urban'},
@@ -6961,23 +7004,83 @@ function dayRangeAround(d, days){
         {lat:43.80,lon:-120.55,name:'Rural Oregon',t:'rural'}
       ];
 
-      var allPts=pts.concat(refs);
-      var lats=allPts.map(function(p){return(p.lat).toFixed(4);}).join(',');
-      var lons=allPts.map(function(p){return(p.lon).toFixed(4);}).join(',');
-      var stAbbr={'New York':'NY','New Jersey':'NJ','Connecticut':'CT','Pennsylvania':'PA','Massachusetts':'MA','Vermont':'VT','New Hampshire':'NH','Maine':'ME','Maryland':'MD','Virginia':'VA','Delaware':'DE','California':'CA','Texas':'TX','Illinois':'IL','Ohio':'OH','Michigan':'MI','Georgia':'GA','Florida':'FL','North Carolina':'NC','Washington':'WA','Oregon':'OR','Colorado':'CO','Arizona':'AZ','Nevada':'NV','Utah':'UT','Montana':'MT','Idaho':'ID','Wyoming':'WY','Tennessee':'TN','Kentucky':'KY','Indiana':'IN','Wisconsin':'WI','Minnesota':'MN','Iowa':'IA','Missouri':'MO','Arkansas':'AR','Louisiana':'LA','Mississippi':'MS','Alabama':'AL','South Carolina':'SC','West Virginia':'WV','Rhode Island':'RI','Nebraska':'NE','Kansas':'KS','Oklahoma':'OK','New Mexico':'NM','South Dakota':'SD','North Dakota':'ND'};
+      // Search for nearby cities using Open-Meteo geocoding — 4 fast parallel searches
+      var searchQueries=[
+        'https://geocoding-api.open-meteo.com/v1/search?name=city&count=10&latitude='+lat+'&longitude='+lon+'&radius=160000',
+      ];
+      // Use directional searches at ~100mi offsets to find cities in each direction
+      var off=1.45;
+      var dirPts=[
+        {lat:lat+off,lon:lon},{lat:lat-off,lon:lon},
+        {lat:lat,lon:lon+off},{lat:lat,lon:lon-off},
+        {lat:lat+off*.7,lon:lon+off*.7},{lat:lat-off*.7,lon:lon-off*.7},
+        {lat:lat+off*.7,lon:lon-off*.7},{lat:lat-off*.7,lon:lon+off*.7},
+        {lat:lat+off*.5,lon:lon},{lat:lat-off*.5,lon:lon},
+        {lat:lat,lon:lon+off*.5},{lat:lat,lon:lon-off*.5}
+      ];
 
-      // Render helper
+      // Just directly fetch AQI for directional grid + refs in one call (instant)
+      var allPts=dirPts.concat(refs);
+      var lats=allPts.map(function(p){return p.lat.toFixed(4);}).join(',');
+      var lons=allPts.map(function(p){return p.lon.toFixed(4);}).join(',');
+
+      // Single fast AQI fetch
+      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+lats+'&longitude='+lons+'&current=us_aqi,pm2_5')
+      .then(function(r){return r.json();}).then(function(data){
+        if(!compEl||!Array.isArray(data))return;
+
+        var dirLabels=['N','S','E','W','NE','SW','NW','SE','N-mid','S-mid','E-mid','W-mid'];
+        var near=[],ref=[];
+        data.forEach(function(dd,i){
+          if(!dd||!dd.current||dd.current.us_aqi==null)return;
+          var a=Math.round(dd.current.us_aqi);
+          if(i<dirPts.length){
+            // Use latitude/longitude to generate approximate city via state lookup
+            near.push({n:dirLabels[i]+' ~'+(i>=8?'50':'100')+'mi',aqi:a,lat:dirPts[i].lat,lon:dirPts[i].lon});
+          } else {
+            var rf=refs[i-dirPts.length];
+            ref.push({n:rf.name,aqi:a,t:rf.t});
+          }
+        });
+        var me={n:LOCATION.name||'You',aqi:Math.round(c.us_aqi),you:true};
+
+        // Render immediately with compass directions
+        renderComp(near,ref,me);
+
+        // Background: batch reverse geocode via Nominatim for real names
+        // Fire ALL at once (Nominatim may rate limit but results still come)
+        var resolved=0;
+        near.forEach(function(nr,idx){
+          setTimeout(function(){
+            fetch('https://nominatim.openstreetmap.org/reverse?lat='+nr.lat.toFixed(4)+'&lon='+nr.lon.toFixed(4)+'&format=json&zoom=10&addressdetails=1')
+            .then(function(r){return r.json();}).then(function(d){
+              if(d&&d.address){
+                var nm=d.address.city||d.address.town||d.address.village||d.address.hamlet||d.address.county||'';
+                var st=d.address.state||'';
+                var ab={'New York':'NY','New Jersey':'NJ','Connecticut':'CT','Pennsylvania':'PA','Massachusetts':'MA','Vermont':'VT','New Hampshire':'NH','Maine':'ME','Maryland':'MD','Virginia':'VA','Delaware':'DE','California':'CA','Texas':'TX','Illinois':'IL','Ohio':'OH','Michigan':'MI','Georgia':'GA','Florida':'FL','North Carolina':'NC','Washington':'WA','Oregon':'OR','Colorado':'CO','Arizona':'AZ','Nevada':'NV','Utah':'UT','Montana':'MT','Idaho':'ID','Wyoming':'WY','Tennessee':'TN','Kentucky':'KY','Indiana':'IN','Wisconsin':'WI','Minnesota':'MN','Iowa':'IA','Missouri':'MO','Arkansas':'AR','Louisiana':'LA','Mississippi':'MS','Alabama':'AL','South Carolina':'SC','West Virginia':'WV','Rhode Island':'RI','Nebraska':'NE','Kansas':'KS','Oklahoma':'OK','New Mexico':'NM','South Dakota':'SD','North Dakota':'ND'};
+                if(nm) nr.n=nm+', '+(ab[st]||st.substring(0,2).toUpperCase());
+                nr.pop=d.address.city?'urban':'rural';
+              }
+              resolved++;
+              if(resolved>=near.length) renderComp(near,ref,me);
+            }).catch(function(){resolved++;if(resolved>=near.length)renderComp(near,ref,me);});
+          },idx*120);
+        });
+      }).catch(function(){compEl.innerHTML='<div style="font-size:.5rem;color:#666;">Comparison unavailable</div>';});
+
       function renderComp(near,ref,me){
-        near.sort(function(a,b){return a.aqi-b.aqi;});
-        ref.sort(function(a,b){return a.aqi-b.aqi;});
-        // Dedup nearby by name (first word)
-        var seen={},uniqNear=[];
-        near.forEach(function(r){var k=r.n.split(',')[0].trim();if(!seen[k]){seen[k]=true;uniqNear.push(r);}});
-        near=uniqNear;
+        // Dedup + filter unnamed
+        var seen={},uniq=[];
+        near.forEach(function(r){var k=r.n.split(',')[0].trim();if(!seen[k]&&r.n.indexOf('~')===-1){seen[k]=true;uniq.push(r);}});
+        // If no named cities yet, show all compass entries
+        if(uniq.length===0) uniq=near;
 
-        var avgN=near.length?Math.round(near.reduce(function(s,r){return s+r.aqi;},0)/near.length):0;
-        var worst=near.length?near[near.length-1]:{n:'--',aqi:0};
-        var best=near.length?near[0]:{n:'--',aqi:0};
+        uniq.sort(function(a,b){return a.aqi-b.aqi;});
+        ref.sort(function(a,b){return a.aqi-b.aqi;});
+
+        var avgN=uniq.length?Math.round(uniq.reduce(function(s,r){return s+r.aqi;},0)/uniq.length):0;
+        var worst=uniq.length?uniq[uniq.length-1]:{n:'--',aqi:0};
+        var best=uniq.length?uniq[0]:{n:'--',aqi:0};
         var uA=0,uC=0,rA=0,rC=0;
         ref.forEach(function(r){if(r.t==='urban'){uA+=r.aqi;uC++;}if(r.t==='rural'){rA+=r.aqi;rC++;}});
         if(uC)uA=Math.round(uA/uC);if(rC)rA=Math.round(rA/rC);
@@ -6997,7 +7100,7 @@ function dayRangeAround(d, days){
         ch+='<div style="font-size:.6rem;color:#ddd;margin-bottom:2px;">'+(c.us_aqi<=avgN?'<span style="color:#22c55e;font-weight:800;">Better</span>':'<span style="color:#f97316;font-weight:800;">Worse</span>')+' than nearby avg <span style="color:'+ac(avgN)+';font-weight:800;">'+avgN+'</span>';
         if(worst.aqi-best.aqi>10) ch+=' · <span style="color:'+ac(worst.aqi)+';">'+worst.n.split(',')[0]+' '+worst.aqi+'</span> → <span style="color:'+ac(best.aqi)+';">'+best.n.split(',')[0]+' '+best.aqi+'</span>';
         ch+='</div>';
-        var allN=near.slice();allN.push(me);allN.sort(function(a,b){return a.aqi-b.aqi;});
+        var allN=uniq.slice();allN.push(me);allN.sort(function(a,b){return a.aqi-b.aqi;});
         ch+=bars(allN,Math.max.apply(null,allN.map(function(r){return r.aqi;}).concat([100])));
 
         ch+='<div style="font-size:.5rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-top:8px;margin-bottom:3px;">🏙️ US REFERENCE</div>';
@@ -7012,43 +7115,7 @@ function dayRangeAround(d, days){
         ch+='</div>';
         compEl.innerHTML=ch;
       }
-
-      // STEP 1: Fetch AQI immediately for all points (fast)
-      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+lats+'&longitude='+lons+'&current=us_aqi,pm2_5')
-      .then(function(r){return r.json();}).then(function(data){
-        if(!compEl||!Array.isArray(data))return;
-        var near=[],ref=[];
-        data.forEach(function(dd,i){
-          if(!dd||!dd.current||dd.current.us_aqi==null)return;
-          var a=Math.round(dd.current.us_aqi);
-          if(i<pts.length) near.push({n:pts[i].dir,aqi:a,idx:i,pop:'unknown',dir:pts[i].dir});
-          else ref.push({n:refs[i-pts.length].name,aqi:a,t:refs[i-pts.length].t});
-        });
-        var me={n:LOCATION.name||'You',aqi:Math.round(c.us_aqi),you:true};
-
-        // Render immediately with compass directions
-        renderComp(near,ref,me);
-
-        // STEP 2: Background geocode to replace compass names with real city names
-        var pending=near.length;
-        near.forEach(function(nr,nIdx){
-          setTimeout(function(){
-            fetch('https://nominatim.openstreetmap.org/reverse?lat='+pts[nr.idx].lat.toFixed(4)+'&lon='+pts[nr.idx].lon.toFixed(4)+'&format=json&zoom=10&addressdetails=1')
-            .then(function(r){return r.json();}).then(function(d){
-              if(d&&d.address){
-                var nm=d.address.city||d.address.town||d.address.village||d.address.hamlet||d.address.county||'';
-                var st=d.address.state||'';
-                var ab=stAbbr[st]||st.substring(0,2).toUpperCase();
-                if(nm) nr.n=nm+', '+ab;
-                nr.pop=d.address.city?'urban':'rural';
-              }
-              pending--;
-              if(pending<=0) renderComp(near,ref,me); // Re-render with real names
-            }).catch(function(){pending--;if(pending<=0)renderComp(near,ref,me);});
-          },nIdx*150); // 150ms stagger
-        });
-      }).catch(function(){compEl.innerHTML='<div style="font-size:.5rem;color:#666;">Comparison unavailable</div>';});
-    },100);
+    },50);
 
     // EPA scale
     h+='<div style="display:flex;gap:1px;height:5px;border-radius:3px;overflow:hidden;margin-top:8px;">';
@@ -7061,7 +7128,7 @@ function dayRangeAround(d, days){
 
     if(widgetModal&&widgetModalBody){
       clearModalAnimations();
-      updateModalHeader('AIR QUALITY','EPA · Open-Meteo');
+      updateModalHeader('AIR QUALITY','EPA · Open-Meteo','https://air-quality-api.open-meteo.com/');
       widgetModalBody.className='widget-modal-body content-card';
       widgetModalBody.innerHTML='<div style="max-width:560px;margin:0 auto;">'+h+'</div>';
       positionModalAtViewport(widgetModal);
@@ -9723,7 +9790,9 @@ function initNowMicroTabs(){
           statusPill.textContent = "🔥 " + totalCount + " ACTIVE FIRE" + (totalCount !== 1 ? "S" : "") + " (7D)";
           statusPill.style.color = largeCount > 0 ? "#dc2626" : (nearbyCount > 0 ? "#f97316" : "#22c55e");
         }
-        
+        // Store fires globally for AQI smoke source analysis
+        window._activeFires = fires;
+
         // Now create smoke heatmap from fire locations
         createSmokeHeatmap();
 
@@ -11007,10 +11076,10 @@ function initNowMicroTabs(){
   };
 
   var MAP_CONFIG = {
-    'lightning-map': { title: 'LIGHTNING', subtitle: 'Blitzortung + Macrostrat', sourceMap: function(){ return lightningMap; }, markers: function(){ return lightningMarkers; } },
-    'fire-map': { title: 'WILDFIRES', subtitle: 'NIFC + ESRI', sourceMap: function(){ return fireMap; }, markers: function(){ return fireMarkers; } },
-    'quake-map': { title: 'EARTHQUAKES', subtitle: 'USGS + Macrostrat', sourceMap: function(){ return quakeMap; }, markers: function(){ return quakeMarkers; } },
-    'national-radar-map': { title: 'NATIONAL RADAR', subtitle: 'IEM NEXRAD', sourceMap: function(){ return nationalRadarMap; }, markers: function(){ return []; } }
+    'lightning-map': { title: 'LIGHTNING', subtitle: 'Blitzortung + Macrostrat', sourceUrl: 'https://www.blitzortung.org/en/live_lightning_maps.php', sourceMap: function(){ return lightningMap; }, markers: function(){ return lightningMarkers; } },
+    'fire-map': { title: 'WILDFIRES', subtitle: 'NIFC + ESRI', sourceUrl: 'https://www.nifc.gov/fire-information', sourceMap: function(){ return fireMap; }, markers: function(){ return fireMarkers; } },
+    'quake-map': { title: 'EARTHQUAKES', subtitle: 'USGS + Macrostrat', sourceUrl: 'https://earthquake.usgs.gov/earthquakes/map/', sourceMap: function(){ return quakeMap; }, markers: function(){ return quakeMarkers; } },
+    'national-radar-map': { title: 'NATIONAL RADAR', subtitle: 'IEM NEXRAD', sourceUrl: 'https://mesonet.agron.iastate.edu/GIS/ridge.phtml', sourceMap: function(){ return nationalRadarMap; }, markers: function(){ return []; } }
   };
 
   function clearModalAnimations(){
@@ -11019,11 +11088,22 @@ function initNowMicroTabs(){
     if (window.modalMap) { window.modalMap.remove(); window.modalMap = null; }
   }
 
-  function updateModalHeader(title, subtitle){
+  function updateModalHeader(title, subtitle, sourceUrl){
     var titleEl = document.getElementById("modal-title");
     var subtitleEl = document.getElementById("modal-subtitle");
     if (titleEl) titleEl.textContent = title || '--';
     if (subtitleEl) subtitleEl.textContent = typeof subtitle === 'function' ? subtitle() : (subtitle || '');
+    // Make header clickable to source
+    var headerEl = document.querySelector(".widget-modal-header");
+    if (headerEl){
+      headerEl.style.cursor = sourceUrl ? 'pointer' : 'default';
+      headerEl.onclick = sourceUrl ? function(e){
+        if(e.target.classList.contains('widget-modal-close'))return;
+        window.open(sourceUrl,'_blank');
+      } : null;
+      if(subtitleEl && sourceUrl) subtitleEl.style.textDecoration = 'underline';
+      else if(subtitleEl) subtitleEl.style.textDecoration = 'none';
+    }
   }
 
   function positionModalAtViewport(el){
@@ -11037,7 +11117,7 @@ function initNowMicroTabs(){
     if (!widgetModal || !widgetModalBody) return;
     clearModalAnimations();
     
-    updateModalHeader(config.title, config.subtitle);
+    updateModalHeader(config.title, config.subtitle, config.sourceUrl);
     widgetModalBody.className = 'widget-modal-body content-image is-loading';
     widgetModalBody.innerHTML = '';
     
@@ -11083,7 +11163,7 @@ function initNowMicroTabs(){
     if (!widgetModal || !widgetModalBody) return;
     clearModalAnimations();
     
-    updateModalHeader(config.title, config.subtitle);
+    updateModalHeader(config.title, config.subtitle, config.sourceUrl);
     widgetModalBody.className = 'widget-modal-body content-card';
     widgetModalBody.innerHTML = '';
     
@@ -11104,7 +11184,7 @@ function initNowMicroTabs(){
     if (!widgetModal || !widgetModalBody) return;
     clearModalAnimations();
     
-    updateModalHeader(config.title, config.subtitle);
+    updateModalHeader(config.title, config.subtitle, config.sourceUrl);
     widgetModalBody.className = 'widget-modal-body content-map';
     widgetModalBody.innerHTML = '<div class="modal-map-container" id="modal-map-container" style="position:relative;"></div>';
     
