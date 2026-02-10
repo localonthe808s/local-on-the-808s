@@ -537,7 +537,7 @@
     border-radius:50%;
     border:1px solid rgba(43,34,244,.3);
     background:rgba(43,34,244,.06);
-    font-size:.7rem;
+    font-size:1rem;
     cursor:pointer;
     display:flex;
     align-items:center;
@@ -4125,6 +4125,7 @@ body > #dynamic-alert-modal {
       <img class="moon-img" id="moon-mini-img" src="" alt="Current moon phase" />
     </div>
   </div>
+  <div id="loc-meta" style="font-size:.48rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);padding:0 0 0 4px;margin-top:-4px;margin-bottom:-6px;line-height:1;font-weight:600;">---</div>
 
   <!-- Details Row -->
   <div class="weather-details-row">
@@ -4137,7 +4138,6 @@ body > #dynamic-alert-modal {
       <div class="weather-stat"><span class="k">Humidity</span><span class="v" id="humidity">--</span></div>
       <div class="weather-stat"><span class="k">Pressure</span><span class="v" id="pressure">--</span></div>
       <div class="weather-stat"><span class="k">UV</span><span class="v" id="uv">--</span></div>
-      <div class="weather-stat loc-meta-stat"><span class="v" id="loc-meta" style="opacity:.45;font-size:.58rem;">---</span></div>
     </div>
   </div>
 
@@ -4145,7 +4145,6 @@ body > #dynamic-alert-modal {
   <div class="weather-details-row">
     <div class="weather-stats-grid">
       <div class="weather-stat"><span class="k">AQI</span><span class="ap-val" id="aqi-val">--</span></div>
-      <div class="weather-stat"><span class="k">💨 AIR</span><span class="pollen-val" id="smoke-risk">--</span></div>
       <div class="weather-stat"><span class="k">PM2.5</span><span class="v" id="pm25-val">--</span></div>
       <div class="weather-stat"><span class="k">PM10</span><span class="v" id="pm10-val">--</span></div>
       <div class="weather-stat"><span class="k">🌳 Tree</span><span class="pollen-val" id="pollen-tree">--</span></div>
@@ -4493,7 +4492,7 @@ body > #dynamic-alert-modal {
               <div class="widget-body" style="position:relative;">
                 <div id="fire-map" style="width:100%; height:100%; background:#f5f5f5;"></div>
                 <div id="fire-labels-toggle" onclick="toggleFireLabels()" style="position:absolute; top:10px; right:10px; z-index:1000; padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.90); backdrop-filter:blur(8px); font-size:.62rem; font-weight:700; color:#888; box-shadow:0 2px 8px rgba(0,0,0,.15); cursor:pointer; user-select:none; border:2px solid #888;">🏙️ OFF</div>
-                <div id="fire-aqi-pill" style="position:absolute; bottom:10px; left:10px; z-index:1000; padding:6px 12px; border-radius:16px; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); font-size:.7rem; font-weight:700; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); display:none; pointer-events:none;"><span id="fire-aqi-value">--</span> AQI</div>
+                <div id="fire-aqi-pill" style="position:absolute; bottom:10px; left:10px; z-index:1000; padding:6px 12px; border-radius:16px; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); font-size:1rem; font-weight:700; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); display:none; pointer-events:none;"><span id="fire-aqi-value">--</span> AQI</div>
                 <div class="fire-status-wrap" style="position:absolute; top:10px; left:10px; z-index:1000;">
                   <div id="fire-status-pill" style="padding:5px 10px; border-radius:20px; background:rgba(255,255,255,.06);
     box-shadow:0 0 30px rgba(255,255,255,.10), inset 0 0 20px rgba(255,255,255,.18); backdrop-filter:blur(8px); font-size:.68rem; font-weight:700; color:#333; box-shadow:0 2px 8px rgba(0,0,0,.12); cursor:pointer;">🔥 Loading...</div>
@@ -6273,7 +6272,7 @@ function dayRangeAround(d, days){
           '<span class="today-tl-weather-time">' + timeLabel + '</span>' +
           '<span class="today-tl-weather-icon ' + weatherInfo.animClass + '">' + weatherInfo.emoji + '</span>' +
           '<span class="today-tl-weather-temp">' + temp + '</span>' +
-          '<span style="font-size:.7rem;font-weight:400;color:rgba(255,255,255,.45);">' + feelsLike + '</span>' +
+          '<span style="font-size:1rem;font-weight:400;color:rgba(255,255,255,.45);">' + feelsLike + '</span>' +
           '<span style="font-size:.55rem;font-weight:600;color:rgba(255,255,255,.35);display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
           '<span style="font-size:.5rem;font-weight:600;color:rgba(255,255,255,.3);display:block;text-align:center;width:100%;letter-spacing:.3px;">' + windDirStr + '</span>' +
           '<span class="today-tl-weather-precip ' + precipClass + '">' + precip + '%</span>' +
@@ -6744,8 +6743,10 @@ function dayRangeAround(d, days){
       "https://air-quality-api.open-meteo.com/v1/air-quality" +
       "?latitude=" + LOCATION.lat +
       "&longitude=" + LOCATION.lon +
-      "&current=us_aqi,pm10,pm2_5,carbon_monoxide" +
-      "&current=alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen";
+      "&current=us_aqi,us_aqi_pm2_5,us_aqi_pm10,us_aqi_nitrogen_dioxide,us_aqi_ozone,us_aqi_sulphur_dioxide,us_aqi_carbon_monoxide,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone" +
+      "&current=alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen" +
+      "&hourly=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide" +
+      "&forecast_hours=24";
 
     fetchWithTimeout(url, null, 12000)
       .then(function(r){ return r.json(); })
@@ -6754,31 +6755,16 @@ function dayRangeAround(d, days){
           var current = data && data.current;
           if (!current) return;
 
+          // Store full AQ data for detail modal
+          window._aqData = { current: current, hourly: data.hourly, time: data.current_units };
+
           // AQI
           if (aqiEl){
             var aqiInfo = classifyAqi(current.us_aqi);
             aqiEl.textContent = aqiInfo.label;
             aqiEl.className = "ap-val " + aqiInfo.cls;
-          }
-
-          // Smoke risk (based on PM2.5 + CO levels)
-          var smokeEl = document.getElementById("smoke-risk");
-          var pm25 = current.pm2_5 || 0;
-          var co = current.carbon_monoxide || 0;
-          
-          if (smokeEl){
-            var smokeRisk;
-            if (pm25 >= 55.5) {
-              smokeRisk = { label: "Unhealthy", cls: "very-high" };
-            } else if (pm25 >= 35.5) {
-              smokeRisk = { label: "USG", cls: "moderate" };
-            } else if (pm25 >= 12.1) {
-              smokeRisk = { label: "Moderate", cls: "low" };
-            } else {
-              smokeRisk = { label: "Good", cls: "none" };
-            }
-            smokeEl.textContent = smokeRisk.label;
-            smokeEl.className = "pollen-val " + smokeRisk.cls;
+            aqiEl.style.cursor = "pointer";
+            aqiEl.onclick = function(){ openAqiDetail(); };
           }
 
           // PM2.5
@@ -6830,6 +6816,258 @@ function dayRangeAround(d, days){
         console.error("Air quality load error", err);
       });
   }
+  function openAqiDetail(){
+    var d=window._aqData;if(!d||!d.current)return;
+    var c=d.current,hr=d.hourly;
+    function ac(v){if(v==null||isNaN(v))return"#666";if(v<=50)return"#22c55e";if(v<=100)return"#eab308";if(v<=150)return"#f97316";if(v<=200)return"#ef4444";if(v<=300)return"#9333ea";return"#7f1d1d";}
+    function al(v){if(v==null||isNaN(v))return"--";if(v<=50)return"Good";if(v<=100)return"Moderate";if(v<=150)return"USG";if(v<=200)return"Unhealthy";if(v<=300)return"V.Unhealthy";return"Hazardous";}
+    function hg(a){
+      if(a==null)return{i:"❓",w:"",a:""};
+      if(a<=50)return{i:"✅",w:"",a:"Satisfactory. Great for all outdoor activities."};
+      if(a<=100)return{i:"⚠️",w:"Asthma, COPD, heart disease, children, elderly",a:"Acceptable. Sensitive individuals should limit prolonged heavy exertion."};
+      if(a<=150)return{i:"🟠",w:"Children, elderly, respiratory/cardiac conditions",a:"Sensitive groups reduce outdoor exertion. Move indoors if symptoms occur."};
+      if(a<=200)return{i:"🔴",w:"Everyone — especially sensitive groups",a:"Reduce outdoor exertion. Sensitive groups avoid outdoor activity."};
+      if(a<=300)return{i:"🟣",w:"Everyone",a:"Avoid all outdoor exertion. Close windows. Run air purifiers."};
+      return{i:"⛔",w:"Everyone",a:"Health emergency. Remain indoors. Seal windows. N95 essential."};
+    }
+    var windEl=document.getElementById("wind");var gustEl=document.getElementById("gusts");
+    var cWind=windEl?windEl.textContent:'--';var cGust=gustEl?gustEl.textContent:'--';
+    var wDir='--';
+    if(window._wxHourly&&window._wxHourly.wind_direction_10m&&window._wxNearestIdx!=null){
+      var wd=window._wxHourly.wind_direction_10m[window._wxNearestIdx];
+      if(wd!=null)wDir=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(wd/22.5)%16];
+    }
+    var subs=[
+      {n:'PM2.5',v:c.pm2_5,u:'µg/m³',a:c.us_aqi_pm2_5,k:'pm2_5',who:5,d:'Ultrafine · smoke, exhaust · lungs & blood'},
+      {n:'PM10',v:c.pm10,u:'µg/m³',a:c.us_aqi_pm10,k:'pm10',who:15,d:'Coarse · dust, pollen · airways'},
+      {n:'O₃',v:c.ozone,u:'µg/m³',a:c.us_aqi_ozone,k:'ozone',who:100,d:'Gas · smog · inflames lungs'},
+      {n:'NO₂',v:c.nitrogen_dioxide,u:'µg/m³',a:c.us_aqi_nitrogen_dioxide,k:'nitrogen_dioxide',who:25,d:'Gas · diesel · damages airways'},
+      {n:'SO₂',v:c.sulphur_dioxide,u:'µg/m³',a:c.us_aqi_sulphur_dioxide,k:'sulphur_dioxide',who:40,d:'Gas · coal · constricts airways'},
+      {n:'CO',v:c.carbon_monoxide,u:'µg/m³',a:c.us_aqi_carbon_monoxide,k:'carbon_monoxide',who:4000,d:'Gas · engines · starves O₂'}
+    ];
+    var dom=subs.reduce(function(a,b){return(b.a||0)>(a.a||0)?b:a;});
+    var ov=c.us_aqi!=null?Math.round(c.us_aqi):'--';
+    var oc=ac(c.us_aqi),ol=al(c.us_aqi),g=hg(c.us_aqi);
+    var pm25=c.pm2_5||0;
+
+    var h='';
+    // === TOP: Hero + Health + Trend + Smoke + Wind — all in one grid ===
+    h+='<div style="display:grid;grid-template-columns:90px 1fr 100px;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06);">';
+    // Col 1: AQI number
+    h+='<div style="text-align:center;display:flex;flex-direction:column;justify-content:center;">';
+    h+='<div style="font-size:2.8rem;font-weight:900;color:'+oc+';line-height:1;">'+ov+'</div>';
+    h+='<div style="font-size:.8rem;font-weight:800;color:'+oc+';">'+ol+'</div>';
+    h+='<div style="font-size:.48rem;color:#888;margin-top:2px;font-weight:700;">'+dom.n+' dominant</div>';
+    h+='</div>';
+    // Col 2: Health + Trend stacked
+    h+='<div>';
+    h+='<div style="font-size:.68rem;color:#ddd;line-height:1.35;margin-bottom:4px;">'+g.i+' '+g.a+'</div>';
+    if(g.w) h+='<div style="font-size:.52rem;color:#f97316;font-weight:700;margin-bottom:4px;">At risk: <span style="font-weight:500;color:#aaa;">'+g.w+'</span></div>';
+    // Trend inline
+    if(hr&&hr.us_aqi&&hr.time){
+      var vals=hr.us_aqi,maxV=Math.max.apply(null,vals.filter(function(v){return v!=null;}).concat([50]));
+      var pts=[];for(var i=0;i<vals.length;i++){if(vals[i]==null)continue;pts.push(((i/(vals.length-1))*180)+','+(18-(vals[i]/maxV)*18));}
+      if(pts.length>1){
+        var fV=vals[0]||0,lV=vals[vals.length-1]||0;
+        var tr=lV<fV-5?'📉Improving':lV>fV+5?'📈Worsening':'➡️Stable';
+        var tc=lV<fV-5?'#22c55e':lV>fV+5?'#ef4444':'#eab308';
+        h+='<div style="display:flex;align-items:center;gap:6px;">';
+        h+='<svg viewBox="0 0 180 18" style="flex:1;height:18px;" preserveAspectRatio="none">';
+        h+='<polygon points="0,18 '+pts.join(' ')+' 180,18" fill="'+oc+'" opacity="0.15"/>';
+        h+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+oc+'" stroke-width="1.5"/>';
+        h+='</svg>';
+        h+='<span style="font-size:.48rem;font-weight:800;color:'+tc+';white-space:nowrap;">'+tr+'</span>';
+        h+='</div>';
+      }
+    }
+    h+='</div>';
+    // Col 3: Wind
+    h+='<div style="text-align:center;display:flex;flex-direction:column;justify-content:center;border-left:1px solid rgba(255,255,255,.06);padding-left:8px;">';
+    h+='<div style="font-size:.42rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:.5px;">💨 WIND</div>';
+    h+='<div style="font-size:.9rem;font-weight:900;color:#fff;">'+cWind+'</div>';
+    h+='<div style="font-size:.5rem;color:#aaa;font-weight:700;">'+wDir+'</div>';
+    h+='<div style="font-size:.48rem;color:#777;">Gusts '+cGust+'</div>';
+    h+='</div></div>';
+
+    // === SMOKE — compact single row ===
+    var sL,sC,sP;
+    if(pm25>=150){sL='HEAVY';sC='#ef4444';sP='Stay indoors. HEPA on. N95 outside.';}
+    else if(pm25>=55.5){sL='THICK';sC='#f97316';sP='Limit outdoor time. Close windows. N95 helps.';}
+    else if(pm25>=35.5){sL='MODERATE';sC='#eab308';sP='Sensitive groups limit outdoors. Close windows PM.';}
+    else if(pm25>=12.1){sL='LIGHT HAZE';sC='#a3a3a3';sP='No precautions for most.';}
+    else{sL='CLEAR';sC='#22c55e';sP='Clean air. No precautions.';}
+    var sVis=pm25>=150?'<1mi':pm25>=55.5?'1–3mi':pm25>=35.5?'3–5mi':pm25>=12.1?'5–10mi':'10+mi';
+
+    h+='<div style="display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:10px;border:1px solid rgba(255,255,255,.04);">';
+    h+='<div style="font-size:.48rem;color:#888;font-weight:800;">🌫️</div>';
+    h+='<div>';
+    h+='<div style="font-size:.65rem;font-weight:900;color:'+sC+';line-height:1;">'+sL+'</div>';
+    h+='<div style="font-size:.45rem;color:#999;">'+sP+'</div>';
+    h+='</div>';
+    h+='<div style="text-align:center;"><div style="font-size:.38rem;color:#777;font-weight:700;">PM2.5</div><div style="font-size:.6rem;font-weight:900;color:'+ac(c.us_aqi_pm2_5)+';">'+Math.round(pm25)+'</div></div>';
+    h+='<div style="text-align:center;"><div style="font-size:.38rem;color:#777;font-weight:700;">WHO</div><div style="font-size:.6rem;font-weight:900;color:#f97316;">'+(pm25/5).toFixed(1)+'×</div></div>';
+    h+='<div style="text-align:center;"><div style="font-size:.38rem;color:#777;font-weight:700;">VIS</div><div style="font-size:.55rem;font-weight:700;color:#ccc;">'+sVis+'</div></div>';
+    h+='</div>';
+
+    // === POLLUTANTS — compact 2-col grid ===
+    h+='<div style="font-size:.5rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">POLLUTANTS</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">';
+    subs.forEach(function(p){
+      var pc=ac(p.a),pl=al(p.a),isDom=p.n===dom.n;
+      var barW=p.a!=null?Math.min((p.a/300)*100,100):0;
+      var whoX='';if(p.v!=null&&p.who){var r=p.v/p.who;whoX=r<=1?'<span style="color:#22c55e;">✓</span>':'<span style="color:#f97316;">'+r.toFixed(1)+'×</span>';}
+      var ms='';
+      if(hr&&hr[p.k]){var pV=hr[p.k],pM=Math.max.apply(null,pV.filter(function(v){return v!=null;}).concat([1]));var mP=[];for(var j=0;j<pV.length;j++){if(pV[j]==null)continue;mP.push(((j/(pV.length-1))*40)+','+(12-(pV[j]/pM)*12));}if(mP.length>1)ms='<svg viewBox="0 0 40 12" style="width:35px;height:12px;opacity:.5;" preserveAspectRatio="none"><polyline points="'+mP.join(' ')+'" fill="none" stroke="'+pc+'" stroke-width="1"/></svg>';}
+
+      h+='<div style="padding:5px 7px;background:'+(isDom?'rgba(255,255,255,.06)':'rgba(255,255,255,.02)')+';border-radius:6px;border:1px solid '+(isDom?'rgba(255,255,255,.08)':'rgba(255,255,255,.03)')+';">';
+      // Row 1: name + AQI
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;">';
+      h+='<span style="font-size:.68rem;font-weight:800;color:#fff;">'+p.n+(isDom?' <span style="font-size:.32rem;background:'+pc+';color:#000;padding:1px 3px;border-radius:2px;vertical-align:middle;">⬆</span>':'')+'</span>';
+      h+='<div style="display:flex;align-items:center;gap:3px;">'+ms+'<span style="font-size:.72rem;font-weight:900;color:'+pc+';">'+(p.a!=null?Math.round(p.a):'--')+'</span></div>';
+      h+='</div>';
+      // Bar
+      h+='<div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin:3px 0;">';
+      h+='<div style="height:100%;width:'+barW+'%;background:'+pc+';border-radius:2px;"></div></div>';
+      // Row 2: value + WHO + desc
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;">';
+      h+='<span style="font-size:.48rem;color:#aaa;">'+(p.v!=null?(Math.round(p.v*10)/10)+'µg':'--')+' '+whoX+'</span>';
+      h+='<span style="font-size:.42rem;color:#666;font-style:italic;">'+p.d+'</span>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+
+    // === COMPARISON — nearby + reference ===
+    var compId='aqi-cmp-'+Date.now();
+    h+='<div id="'+compId+'">';
+    h+='<div style="font-size:.5rem;color:#666;text-align:center;padding:8px;">Loading nearby & reference data...</div>';
+    h+='</div>';
+
+    setTimeout(function(){
+      var compEl=document.getElementById(compId);if(!compEl)return;
+      var lat=LOCATION.lat,lon=LOCATION.lon,off=1.45;
+      var pts=[
+        {lat:lat+off,lon:lon,dir:'N ~100mi'},{lat:lat+off*.7,lon:lon+off*.7,dir:'NE ~100mi'},
+        {lat:lat,lon:lon+off,dir:'E ~100mi'},{lat:lat-off*.7,lon:lon+off*.7,dir:'SE ~100mi'},
+        {lat:lat-off,lon:lon,dir:'S ~100mi'},{lat:lat-off*.7,lon:lon-off*.7,dir:'SW ~100mi'},
+        {lat:lat,lon:lon-off,dir:'W ~100mi'},{lat:lat+off*.7,lon:lon-off*.7,dir:'NW ~100mi'},
+        {lat:lat+off*.5,lon:lon,dir:'N ~50mi'},{lat:lat,lon:lon+off*.5,dir:'E ~50mi'},
+        {lat:lat-off*.5,lon:lon,dir:'S ~50mi'},{lat:lat,lon:lon-off*.5,dir:'W ~50mi'}
+      ];
+      var refs=[
+        {lat:40.71,lon:-74.01,name:'New York City',t:'urban'},{lat:34.05,lon:-118.24,name:'Los Angeles',t:'urban'},
+        {lat:41.88,lon:-87.63,name:'Chicago',t:'urban'},{lat:35.37,lon:-119.02,name:'Bakersfield',t:'urban'},
+        {lat:40.76,lon:-111.89,name:'Salt Lake City',t:'urban'},{lat:29.76,lon:-95.37,name:'Houston',t:'urban'},
+        {lat:46.87,lon:-110.36,name:'Rural Montana',t:'rural'},{lat:44.26,lon:-72.58,name:'Rural Vermont',t:'rural'},
+        {lat:43.80,lon:-120.55,name:'Rural Oregon',t:'rural'}
+      ];
+
+      var allPts=pts.concat(refs);
+      var lats=allPts.map(function(p){return(p.lat).toFixed(4);}).join(',');
+      var lons=allPts.map(function(p){return(p.lon).toFixed(4);}).join(',');
+      var stAbbr={'New York':'NY','New Jersey':'NJ','Connecticut':'CT','Pennsylvania':'PA','Massachusetts':'MA','Vermont':'VT','New Hampshire':'NH','Maine':'ME','Maryland':'MD','Virginia':'VA','Delaware':'DE','California':'CA','Texas':'TX','Illinois':'IL','Ohio':'OH','Michigan':'MI','Georgia':'GA','Florida':'FL','North Carolina':'NC','Washington':'WA','Oregon':'OR','Colorado':'CO','Arizona':'AZ','Nevada':'NV','Utah':'UT','Montana':'MT','Idaho':'ID','Wyoming':'WY','Tennessee':'TN','Kentucky':'KY','Indiana':'IN','Wisconsin':'WI','Minnesota':'MN','Iowa':'IA','Missouri':'MO','Arkansas':'AR','Louisiana':'LA','Mississippi':'MS','Alabama':'AL','South Carolina':'SC','West Virginia':'WV','Rhode Island':'RI','Nebraska':'NE','Kansas':'KS','Oklahoma':'OK','New Mexico':'NM','South Dakota':'SD','North Dakota':'ND'};
+
+      // Render helper
+      function renderComp(near,ref,me){
+        near.sort(function(a,b){return a.aqi-b.aqi;});
+        ref.sort(function(a,b){return a.aqi-b.aqi;});
+        // Dedup nearby by name (first word)
+        var seen={},uniqNear=[];
+        near.forEach(function(r){var k=r.n.split(',')[0].trim();if(!seen[k]){seen[k]=true;uniqNear.push(r);}});
+        near=uniqNear;
+
+        var avgN=near.length?Math.round(near.reduce(function(s,r){return s+r.aqi;},0)/near.length):0;
+        var worst=near.length?near[near.length-1]:{n:'--',aqi:0};
+        var best=near.length?near[0]:{n:'--',aqi:0};
+        var uA=0,uC=0,rA=0,rC=0;
+        ref.forEach(function(r){if(r.t==='urban'){uA+=r.aqi;uC++;}if(r.t==='rural'){rA+=r.aqi;rC++;}});
+        if(uC)uA=Math.round(uA/uC);if(rC)rA=Math.round(rA/rC);
+
+        function bars(list,max){
+          var s='';list.forEach(function(r){
+            var bp=Math.min((r.aqi/max)*100,100),bc=ac(r.aqi);
+            var tag=r.pop==='rural'||r.t==='rural'?'🌲':r.pop==='urban'||r.t==='urban'?'🏙️':'';
+            s+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:1px;'+(r.you?'background:rgba(255,255,255,.07);border-radius:3px;padding:2px 5px;margin-left:-5px;margin-right:-5px;':'')+'">';
+            s+='<div style="width:105px;font-size:.48rem;color:'+(r.you?'#fff':'#999')+';font-weight:'+(r.you?'800':'500')+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(r.you?'📍 '+r.n:r.n+(tag?' '+tag:''))+'</div>';
+            s+='<div style="flex:1;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+bp+'%;background:'+bc+';border-radius:2px;"></div></div>';
+            s+='<div style="width:22px;font-size:.48rem;font-weight:800;color:'+bc+';">'+r.aqi+'</div></div>';
+          });return s;
+        }
+        var ch='';
+        ch+='<div style="font-size:.5rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">📍 NEARBY (~100 mi)</div>';
+        ch+='<div style="font-size:.6rem;color:#ddd;margin-bottom:2px;">'+(c.us_aqi<=avgN?'<span style="color:#22c55e;font-weight:800;">Better</span>':'<span style="color:#f97316;font-weight:800;">Worse</span>')+' than nearby avg <span style="color:'+ac(avgN)+';font-weight:800;">'+avgN+'</span>';
+        if(worst.aqi-best.aqi>10) ch+=' · <span style="color:'+ac(worst.aqi)+';">'+worst.n.split(',')[0]+' '+worst.aqi+'</span> → <span style="color:'+ac(best.aqi)+';">'+best.n.split(',')[0]+' '+best.aqi+'</span>';
+        ch+='</div>';
+        var allN=near.slice();allN.push(me);allN.sort(function(a,b){return a.aqi-b.aqi;});
+        ch+=bars(allN,Math.max.apply(null,allN.map(function(r){return r.aqi;}).concat([100])));
+
+        ch+='<div style="font-size:.5rem;color:#888;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-top:8px;margin-bottom:3px;">🏙️ US REFERENCE</div>';
+        var allR=ref.slice();allR.push(me);allR.sort(function(a,b){return a.aqi-b.aqi;});
+        ch+=bars(allR,Math.max.apply(null,allR.map(function(r){return r.aqi;}).concat([100])));
+
+        ch+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-top:6px;">';
+        ch+='<div style="text-align:center;padding:3px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:.38rem;color:#888;font-weight:700;">NEARBY</div><div style="font-size:.72rem;font-weight:900;color:'+ac(avgN)+';">'+avgN+'</div></div>';
+        ch+='<div style="text-align:center;padding:3px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:.38rem;color:#888;font-weight:700;">🏙️ URBAN</div><div style="font-size:.72rem;font-weight:900;color:'+ac(uA)+';">'+uA+'</div></div>';
+        ch+='<div style="text-align:center;padding:3px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:.38rem;color:#888;font-weight:700;">🌲 RURAL</div><div style="font-size:.72rem;font-weight:900;color:'+ac(rA)+';">'+rA+'</div></div>';
+        ch+='<div style="text-align:center;padding:3px;background:rgba(255,255,255,.06);border-radius:4px;border:1px solid rgba(255,255,255,.08);"><div style="font-size:.38rem;color:#888;font-weight:700;">📍 YOU</div><div style="font-size:.72rem;font-weight:900;color:'+ac(c.us_aqi)+';">'+Math.round(c.us_aqi)+'</div></div>';
+        ch+='</div>';
+        compEl.innerHTML=ch;
+      }
+
+      // STEP 1: Fetch AQI immediately for all points (fast)
+      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+lats+'&longitude='+lons+'&current=us_aqi,pm2_5')
+      .then(function(r){return r.json();}).then(function(data){
+        if(!compEl||!Array.isArray(data))return;
+        var near=[],ref=[];
+        data.forEach(function(dd,i){
+          if(!dd||!dd.current||dd.current.us_aqi==null)return;
+          var a=Math.round(dd.current.us_aqi);
+          if(i<pts.length) near.push({n:pts[i].dir,aqi:a,idx:i,pop:'unknown',dir:pts[i].dir});
+          else ref.push({n:refs[i-pts.length].name,aqi:a,t:refs[i-pts.length].t});
+        });
+        var me={n:LOCATION.name||'You',aqi:Math.round(c.us_aqi),you:true};
+
+        // Render immediately with compass directions
+        renderComp(near,ref,me);
+
+        // STEP 2: Background geocode to replace compass names with real city names
+        var pending=near.length;
+        near.forEach(function(nr,nIdx){
+          setTimeout(function(){
+            fetch('https://nominatim.openstreetmap.org/reverse?lat='+pts[nr.idx].lat.toFixed(4)+'&lon='+pts[nr.idx].lon.toFixed(4)+'&format=json&zoom=10&addressdetails=1')
+            .then(function(r){return r.json();}).then(function(d){
+              if(d&&d.address){
+                var nm=d.address.city||d.address.town||d.address.village||d.address.hamlet||d.address.county||'';
+                var st=d.address.state||'';
+                var ab=stAbbr[st]||st.substring(0,2).toUpperCase();
+                if(nm) nr.n=nm+', '+ab;
+                nr.pop=d.address.city?'urban':'rural';
+              }
+              pending--;
+              if(pending<=0) renderComp(near,ref,me); // Re-render with real names
+            }).catch(function(){pending--;if(pending<=0)renderComp(near,ref,me);});
+          },nIdx*150); // 150ms stagger
+        });
+      }).catch(function(){compEl.innerHTML='<div style="font-size:.5rem;color:#666;">Comparison unavailable</div>';});
+    },100);
+
+    // EPA scale
+    h+='<div style="display:flex;gap:1px;height:5px;border-radius:3px;overflow:hidden;margin-top:8px;">';
+    ['#22c55e','#eab308','#f97316','#ef4444','#9333ea','#7f1d1d'].forEach(function(cc){h+='<div style="flex:1;background:'+cc+';"></div>';});
+    h+='</div>';
+    h+='<div style="display:flex;justify-content:space-between;margin-top:1px;margin-bottom:3px;">';
+    ['Good','Moderate','USG','Unhealthy','V.Unhlthy','Hazardous'].forEach(function(l){h+='<span style="font-size:.38rem;color:#666;text-align:center;flex:1;font-weight:600;">'+l+'</span>';});
+    h+='</div>';
+    h+='<div style="text-align:center;font-size:.4rem;color:#555;">Open-Meteo · CAMS · EPA · Hourly</div>';
+
+    if(widgetModal&&widgetModalBody){
+      clearModalAnimations();
+      updateModalHeader('AIR QUALITY','EPA · Open-Meteo');
+      widgetModalBody.className='widget-modal-body content-card';
+      widgetModalBody.innerHTML='<div style="max-width:560px;margin:0 auto;">'+h+'</div>';
+      positionModalAtViewport(widgetModal);
+    }
+  }
+
   /* =========================================================
      WEATHER LOAD (Open-Meteo)
      ========================================================= */
