@@ -1491,19 +1491,85 @@
     color:rgba(100,180,255,.95);
   }
 
-  /* Day hours - dark text */
+  /* Day hours - white text on blue sky */
   .today-tl-weather-hour.day-hour .today-tl-weather-time{
-    color:rgba(43,34,244,.50);
-    text-shadow:none;
+    color:rgba(255,255,255,.7);
+    text-shadow:0 1px 3px rgba(0,40,120,.3);
   }
 
   .today-tl-weather-hour.day-hour .today-tl-weather-temp{
-    color:#2B22F4;
-    text-shadow:none;
+    color:#fff;
+    text-shadow:0 1px 4px rgba(0,40,120,.35);
   }
 
   .today-tl-weather-hour.day-hour .today-tl-weather-precip{
-    color:rgba(43,34,244,.40);
+    color:rgba(255,255,255,.55);
+    text-shadow:none;
+  }
+
+  /* Golden hour text - warm amber */
+  .today-tl-weather-hour.golden-hour .today-tl-weather-time{
+    color:rgba(255,180,80,.75);
+    text-shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  .today-tl-weather-hour.golden-hour .today-tl-weather-temp{
+    color:rgba(255,200,100,1);
+    text-shadow:0 0 8px rgba(255,150,40,.2);
+  }
+  .today-tl-weather-hour.golden-hour .today-tl-weather-precip{
+    color:rgba(255,180,80,.55);
+    text-shadow:none;
+  }
+
+  /* Golden peak text - intense warm */
+  .today-tl-weather-hour.golden-peak-hour .today-tl-weather-time{
+    color:rgba(255,160,50,.85);
+    text-shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  .today-tl-weather-hour.golden-peak-hour .today-tl-weather-temp{
+    color:rgba(255,180,60,1);
+    text-shadow:0 0 12px rgba(255,120,20,.3);
+  }
+  .today-tl-weather-hour.golden-peak-hour .today-tl-weather-precip{
+    color:rgba(255,160,50,.6);
+    text-shadow:none;
+  }
+
+  /* Golden peak icon glow */
+  .today-tl-weather-hour.golden-peak-hour .today-tl-weather-icon{
+    filter:drop-shadow(0 0 8px rgba(255,140,40,.35));
+  }
+
+  /* Golden hour cloud warm tint */
+  .today-tl-weather-hour.golden-hour .today-tl-weather-icon{
+    filter:sepia(.12) saturate(1.2) brightness(1.05) drop-shadow(0 2px 6px rgba(255,120,30,.2));
+  }
+
+  /* Blue hour text */
+  .today-tl-weather-hour.blue-hour-col .today-tl-weather-time{
+    color:rgba(150,180,240,.6);
+    text-shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  .today-tl-weather-hour.blue-hour-col .today-tl-weather-temp{
+    color:rgba(200,220,255,.95);
+    text-shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  .today-tl-weather-hour.blue-hour-col .today-tl-weather-precip{
+    color:rgba(150,180,255,.55);
+    text-shadow:none;
+  }
+
+  /* Twilight text */
+  .today-tl-weather-hour.twilight-hour .today-tl-weather-time{
+    color:rgba(200,210,255,.5);
+    text-shadow:0 1px 2px rgba(0,0,0,.5);
+  }
+  .today-tl-weather-hour.twilight-hour .today-tl-weather-temp{
+    color:rgba(220,230,255,.9);
+    text-shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  .today-tl-weather-hour.twilight-hour .today-tl-weather-precip{
+    color:rgba(180,200,255,.45);
     text-shadow:none;
   }
 
@@ -6061,82 +6127,111 @@ function dayRangeAround(d, days){
       tlCloudTrack.innerHTML = cloudHtml;
     }
 
-    // Render sky gradient bands
+    // Render sky gradient bands — continuous gradient based on sunrise/sunset position
     if (tlSkyBands){
-      var bandsHtml = "";
+      var srPct = pctForTime(srDate);
+      var ssPct = pctForTime(ssDate);
       
-      // Night before dawn
-      if (astroDawn){
-        var p = pctForTime(astroDawn);
-        if (p > 0) bandsHtml += '<div class="today-tl-sky-band night" style="width:' + p + '%;"></div>';
-      }
+      if (srPct < 0) srPct = 25;
+      if (ssPct < 0) ssPct = 75;
       
-      // Astro twilight AM
-      if (astroDawn && blueAmStart){
-        var p1 = pctForTime(astroDawn);
-        var p2 = pctForTime(blueAmStart);
-        if (p1 >= 0 && p2 > p1) bandsHtml += '<div class="today-tl-sky-band astro-twilight" style="width:' + (p2 - p1) + '%;"></div>';
-      }
+      // Build smooth gradient with stops relative to sunrise/sunset
+      // Dawn side: cooler, paler golden
+      // Dusk side: warmer, richer, WIDER amber-red (atmospheric asymmetry)
       
-      // Blue hour AM
-      if (blueAmStart && blueAmEnd){
-        var p1 = pctForTime(blueAmStart);
-        var p2 = pctForTime(blueAmEnd);
-        if (p1 >= 0 && p2 > p1) bandsHtml += '<div class="today-tl-sky-band blue-hour" style="width:' + (p2 - p1) + '%;"></div>';
-      }
+      // Spread widths (in percentage points)
+      // AM spreads
+      var amGoldenInner = 3.5;  // golden before sunrise
+      var amGoldenOuter = 5.5;  // golden after sunrise into day
+      var amBlueW = 2.5;        // blue hour before golden
+      var amNautW = 3.0;        // nautical twilight
+      var amAstroW = 4.0;       // astronomical twilight
+      var amDayEdgeW = 3.5;     // golden fade into daylight
       
-      // Golden hour AM - smooth gradient with peak line
-      if (goldenAmStart && goldenAmEnd){
-        var p1 = pctForTime(goldenAmStart);
-        var p2 = pctForTime(goldenAmEnd);
-        // Peak moment: sun at 0° (sunrise exact moment)
-        var peakAm = pctForTime(srDate);
-        
-        if (p1 >= 0 && p2 > p1){
-          // Full golden hour as one gradient band
-          bandsHtml += '<div class="today-tl-sky-band golden-am" style="width:' + (p2 - p1) + '%;"></div>';
-        }
-      }
+      // PM spreads (wider for richer dusk)
+      var pmGoldenInner = 4.0;  // golden before sunset from day side
+      var pmGoldenOuter = 6.0;  // golden after sunset into night
+      var pmBlueW = 3.0;        // blue hour after golden
+      var pmNautW = 3.5;        // nautical twilight
+      var pmAstroW = 4.5;       // astronomical twilight
+      var pmDayEdgeW = 3.5;     // day fade into golden
       
-      // Day
-      if (goldenAmEnd && goldenPmStart){
-        var p1 = pctForTime(goldenAmEnd);
-        var p2 = pctForTime(goldenPmStart);
-        if (p1 >= 0 && p2 > p1) bandsHtml += '<div class="today-tl-sky-band day" style="width:' + (p2 - p1) + '%;"></div>';
-      }
+      // AM anchor points
+      var amAstroStart = Math.max(0, srPct - amGoldenInner - amBlueW - amNautW - amAstroW);
+      var amNautStart  = Math.max(0, srPct - amGoldenInner - amBlueW - amNautW);
+      var amBlueStart  = Math.max(0, srPct - amGoldenInner - amBlueW);
+      var amGoldenStart= Math.max(0, srPct - amGoldenInner);
+      var amSunrise    = srPct;
+      var amGoldenEnd  = srPct + amGoldenOuter;
+      var amDayEdge    = srPct + amGoldenOuter + amDayEdgeW;
       
-      // Golden hour PM - smooth gradient with peak line
-      if (goldenPmStart && goldenPmEnd){
-        var p1 = pctForTime(goldenPmStart);
-        var p2 = pctForTime(goldenPmEnd);
-        
-        if (p1 >= 0 && p2 > p1){
-          // Full golden hour as one gradient band
-          bandsHtml += '<div class="today-tl-sky-band golden-pm" style="width:' + (p2 - p1) + '%;"></div>';
-        }
-      }
+      // PM anchor points
+      var pmDayEdge    = Math.min(100, ssPct - pmGoldenInner - pmDayEdgeW);
+      var pmGoldenStart= Math.min(100, ssPct - pmGoldenInner);
+      var pmSunset     = ssPct;
+      var pmGoldenEnd  = Math.min(100, ssPct + pmGoldenOuter);
+      var pmBlueEnd    = Math.min(100, ssPct + pmGoldenOuter + pmBlueW);
+      var pmNautEnd    = Math.min(100, ssPct + pmGoldenOuter + pmBlueW + pmNautW);
+      var pmAstroEnd   = Math.min(100, ssPct + pmGoldenOuter + pmBlueW + pmNautW + pmAstroW);
       
-      // Blue hour PM
-      if (bluePmStart && bluePmEnd){
-        var p1 = pctForTime(bluePmStart);
-        var p2 = pctForTime(bluePmEnd);
-        if (p1 >= 0 && p2 > p1) bandsHtml += '<div class="today-tl-sky-band blue-hour" style="width:' + (p2 - p1) + '%;"></div>';
-      }
+      // Midday center
+      var midday = (amDayEdge + pmDayEdge) / 2;
       
-      // Astro twilight PM
-      if (bluePmEnd && astroDusk){
-        var p1 = pctForTime(bluePmEnd);
-        var p2 = pctForTime(astroDusk);
-        if (p1 >= 0 && p2 > p1) bandsHtml += '<div class="today-tl-sky-band astro-twilight" style="width:' + (p2 - p1) + '%;"></div>';
-      }
+      var gradientStr = "linear-gradient(90deg, " +
+        // Night before dawn
+        "rgba(15,20,45,.92) 0%, " +
+        "rgba(15,20,45,.92) " + Math.max(0, amAstroStart - 2).toFixed(1) + "%, " +
+        // Astronomical twilight AM — gentle start
+        "rgba(20,28,60,.88) " + amAstroStart.toFixed(1) + "%, " +
+        "rgba(28,38,80,.80) " + amNautStart.toFixed(1) + "%, " +
+        // Nautical twilight AM
+        "rgba(42,55,115,.65) " + ((amNautStart + amBlueStart) / 2).toFixed(1) + "%, " +
+        "rgba(55,70,140,.55) " + amBlueStart.toFixed(1) + "%, " +
+        // Blue hour AM
+        "rgba(70,95,170,.48) " + amGoldenStart.toFixed(1) + "%, " +
+        // Golden hour AM — approach sunrise (cooler/paler)
+        "rgba(160,120,75,.45) " + (amSunrise - 2.5).toFixed(1) + "%, " +
+        "rgba(220,155,70,.52) " + (amSunrise - 1.2).toFixed(1) + "%, " +
+        // Sunrise peak
+        "rgba(255,145,55,.62) " + amSunrise.toFixed(1) + "%, " +
+        // Golden fade into day
+        "rgba(255,185,95,.42) " + (amSunrise + 2).toFixed(1) + "%, " +
+        "rgba(240,210,160,.35) " + (amSunrise + 3.5).toFixed(1) + "%, " +
+        "rgba(210,220,240,.35) " + amGoldenEnd.toFixed(1) + "%, " +
+        // Day edge
+        "rgba(170,205,248,.42) " + amDayEdge.toFixed(1) + "%, " +
+        // Full daylight — rich sky blue
+        "rgba(100,170,245,.52) " + (midday - 8).toFixed(1) + "%, " +
+        "rgba(65,140,230,.58) " + (midday - 3).toFixed(1) + "%, " +
+        "rgba(65,140,230,.58) " + (midday + 3).toFixed(1) + "%, " +
+        "rgba(100,170,245,.52) " + (midday + 8).toFixed(1) + "%, " +
+        // Day edge PM
+        "rgba(170,205,248,.42) " + pmDayEdge.toFixed(1) + "%, " +
+        // Golden approach from day (PM — warmer ramp-up)
+        "rgba(210,220,240,.35) " + pmGoldenStart.toFixed(1) + "%, " +
+        "rgba(240,200,140,.38) " + (pmSunset - 3.5).toFixed(1) + "%, " +
+        "rgba(255,180,80,.45) " + (pmSunset - 2).toFixed(1) + "%, " +
+        "rgba(255,150,50,.58) " + (pmSunset - 0.8).toFixed(1) + "%, " +
+        // Sunset peak — deeper, richer than sunrise
+        "rgba(240,105,30,.68) " + pmSunset.toFixed(1) + "%, " +
+        // Post-sunset deep amber spread (wider than AM)
+        "rgba(220,85,25,.64) " + (pmSunset + 1.5).toFixed(1) + "%, " +
+        "rgba(190,65,30,.58) " + (pmSunset + 3).toFixed(1) + "%, " +
+        "rgba(140,50,40,.52) " + (pmSunset + 4.5).toFixed(1) + "%, " +
+        "rgba(100,45,50,.48) " + pmGoldenEnd.toFixed(1) + "%, " +
+        // Blue hour PM
+        "rgba(60,45,80,.55) " + ((pmGoldenEnd + pmBlueEnd) / 2).toFixed(1) + "%, " +
+        "rgba(50,50,100,.60) " + pmBlueEnd.toFixed(1) + "%, " +
+        // Nautical twilight PM
+        "rgba(38,42,85,.72) " + pmNautEnd.toFixed(1) + "%, " +
+        // Astronomical twilight PM
+        "rgba(25,32,65,.82) " + pmAstroEnd.toFixed(1) + "%, " +
+        // Night after dusk
+        "rgba(15,20,45,.92) " + Math.min(100, pmAstroEnd + 3).toFixed(1) + "%, " +
+        "rgba(15,20,45,.92) 100%" +
+      ")";
       
-      // Night after dusk
-      if (astroDusk){
-        var p = pctForTime(astroDusk);
-        if (p >= 0 && p < 100) bandsHtml += '<div class="today-tl-sky-band night" style="width:' + (100 - p) + '%;"></div>';
-      }
-      
-      tlSkyBands.innerHTML = bandsHtml;
+      tlSkyBands.innerHTML = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:' + gradientStr + ';"></div>';
     }
 
     // Render planet tracks
@@ -6248,9 +6343,52 @@ function dayRangeAround(d, days){
         var precip = 0;
         var weatherCode = 0;
         
-        // Determine if night hour
+        // Determine sky state for this hour
         var isNightHour = (targetHour < srDate || targetHour > ssDate);
         var isDayHour = !isNightHour;
+        
+        // Classify sky state: golden-peak, golden, blue-hour, twilight, day, night
+        var skyState = "night";
+        var tH = targetHour.getTime();
+        var tHEnd = tH + 3600000; // end of this hour
+        
+        // Check golden peak (within ~30 min of sunrise/sunset)
+        var srT = srDate ? srDate.getTime() : 0;
+        var ssT = ssDate ? ssDate.getTime() : 0;
+        var peakWindow = 30 * 60000; // 30 minutes
+        
+        if ((srT && Math.abs(tH - srT) < 3600000 && tH <= srT + peakWindow && tH >= srT - peakWindow) ||
+            (ssT && Math.abs(tH - ssT) < 3600000 && tH <= ssT + peakWindow && tH >= ssT - peakWindow)){
+          skyState = "golden-peak";
+        }
+        // Golden hour AM
+        else if (goldenAmStart && goldenAmEnd && tH >= goldenAmStart.getTime() && tH < goldenAmEnd.getTime()){
+          skyState = "golden";
+        }
+        // Golden hour PM
+        else if (goldenPmStart && goldenPmEnd && tH >= goldenPmStart.getTime() && tH < goldenPmEnd.getTime()){
+          skyState = "golden";
+        }
+        // Blue hour AM
+        else if (blueAmStart && blueAmEnd && tH >= blueAmStart.getTime() && tH < blueAmEnd.getTime()){
+          skyState = "blue-hour";
+        }
+        // Blue hour PM
+        else if (bluePmStart && bluePmEnd && tH >= bluePmStart.getTime() && tH < bluePmEnd.getTime()){
+          skyState = "blue-hour";
+        }
+        // Twilight AM
+        else if (astroDawn && blueAmStart && tH >= astroDawn.getTime() && tH < blueAmStart.getTime()){
+          skyState = "twilight";
+        }
+        // Twilight PM
+        else if (bluePmEnd && astroDusk && tH >= bluePmEnd.getTime() && tH < astroDusk.getTime()){
+          skyState = "twilight";
+        }
+        // Daytime
+        else if (isDayHour){
+          skyState = "day";
+        }
         
         if (matchIdx >= 0){
           temp = Math.round(hourly.temperature_2m[matchIdx]) + "°";
@@ -6260,7 +6398,15 @@ function dayRangeAround(d, days){
         
         var weatherInfo = getWeatherAnimClass(weatherCode, isNightHour);
         var precipClass = precip >= 50 ? "active" : "";
-        var hourClass = "today-tl-weather-hour" + (isDayHour ? " day-hour" : "");
+        
+        // Build class list based on sky state
+        var hourClass = "today-tl-weather-hour";
+        if (skyState === "golden-peak") hourClass += " golden-peak-hour";
+        else if (skyState === "golden") hourClass += " golden-hour";
+        else if (skyState === "blue-hour") hourClass += " blue-hour-col";
+        else if (skyState === "twilight") hourClass += " twilight-hour";
+        else if (skyState === "day") hourClass += " day-hour";
+        // night hours get no extra class (default white-on-dark)
         
         var feelsLike = (matchIdx >= 0 && hourly.apparent_temperature) ? Math.round(hourly.apparent_temperature[matchIdx]) + "°" : "";
         var windSpd = (matchIdx >= 0 && hourly.windspeed_10m) ? Math.round(hourly.windspeed_10m[matchIdx]) : "";
@@ -6269,13 +6415,40 @@ function dayRangeAround(d, days){
         var windDeg = (matchIdx >= 0 && hourly.wind_direction_10m) ? (hourly.wind_direction_10m[matchIdx] || 0) : 0;
         var wDirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
         var windDirStr = windSpd !== "" ? wDirs[Math.round(windDeg / 22.5) % 16] : "";
+        
+        // Inline color styles for feels-like, wind, wind-dir based on sky state
+        var feelsColor = "rgba(255,255,255,.45)";
+        var windColor = "rgba(255,255,255,.35)";
+        var windDirColor = "rgba(255,255,255,.3)";
+        if (skyState === "golden-peak"){
+          feelsColor = "rgba(255,160,50,.55)";
+          windColor = "rgba(255,160,50,.45)";
+          windDirColor = "rgba(255,160,50,.4)";
+        } else if (skyState === "golden"){
+          feelsColor = "rgba(255,180,80,.5)";
+          windColor = "rgba(255,180,80,.4)";
+          windDirColor = "rgba(255,180,80,.35)";
+        } else if (skyState === "blue-hour"){
+          feelsColor = "rgba(150,180,240,.5)";
+          windColor = "rgba(150,180,240,.4)";
+          windDirColor = "rgba(150,180,240,.35)";
+        } else if (skyState === "twilight"){
+          feelsColor = "rgba(180,195,240,.45)";
+          windColor = "rgba(180,195,240,.35)";
+          windDirColor = "rgba(180,195,240,.3)";
+        } else if (skyState === "day"){
+          feelsColor = "rgba(255,255,255,.55)";
+          windColor = "rgba(255,255,255,.45)";
+          windDirColor = "rgba(255,255,255,.4)";
+        }
+        
         weatherHtml += '<div class="' + hourClass + '">' +
           '<span class="today-tl-weather-time">' + timeLabel + '</span>' +
           '<span class="today-tl-weather-icon ' + weatherInfo.animClass + '">' + weatherInfo.emoji + '</span>' +
           '<span class="today-tl-weather-temp">' + temp + '</span>' +
-          '<span style="font-size:1rem;font-weight:400;color:rgba(255,255,255,.45);">' + feelsLike + '</span>' +
-          '<span style="font-size:.55rem;font-weight:600;color:rgba(255,255,255,.35);display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
-          '<span style="font-size:.5rem;font-weight:600;color:rgba(255,255,255,.3);display:block;text-align:center;width:100%;letter-spacing:.3px;">' + windDirStr + '</span>' +
+          '<span style="font-size:1rem;font-weight:400;color:' + feelsColor + ';">' + feelsLike + '</span>' +
+          '<span style="font-size:.55rem;font-weight:600;color:' + windColor + ';display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
+          '<span style="font-size:.5rem;font-weight:600;color:' + windDirColor + ';display:block;text-align:center;width:100%;letter-spacing:.3px;">' + windDirStr + '</span>' +
           '<span class="today-tl-weather-precip ' + precipClass + '">' + precip + '%</span>' +
         '</div>';
       }
