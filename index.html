@@ -215,8 +215,9 @@
   .weather-main{
     display:flex;
     align-items:center;
-    gap:16px;
+    gap:12px;
     flex-wrap:wrap;
+    margin-top:6px;
   }
 
   .weather-temp-block{
@@ -225,7 +226,7 @@
   }
 
   .weather-temp-block .temp{
-    font-size:3.2rem;
+    font-size:4rem;
     font-weight:740;
     letter-spacing:-.04em;
     line-height:1;
@@ -248,8 +249,8 @@
   }
 
   .weather-cond-block .cond-icon-img{
-    width:100px;
-    height:100px;
+    width:120px;
+    height:120px;
     object-fit:contain;
   }
 
@@ -306,10 +307,8 @@
   }
 
   .weather-details-row{
-    margin-top:14px;
-    padding-top:14px;
-    border-top:1px solid rgba(43,34,244,.12);
-    border-image:linear-gradient(to right, rgba(43,34,244,.12) 0%, rgba(43,34,244,.12) 70%, transparent 85%) 1;
+    margin-top:8px;
+    padding-top:8px;
   }
 
   .weather-details-row:last-child{
@@ -317,12 +316,12 @@
   }
 
   .weather-hilo{
-    font-size:.82rem;
+    font-size:.88rem;
     font-weight:700;
     letter-spacing:.10em;
     text-transform:uppercase;
     color:var(--ink);
-    margin-bottom:12px;
+    margin-bottom:10px;
   }
 
   .feels-inline{
@@ -348,7 +347,7 @@
   }
 
   .weather-stat .k{
-    font-size:.64rem;
+    font-size:.68rem;
     color:var(--ink-dim);
     font-weight:600;
     letter-spacing:.06em;
@@ -356,7 +355,7 @@
   }
 
   .weather-stat .v{
-    font-size:.68rem;
+    font-size:.72rem;
     color:var(--ink);
     font-weight:700;
     letter-spacing:.06em;
@@ -364,7 +363,7 @@
   }
 
   .weather-stat .pollen-val{
-    font-size:.72rem;
+    font-size:.74rem;
     font-weight:800;
     padding:2px 8px;
     border-radius:6px;
@@ -452,7 +451,7 @@
 
   .loc-name{
     font-weight:820;
-    font-size:1.2rem;
+    font-size:1.4rem;
     text-transform:uppercase;
     letter-spacing:.08em;
     transition:opacity .18s ease;
@@ -698,16 +697,18 @@
     max-height:180px;
     overflow-y:auto;
     overflow-x:hidden;
-    -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 75%, transparent 100%);
-    mask-image:linear-gradient(to bottom, #000 0%, #000 75%, transparent 100%);
     scrollbar-width:none;
     -ms-overflow-style:none;
   }
   .weather-alerts-block::-webkit-scrollbar{
     display:none;
   }
-  /* Remove fade mask when user hovers to scroll */
-  .weather-alerts-block:hover{
+  /* Fade mask only for 3+ alerts */
+  .weather-alerts-block.many-alerts{
+    -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+    mask-image:linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+  }
+  .weather-alerts-block.many-alerts:hover{
     -webkit-mask-image:none;
     mask-image:none;
   }
@@ -4198,6 +4199,7 @@ body > #dynamic-alert-modal {
               <button class="loc-search-close" id="loc-search-close" aria-label="Close search">✕</button>
             </div>
           </div>
+          <div id="loc-meta" style="font-size:.52rem;opacity:.6;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5);padding:0 0 0 4px;margin-top:1px;line-height:1;font-weight:600;">---</div>
           <div class="loc-dots-row">
             <button class="loc-arrow" id="loc-prev" aria-label="Previous location">‹</button>
             <div class="loc-dots" id="loc-dots"></div>
@@ -4223,7 +4225,6 @@ body > #dynamic-alert-modal {
       <img class="moon-img" id="moon-mini-img" src="" alt="Current moon phase" />
     </div>
   </div>
-  <div id="loc-meta" style="font-size:.48rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);padding:0 0 0 4px;margin-top:-4px;margin-bottom:-6px;line-height:1;font-weight:600;">---</div>
 
   <!-- Details Row -->
   <div class="weather-details-row">
@@ -4269,33 +4270,41 @@ body > #dynamic-alert-modal {
             
             <!-- Header with metadata -->
             <div class="today-tl-header">
-              <div>
-                <div class="today-tl-title">TODAY</div><!-- v8feb -->
-              </div>
               
               <div class="today-tl-meta">
-                <div class="meta-item">
-                  <span class="meta-key">Sunrise</span>
-                  <span class="meta-val orange" id="today-tl-sunrise">--:--</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-key">Sunset</span>
-                  <span class="meta-val orange" id="today-tl-sunset">--:--</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-key">Golden AM</span>
-                  <span class="meta-val" id="today-tl-golden-am">--</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-key">Golden PM</span>
-                  <span class="meta-val" id="today-tl-golden-pm">--</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-key">Daylight</span>
-                  <span class="meta-val" id="today-tl-daylight">--</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-val green" id="today-tl-daylight-change">--</span>
+                <div style="display:flex;gap:20px;align-items:start;">
+                  <!-- Sunrise / Sunset column -->
+                  <div style="display:flex;flex-direction:column;gap:3px;">
+                    <div class="meta-item">
+                      <span class="meta-key" style="min-width:48px;">Sunrise</span>
+                      <span class="meta-val orange" id="today-tl-sunrise">--:--</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-key" style="min-width:48px;">Sunset</span>
+                      <span class="meta-val orange" id="today-tl-sunset">--:--</span>
+                    </div>
+                  </div>
+                  <!-- Golden Hour column -->
+                  <div style="display:flex;flex-direction:column;gap:3px;">
+                    <div class="meta-item">
+                      <span class="meta-key">AM Golden</span>
+                      <span class="meta-val orange" id="today-tl-golden-am">--</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-key">PM Golden</span>
+                      <span class="meta-val orange" id="today-tl-golden-pm">--</span>
+                    </div>
+                  </div>
+                  <!-- Daylight column -->
+                  <div style="display:flex;flex-direction:column;gap:3px;">
+                    <div class="meta-item">
+                      <span class="meta-key">Daylight</span>
+                      <span class="meta-val" id="today-tl-daylight">--</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-val green" id="today-tl-daylight-change">--</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -4486,10 +4495,17 @@ body > #dynamic-alert-modal {
               </div>
               <div class="widget-body" style="background:#000; position:relative;">
                 <img id="radar-img" alt="Radar loop" />
+                <div id="radar-hydro-container" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; overflow:hidden;"></div>
                 <div style="position:absolute; top:10px; left:10px; z-index:10;">
                   <div id="local-radar-timestamp" style="padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); font-size:.65rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif; white-space:nowrap;">--:-- --</div>
                 </div>
-                <div style="position:absolute; bottom:10px; right:10px; z-index:10; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); padding:6px 10px; border-radius:6px;">
+                <!-- Radar mode toggle -->
+                <div id="radar-mode-toggle" style="position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:0; border-radius:6px; overflow:hidden; background:rgba(0,0,0,.7); backdrop-filter:blur(8px);">
+                  <button id="radar-mode-refl" onclick="window.switchRadarMode('reflectivity')" style="padding:4px 8px; font-size:.52rem; font-weight:700; color:#fff; background:rgba(255,255,255,.2); border:none; cursor:pointer; letter-spacing:.04em; text-transform:uppercase; font-family:system-ui,sans-serif;">Reflectivity</button>
+                  <button id="radar-mode-hydro" onclick="window.switchRadarMode('hydrometeor')" style="padding:4px 8px; font-size:.52rem; font-weight:700; color:rgba(255,255,255,.5); background:transparent; border:none; cursor:pointer; letter-spacing:.04em; text-transform:uppercase; font-family:system-ui,sans-serif;">Precip Type</button>
+                </div>
+                <!-- Reflectivity legend -->
+                <div id="radar-legend-refl" style="position:absolute; bottom:10px; right:10px; z-index:10; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); padding:6px 10px; border-radius:6px;">
                   <div style="display:flex; align-items:center; gap:6px; font-size:.55rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif;">
                     <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#04e9e7;border-radius:1px;"></span>Light</span>
                     <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#02fd02;border-radius:1px;"></span>Mod</span>
@@ -4497,9 +4513,74 @@ body > #dynamic-alert-modal {
                     <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#fd0000;border-radius:1px;"></span>Severe</span>
                   </div>
                 </div>
-                <div class="badge">NWS RIDGE</div>
+                <!-- Hydrometeor legend -->
+                <div id="radar-legend-hydro" style="display:none; position:absolute; bottom:10px; right:10px; z-index:10; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); padding:6px 10px; border-radius:6px;">
+                  <div style="display:flex; flex-wrap:wrap; align-items:center; gap:5px; font-size:.5rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif;">
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#00ff00;border-radius:1px;"></span>Rain</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#ff0000;border-radius:1px;"></span>Heavy Rain</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#00bfff;border-radius:1px;"></span>Dry Snow</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#0040ff;border-radius:1px;"></span>Wet Snow</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#b967ff;border-radius:1px;"></span>Ice</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#ff69b4;border-radius:1px;"></span>Graupel</span>
+                    <span style="display:flex; align-items:center; gap:2px;"><span style="width:8px;height:8px;background:#ffffff;border-radius:1px;border:1px solid #666;"></span>Hail</span>
+                  </div>
+                </div>
+                <div class="badge" id="radar-badge">NWS RIDGE</div>
               </div>
             </div>
+
+            <!-- NATIONAL RADAR -->
+            <div class="widget map-widget">
+              <div class="widget-head">
+                <div class="widget-title">NATIONAL RADAR <span class="live-tag" id="national-radar-live">• LIVE</span></div>
+                <a href="https://radar.weather.gov/" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">IEM NEXRAD</a>
+              </div>
+              <div class="widget-body" style="background:#000;position:relative;">
+                <div id="national-radar-map" style="width:100%; height:100%; background:#1a1a2e;"></div>
+                <div style="position:absolute; top:10px; left:10px; z-index:1000;">
+                  <div id="national-radar-timestamp" style="padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); font-size:.65rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif; white-space:nowrap;">--:-- --</div>
+                </div>
+                <div class="badge">IEM NEXRAD</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ROW 1B: FUTURE RADAR -->
+          <div style="margin-top:12px;margin-bottom:12px;">
+
+            <div class="widget">
+              <div class="widget-head">
+                <div class="widget-title">FUTURE RADAR</div>
+                <a href="https://mag.ncep.noaa.gov/model-guidance-model-parameter.php?group=Model+Guidance&model=gfs&area=conus" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">GFS NCEP</a>
+              </div>
+              <div class="widget-body" style="background:#0a0a1a;position:relative;overflow:hidden;">
+                <img id="fcast-radar-img" alt="GFS Forecast Radar" style="width:106%;height:106%;object-fit:contain;filter:invert(1) hue-rotate(180deg) contrast(1.2) saturate(1.5);position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);z-index:1;" />
+                <!-- Tabs stacked vertically on right side -->
+                <div style="position:absolute;top:10px;right:6px;z-index:10;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                  <button onclick="switchFcastProduct('sim_radar')" id="fcast-tab-sim" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);color:#fff;font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;writing-mode:horizontal-tb;">Reflectivity</button>
+                  <button onclick="switchFcastProduct('precip_type')" id="fcast-tab-ptype" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Precip Type</button>
+                  <div style="width:20px;border-top:1px solid rgba(255,255,255,.15);margin:2px 0;"></div>
+                  <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Tomorrow</button>
+                  <button onclick="switchFcastRange('72h')" id="fcast-range-72h" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);color:#fff;font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">72h</button>
+                  <button onclick="switchFcastRange('7d')" id="fcast-range-7d" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">7 Day</button>
+                  <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">16 Day</button>
+                </div>
+                <!-- Forecast hour stepper -->
+                <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:10;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);">
+                  <button onclick="fcastRadarStep(-1)" style="background:none;border:none;color:#fff;font-size:.8rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">◀</button>
+                  <span id="fcast-radar-label" style="font-size:.6rem;font-weight:700;color:#fff;font-family:system-ui,sans-serif;min-width:80px;text-align:center;">F003 · +3h</span>
+                  <button onclick="fcastRadarStep(1)" style="background:none;border:none;color:#fff;font-size:.8rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">▶</button>
+                  <button onclick="fcastRadarTogglePlay()" id="fcast-radar-play-btn" style="background:none;border:none;color:#fff;font-size:.65rem;cursor:pointer;padding:2px 6px;font-family:system-ui;">⏵</button>
+                </div>
+                <div class="badge" id="fcast-badge">GFS SIM RADAR</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ROW 2: CLOUDS / GFS UPPER AIR -->
+          <div class="widgets-row-two">
 
             <!-- GOES CLOUDS -->
             <div class="widget">
@@ -4514,26 +4595,6 @@ body > #dynamic-alert-modal {
                 </div>
                 <img id="goes-img" alt="GOES-19 Northeast GeoColor loop" />
                 <div class="badge">NESDIS/STAR</div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- ROW 2: NATIONAL RADAR / GFS UPPER AIR -->
-          <div class="widgets-row-two">
-
-            <!-- NATIONAL RADAR -->
-            <div class="widget map-widget">
-              <div class="widget-head">
-                <div class="widget-title">NATIONAL RADAR <span class="live-tag" id="national-radar-live">• LIVE</span></div>
-                <a href="https://radar.weather.gov/" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">IEM NEXRAD</a>
-              </div>
-              <div class="widget-body" style="background:#000;position:relative;">
-                <div id="national-radar-map" style="width:100%; height:100%; background:#1a1a2e;"></div>
-                <div style="position:absolute; top:10px; left:10px; z-index:1000;">
-                  <div id="national-radar-timestamp" style="padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); font-size:.65rem; font-weight:600; color:#fff; font-family:system-ui,sans-serif; white-space:nowrap;">--:-- --</div>
-                </div>
-                <div class="badge">IEM NEXRAD</div>
               </div>
             </div>
 
@@ -7782,16 +7843,6 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
               );
             }
 
-            // 3. NEXT OPPOSITION
-            if (opp){
-              var duO = daysUntil(now2, opp.d);
-              bullets += bulletHtml(
-                "NEXT OPPOSITION",
-                fmtMonthDay(opp.d),
-                opp.planet + " at magnitude " + opp.magnitude + " in " + opp.constellation + " • In " + duO + "d • " + opp.note
-              );
-            }
-
             // 4. METEOR SHOWER PEAK
             if (met){
               var when = (met.days === 0 ? "Tonight" : (met.days === 1 ? "Tomorrow" : ("In " + met.days + "d")));
@@ -8069,6 +8120,96 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     refresh();
     if (radarRefreshTimer) clearInterval(radarRefreshTimer);
     radarRefreshTimer = setInterval(refresh, 2 * 60 * 1000);
+  }
+
+  /* Radar mode switching (reflectivity vs hydrometeor classification) */
+  var currentRadarMode = "reflectivity";
+  var hydroRefreshTimer = null;
+  
+  function loadHydrometeorImage(){
+    var container = document.getElementById("radar-hydro-container");
+    if (!container) return;
+    
+    var STATION = (LOCATION.radar || "KOKX").toLowerCase();
+    var region = LOCATION.radarRegion || "NORTHEAST";
+    var W = container.clientWidth || 800;
+    var H = container.clientHeight || 500;
+    
+    /* Use the RIDGE regional static frame as base map (same as reflectivity view) */
+    var ridgeBase = "https://radar.weather.gov/ridge/standard/" + region + "_0.gif?cb=" + Date.now();
+    
+    /* RIDGE region extents (approx lat/lon bounding boxes for WMS alignment) */
+    var regionExtents = {
+      "NORTHEAST":     { minLon: -82.0, minLat: 37.0, maxLon: -66.5, maxLat: 48.0 },
+      "UPPERMISSVLY":  { minLon: -98.0, minLat: 38.0, maxLon: -82.0, maxLat: 50.0 },
+      "SOUTHEAST":     { minLon: -92.0, minLat: 24.0, maxLon: -74.0, maxLat: 38.0 },
+      "SOUTHMISSVLY":  { minLon: -100.0, minLat: 26.0, maxLon: -86.0, maxLat: 38.0 },
+      "SOUTHPLAINS":   { minLon: -107.0, minLat: 26.0, maxLon: -93.0, maxLat: 38.0 },
+      "CENTGRLAKES":   { minLon: -92.0, minLat: 38.0, maxLon: -76.0, maxLat: 48.0 },
+      "NORTHROCKIES":  { minLon: -117.0, minLat: 40.0, maxLon: -101.0, maxLat: 50.0 },
+      "SOUTHROCKIES":  { minLon: -115.0, minLat: 30.0, maxLon: -99.0, maxLat: 42.0 },
+      "PACNORTHWEST":  { minLon: -128.0, minLat: 40.0, maxLon: -114.0, maxLat: 50.0 },
+      "PACSOUTHWEST":  { minLon: -124.0, minLat: 30.0, maxLon: -112.0, maxLat: 42.0 },
+      "NORTHPLAINS":   { minLon: -108.0, minLat: 38.0, maxLon: -94.0, maxLat: 50.0 }
+    };
+    
+    var ext = regionExtents[region] || { minLon: LOCATION.lon - 8, minLat: LOCATION.lat - 5.5, maxLon: LOCATION.lon + 8, maxLat: LOCATION.lat + 5.5 };
+    var bbox = ext.minLon + "," + ext.minLat + "," + ext.maxLon + "," + ext.maxLat;
+    
+    var wmsUrl = "https://opengeo.ncep.noaa.gov/geoserver/" + STATION + "/ows?" +
+      "service=WMS&version=1.1.0&request=GetMap" +
+      "&layers=" + STATION + "_bdhc" +
+      "&styles=&bbox=" + bbox +
+      "&width=" + Math.round(W) + "&height=" + Math.round(H) +
+      "&srs=EPSG:4326" +
+      "&format=image/png" +
+      "&transparent=true" +
+      "&cb=" + Date.now();
+    
+    var html = "";
+    html += '<img src="' + ridgeBase + '" style="position:absolute;top:0;left:0;width:100%;height:100%;filter:invert(1) hue-rotate(180deg) brightness(0.4) contrast(1.2) saturate(0);z-index:1;" onerror="this.style.display=\'none\'" />';
+    html += '<img src="' + wmsUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;" onerror="this.style.display=\'none\'" />';
+    
+    container.innerHTML = html;
+  }
+  
+  function switchRadarMode(mode){
+    currentRadarMode = mode;
+    var reflImg = document.getElementById("radar-img");
+    var hydroContainer = document.getElementById("radar-hydro-container");
+    var reflBtn = document.getElementById("radar-mode-refl");
+    var hydroBtn = document.getElementById("radar-mode-hydro");
+    var reflLegend = document.getElementById("radar-legend-refl");
+    var hydroLegend = document.getElementById("radar-legend-hydro");
+    var badge = document.getElementById("radar-badge");
+    
+    if (mode === "hydrometeor"){
+      // Show hydrometeor, hide reflectivity
+      if (reflImg) reflImg.style.display = "none";
+      if (hydroContainer) hydroContainer.style.display = "block";
+      if (reflBtn){ reflBtn.style.background = "transparent"; reflBtn.style.color = "rgba(255,255,255,.5)"; }
+      if (hydroBtn){ hydroBtn.style.background = "rgba(255,255,255,.2)"; hydroBtn.style.color = "#fff"; }
+      if (reflLegend) reflLegend.style.display = "none";
+      if (hydroLegend) hydroLegend.style.display = "block";
+      if (badge) badge.textContent = "NWS DUAL-POL";
+      
+      loadHydrometeorImage();
+      
+      // Refresh hydrometeor every 5 min
+      if (hydroRefreshTimer) clearInterval(hydroRefreshTimer);
+      hydroRefreshTimer = setInterval(loadHydrometeorImage, 5 * 60 * 1000);
+    } else {
+      // Show reflectivity, hide hydrometeor
+      if (reflImg) reflImg.style.display = "block";
+      if (hydroContainer) hydroContainer.style.display = "none";
+      if (reflBtn){ reflBtn.style.background = "rgba(255,255,255,.2)"; reflBtn.style.color = "#fff"; }
+      if (hydroBtn){ hydroBtn.style.background = "transparent"; hydroBtn.style.color = "rgba(255,255,255,.5)"; }
+      if (reflLegend) reflLegend.style.display = "block";
+      if (hydroLegend) hydroLegend.style.display = "none";
+      if (badge) badge.textContent = "NWS RIDGE";
+      
+      if (hydroRefreshTimer){ clearInterval(hydroRefreshTimer); hydroRefreshTimer = null; }
+    }
   }
 
   /* =========================================================
@@ -8886,6 +9027,175 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   window.gfsStepFhr = gfsStepFhr;
   window.gfsTogglePlay = gfsTogglePlay;
 
+  /* =========================================================
+     FORECAST RADAR & PRECIP TYPE (GFS sim_radar_comp + precip_rate_type)
+     ========================================================= */
+  var fcastState = {
+    cycle: getGfsCycle(),
+    idx: 0,
+    playing: false,
+    timer: null,
+    product: 'sim_radar',
+    range: '72h',
+    allFhrs: (function(){
+      var arr = [];
+      for(var i = 3; i <= 84; i += 3) arr.push(i.toString().padStart(3, '0'));
+      for(var i = 90; i <= 240; i += 6) arr.push(i.toString().padStart(3, '0'));
+      for(var i = 252; i <= 384; i += 12) arr.push(i.toString().padStart(3, '0'));
+      return arr;
+    })(),
+  };
+
+  function getActiveFhrs(){
+    if (fcastState.range === 'tomorrow'){
+      var cycleHour = parseInt(fcastState.cycle, 10);
+      var now = new Date();
+      var cycleDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), cycleHour));
+      if (cycleDate > now) cycleDate.setUTCDate(cycleDate.getUTCDate() - 1);
+      var tomorrowStart = new Date(now); tomorrowStart.setDate(tomorrowStart.getDate() + 1); tomorrowStart.setHours(0,0,0,0);
+      var tomorrowEnd = new Date(tomorrowStart); tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+      var minH = Math.max(3, Math.ceil((tomorrowStart.getTime() - cycleDate.getTime()) / 3600000));
+      var maxH = Math.ceil((tomorrowEnd.getTime() - cycleDate.getTime()) / 3600000);
+      var result = fcastState.allFhrs.filter(function(f){ var h = parseInt(f,10); return h >= minH && h <= maxH; });
+      // Fallback: if empty, show first 24h worth
+      if (result.length === 0) {
+        result = fcastState.allFhrs.filter(function(f){ return parseInt(f,10) <= 48; });
+      }
+      return result;
+    }
+    var maxH = fcastState.range === '72h' ? 72 : (fcastState.range === '7d' ? 168 : 9999);
+    return fcastState.allFhrs.filter(function(f){ return parseInt(f,10) <= maxH; });
+  }
+
+  function buildFcastUrl(fhrIdx){
+    var fhrs = getActiveFhrs();
+    var fhr = fhrs[fhrIdx] || '003';
+    var prod = fcastState.product === 'precip_type' ? 'precip_rate_type' : 'sim_radar_comp';
+    return 'https://mag.ncep.noaa.gov/data/gfs/' + fcastState.cycle + '/conus/' + prod + '/gfs_conus_' + fhr + '_' + prod + '.gif';
+  }
+
+  function getFcastLabel(fhrIdx){
+    var fhrs = getActiveFhrs();
+    var h = parseInt(fhrs[fhrIdx], 10);
+    var cycleHour = parseInt(fcastState.cycle, 10);
+    var now = new Date();
+    var cycleDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), cycleHour));
+    if (cycleDate > now) cycleDate.setUTCDate(cycleDate.getUTCDate() - 1);
+    var targetUTC = new Date(cycleDate.getTime() + h * 3600000);
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var dayName = days[targetUTC.getDay()];
+    var hr = targetUTC.getHours();
+    var ampm = hr >= 12 ? 'PM' : 'AM';
+    hr = hr % 12; if (hr === 0) hr = 12;
+    var today = new Date();
+    var isToday = targetUTC.toDateString() === today.toDateString();
+    var tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    var isTomorrow = targetUTC.toDateString() === tomorrow.toDateString();
+    var prefix = isToday ? 'Today' : (isTomorrow ? 'Tomorrow' : dayName);
+    return prefix + ' ' + hr + ampm + '  (+' + h + 'h)';
+  }
+
+  function loadFcastRadar(){
+    var fhrs = getActiveFhrs();
+    var img = document.getElementById('fcast-radar-img');
+    var label = document.getElementById('fcast-radar-label');
+    if (!fhrs || fhrs.length === 0){
+      if (label) label.textContent = 'No data for range';
+      return;
+    }
+    var url = buildFcastUrl(fcastState.idx);
+    if (img) {
+      img.onerror = function(){ img.style.opacity = '0.3'; };
+      img.onload = function(){ img.style.opacity = '1'; };
+      img.src = url;
+    }
+    if (label) label.textContent = getFcastLabel(fcastState.idx);
+  }
+
+  function fcastRadarStep(dir){
+    var fhrs = getActiveFhrs();
+    fcastState.idx = Math.max(0, Math.min(fhrs.length - 1, fcastState.idx + dir));
+    loadFcastRadar();
+  }
+
+  function fcastRadarTogglePlay(){
+    var btn = document.getElementById('fcast-radar-play-btn');
+    if (fcastState.playing){
+      clearInterval(fcastState.timer);
+      fcastState.playing = false;
+      if (btn) btn.textContent = '⏵';
+    } else {
+      fcastState.playing = true;
+      if (btn) btn.textContent = '⏸';
+      fcastState.timer = setInterval(function(){
+        var fhrs = getActiveFhrs();
+        fcastState.idx++;
+        if (fcastState.idx >= fhrs.length) fcastState.idx = 0;
+        loadFcastRadar();
+      }, 500);
+    }
+  }
+
+  function updateFcastBadge(){
+    var badge = document.getElementById('fcast-badge');
+    if (!badge) return;
+    var prod = fcastState.product === 'precip_type' ? 'PRECIP TYPE' : 'SIM RADAR';
+    badge.textContent = 'GFS ' + prod;
+  }
+
+  function switchFcastRange(range){
+    if (fcastState.playing) fcastRadarTogglePlay();
+    fcastState.range = range;
+    fcastState.idx = 0;
+    var ranges = ['tomorrow','72h','7d','16d'];
+    ranges.forEach(function(r){
+      var btn = document.getElementById('fcast-range-' + r);
+      if (!btn) return;
+      if (r === range){
+        btn.style.background = 'rgba(0,0,0,.5)';
+        btn.style.borderColor = 'rgba(255,255,255,.25)';
+        btn.style.color = '#fff';
+      } else {
+        btn.style.background = 'rgba(0,0,0,.3)';
+        btn.style.borderColor = 'rgba(255,255,255,.15)';
+        btn.style.color = 'rgba(255,255,255,.5)';
+      }
+    });
+    updateFcastBadge();
+    loadFcastRadar();
+    fcastRadarTogglePlay();
+  }
+
+  function switchFcastProduct(prod){
+    if (fcastState.playing) fcastRadarTogglePlay();
+    fcastState.product = prod;
+    fcastState.idx = 0;
+    var simBtn = document.getElementById('fcast-tab-sim');
+    var ptypeBtn = document.getElementById('fcast-tab-ptype');
+    if (prod === 'sim_radar'){
+      if (simBtn){ simBtn.style.background = 'rgba(0,0,0,.5)'; simBtn.style.borderColor = 'rgba(255,255,255,.25)'; simBtn.style.color = '#fff'; }
+      if (ptypeBtn){ ptypeBtn.style.background = 'rgba(0,0,0,.3)'; ptypeBtn.style.borderColor = 'rgba(255,255,255,.15)'; ptypeBtn.style.color = 'rgba(255,255,255,.5)'; }
+    } else {
+      if (ptypeBtn){ ptypeBtn.style.background = 'rgba(0,0,0,.5)'; ptypeBtn.style.borderColor = 'rgba(255,255,255,.25)'; ptypeBtn.style.color = '#fff'; }
+      if (simBtn){ simBtn.style.background = 'rgba(0,0,0,.3)'; simBtn.style.borderColor = 'rgba(255,255,255,.15)'; simBtn.style.color = 'rgba(255,255,255,.5)'; }
+    }
+    updateFcastBadge();
+    loadFcastRadar();
+    fcastRadarTogglePlay();
+  }
+
+  function initFcastWidgets(){
+    fcastState.cycle = getGfsCycle();
+    fcastState.idx = 0;
+    loadFcastRadar();
+    fcastRadarTogglePlay();
+  }
+
+  window.fcastRadarStep = fcastRadarStep;
+  window.fcastRadarTogglePlay = fcastRadarTogglePlay;
+  window.switchFcastProduct = switchFcastProduct;
+  window.switchFcastRange = switchFcastRange;
+
 
   /* =========================================================
      LOCATION SWITCHER
@@ -9407,6 +9717,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       loadWeatherForLocation(LOCATION);
       loadAirQuality();
       loadWeatherAlerts();
+      switchRadarMode("reflectivity");
       startRadarNwsLoop();
       startGoesAutoplay();
       updateSolarMini();
@@ -11088,11 +11399,12 @@ function initNowMicroTabs(){
         
         alertsEl.innerHTML = html;
         
-        // Toggle single-alert class for larger display when only 1 alert
+        // Toggle classes based on alert count
+        alertsEl.classList.remove("single-alert", "many-alerts");
         if (shown === 1){
           alertsEl.classList.add("single-alert");
-        } else {
-          alertsEl.classList.remove("single-alert");
+        } else if (shown >= 3){
+          alertsEl.classList.add("many-alerts");
         }
         
         // Store features globally for modal access
@@ -11643,6 +11955,7 @@ function initNowMicroTabs(){
   initNowMicroTabs();
   initLocationSwitcher();
   initGfsWidget();
+  initFcastWidgets();
 
   // Auto-detect user location on page load
   (function autoLocate(){
@@ -11731,6 +12044,9 @@ function initNowMicroTabs(){
       // User can still use search or GPS button manually
     }, { enableHighAccuracy: false, timeout: 8000 });
   })();
+
+  // Expose radar mode switcher globally for onclick handlers
+  window.switchRadarMode = switchRadarMode;
 
   // Ensure modals are direct children of body, after all other content
   var alertM = document.getElementById('alert-modal');
