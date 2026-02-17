@@ -4553,61 +4553,61 @@ body > #dynamic-alert-modal {
                 <!-- Left panel controls -->
                 <div style="position:absolute;top:10px;left:0;bottom:60px;z-index:10;display:flex;flex-direction:column;align-items:flex-start;gap:2px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding:4px 4px;">
                   <!-- LIVE -->
-                  <button onclick="switchFcastRange('live')" id="fcast-range-live" style="padding:2px 8px;border-radius:6px;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.2);backdrop-filter:blur(8px);color:#22c55e;font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">⦿ LIVE</button>
+                  <button onclick="switchFcastRange('live')" id="fcast-range-live" style="padding:4px 8px;border-radius:8px;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.2);backdrop-filter:blur(8px);color:#22c55e;font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">⦿ LIVE</button>
                   <div style="width:30px;border-top:1px solid rgba(255,255,255,.1);margin:2px 0;"></div>
                   <!-- FORECAST label -->
                   <div id="fcast-forecast-label" style="font-size:.4rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;">FORECAST</div>
                   <div id="fcast-range-area" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">
-                    <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Tomorrow</button>
-                    <button onclick="switchFcastRange('48h')" id="fcast-range-48h" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">48 HOUR | 2 DAY</button>
-                    <button onclick="switchFcastRange('72h')" id="fcast-range-72h" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">72 HOUR | 3 DAY</button>
-                    <button onclick="switchFcastRange('7d')" id="fcast-range-7d" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">7 DAY | WEEK</button>
-                    <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">16 DAY | MAX</button>
+                    <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Tomorrow</button>
+                    <button onclick="switchFcastRange('48h')" id="fcast-range-48h" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">48 HOUR | 2 DAY</button>
+                    <button onclick="switchFcastRange('72h')" id="fcast-range-72h" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">72 HOUR | 3 DAY</button>
+                    <button onclick="switchFcastRange('7d')" id="fcast-range-7d" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">7 DAY | WEEK</button>
+                    <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">16 DAY | MAX</button>
                   </div>
                   <!-- AREAS label -->
                   <div style="font-size:.4rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:3px;">AREAS</div>
                   <!-- Area selector -->
                   <div id="fcast-area-selector" style="display:flex;flex-direction:column;gap:3px;max-width:130px;">
-                    <button onclick="switchFcastArea('conus')" id="fcast-area-conus" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">CONTINENTAL US</button>
-                    <button onclick="switchFcastArea('namer')" id="fcast-area-namer" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH AMERICA</button>
+                    <button onclick="switchFcastArea('conus')" id="fcast-area-conus" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">CONTINENTAL US</button>
+                    <button onclick="switchFcastArea('namer')" id="fcast-area-namer" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH AMERICA</button>
                     <div id="fcast-area-sub-east" style="font-size:.3rem;font-weight:600;color:rgba(43,34,244,.25);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:1px;">EAST</div>
-                    <button onclick="switchFcastArea('us-ne')" id="fcast-area-us-ne" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTHEAST</button>
-                    <button onclick="switchFcastArea('us-se')" id="fcast-area-us-se" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTHEAST</button>
+                    <button onclick="switchFcastArea('us-ne')" id="fcast-area-us-ne" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTHEAST</button>
+                    <button onclick="switchFcastArea('us-se')" id="fcast-area-us-se" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTHEAST</button>
                     <div id="fcast-area-sub-central" style="font-size:.3rem;font-weight:600;color:rgba(43,34,244,.25);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:1px;">CENTRAL</div>
-                    <button onclick="switchFcastArea('us-nc')" id="fcast-area-us-nc" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GREAT LAKES</button>
-                    <button onclick="switchFcastArea('us-sc')" id="fcast-area-us-sc" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH CENTRAL</button>
-                    <button onclick="switchFcastArea('upper-ms')" id="fcast-area-upper-ms" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">UPPER MISS VALLEY</button>
-                    <button onclick="switchFcastArea('south-ms')" id="fcast-area-south-ms" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH MISS VALLEY</button>
-                    <button onclick="switchFcastArea('s-plains')" id="fcast-area-s-plains" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH PLAINS</button>
+                    <button onclick="switchFcastArea('us-nc')" id="fcast-area-us-nc" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GREAT LAKES</button>
+                    <button onclick="switchFcastArea('us-sc')" id="fcast-area-us-sc" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH CENTRAL</button>
+                    <button onclick="switchFcastArea('upper-ms')" id="fcast-area-upper-ms" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">UPPER MISS VALLEY</button>
+                    <button onclick="switchFcastArea('south-ms')" id="fcast-area-south-ms" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH MISS VALLEY</button>
+                    <button onclick="switchFcastArea('s-plains')" id="fcast-area-s-plains" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH PLAINS</button>
                     <div id="fcast-area-sub-west" style="font-size:.3rem;font-weight:600;color:rgba(43,34,244,.25);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:1px;">WEST</div>
-                    <button onclick="switchFcastArea('us-nw')" id="fcast-area-us-nw" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC NW</button>
-                    <button onclick="switchFcastArea('us-sw')" id="fcast-area-us-sw" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC SW</button>
-                    <button onclick="switchFcastArea('n-rockies')" id="fcast-area-n-rockies" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH ROCKIES</button>
-                    <button onclick="switchFcastArea('s-rockies')" id="fcast-area-s-rockies" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH ROCKIES</button>
+                    <button onclick="switchFcastArea('us-nw')" id="fcast-area-us-nw" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC NW</button>
+                    <button onclick="switchFcastArea('us-sw')" id="fcast-area-us-sw" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC SW</button>
+                    <button onclick="switchFcastArea('n-rockies')" id="fcast-area-n-rockies" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH ROCKIES</button>
+                    <button onclick="switchFcastArea('s-rockies')" id="fcast-area-s-rockies" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH ROCKIES</button>
                     <div id="fcast-area-sub-global" style="display:none;font-size:.3rem;font-weight:600;color:rgba(43,34,244,.25);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:1px;">REGIONS</div>
-                    <button onclick="switchFcastArea('north-pac')" id="fcast-area-north-pac" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH PACIFIC</button>
-                    <button onclick="switchFcastArea('east-pac')" id="fcast-area-east-pac" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EAST PACIFIC</button>
-                    <button onclick="switchFcastArea('west-atl')" id="fcast-area-west-atl" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">WEST ATLANTIC</button>
-                    <button onclick="switchFcastArea('atlantic')" id="fcast-area-atlantic" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ATLANTIC</button>
-                    <button onclick="switchFcastArea('arctic')" id="fcast-area-arctic" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ARCTIC</button>
-                    <button onclick="switchFcastArea('europe')" id="fcast-area-europe" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EUROPE</button>
-                    <button onclick="switchFcastArea('asia')" id="fcast-area-asia" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ASIA</button>
-                    <button onclick="switchFcastArea('africa')" id="fcast-area-africa" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">AFRICA</button>
+                    <button onclick="switchFcastArea('north-pac')" id="fcast-area-north-pac" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH PACIFIC</button>
+                    <button onclick="switchFcastArea('east-pac')" id="fcast-area-east-pac" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EAST PACIFIC</button>
+                    <button onclick="switchFcastArea('west-atl')" id="fcast-area-west-atl" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">WEST ATLANTIC</button>
+                    <button onclick="switchFcastArea('atlantic')" id="fcast-area-atlantic" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ATLANTIC</button>
+                    <button onclick="switchFcastArea('arctic')" id="fcast-area-arctic" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ARCTIC</button>
+                    <button onclick="switchFcastArea('europe')" id="fcast-area-europe" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EUROPE</button>
+                    <button onclick="switchFcastArea('asia')" id="fcast-area-asia" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ASIA</button>
+                    <button onclick="switchFcastArea('africa')" id="fcast-area-africa" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">AFRICA</button>
                     <div id="fcast-area-sub-territories" style="font-size:.3rem;font-weight:600;color:rgba(43,34,244,.25);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:1px;">TERRITORIES</div>
-                    <button onclick="switchFcastArea('alaska')" id="fcast-area-alaska" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ALASKA</button>
-                    <button onclick="switchFcastArea('hawaii')" id="fcast-area-hawaii" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">HAWAII</button>
-                    <button onclick="switchFcastArea('pr')" id="fcast-area-pr" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PUERTO RICO</button>
-                    <button onclick="switchFcastArea('guam')" id="fcast-area-guam" style="display:none;padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GUAM</button>
+                    <button onclick="switchFcastArea('alaska')" id="fcast-area-alaska" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ALASKA</button>
+                    <button onclick="switchFcastArea('hawaii')" id="fcast-area-hawaii" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">HAWAII</button>
+                    <button onclick="switchFcastArea('pr')" id="fcast-area-pr" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PUERTO RICO</button>
+                    <button onclick="switchFcastArea('guam')" id="fcast-area-guam" style="display:none;padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GUAM</button>
                   </div>
                   <!-- MODELS -->
                   <div id="fcast-models-label" style="font-size:.4rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:3px;">MODELS</div>
-                  <button onclick="switchFcastModel('gfs')" id="fcast-model-gfs" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GFS 16D</button>
-                  <button onclick="switchFcastModel('nam')" id="fcast-model-nam" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 84H</button>
-                  <button onclick="switchFcastModel('nam_hires')" id="fcast-model-nam_hires" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 3KM 60H</button>
-                  <button onclick="switchFcastModel('hrrr')" id="fcast-model-hrrr" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HRRR 3KM 48H</button>
-                  <button onclick="switchFcastModel('href')" id="fcast-model-href" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HREF ENS 48H</button>
-                  <button onclick="switchFcastModel('nbm')" id="fcast-model-nbm" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NBM BLEND</button>
-                  <button onclick="switchFcastModel('gefs')" id="fcast-model-gefs" style="padding:2px 5px;border-radius:6px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.45rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GEFS SPREAD</button>
+                  <button onclick="switchFcastModel('gfs')" id="fcast-model-gfs" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GFS 16D</button>
+                  <button onclick="switchFcastModel('nam')" id="fcast-model-nam" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 84H</button>
+                  <button onclick="switchFcastModel('nam_hires')" id="fcast-model-nam_hires" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 3KM 60H</button>
+                  <button onclick="switchFcastModel('hrrr')" id="fcast-model-hrrr" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HRRR 3KM 48H</button>
+                  <button onclick="switchFcastModel('href')" id="fcast-model-href" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HREF ENS 48H</button>
+                  <button onclick="switchFcastModel('nbm')" id="fcast-model-nbm" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NBM BLEND</button>
+                  <button onclick="switchFcastModel('gefs')" id="fcast-model-gefs" style="padding:4px 8px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.5rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GEFS SPREAD</button>
                 </div>
                 <div style="position:absolute;top:10px;right:6px;bottom:60px;z-index:10;display:none;flex-direction:column;align-items:flex-end;gap:3px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px;">
                   <!-- PRECIPITATION -->
@@ -9605,26 +9605,28 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     // LIVE mode: 10 frames from Ridge radar (9=oldest, 0=newest)
     if (fcastState.range === 'live') return ['9','8','7','6','5','4','3','2','1','0'];
     
-    // Short-range models use their own FHR arrays, ignore range filters
-    if (fcastState.model === 'nam_hires') return getNamHiresFhrs();
-    if (fcastState.model === 'hrrr') return getHrrrFhrs();
-    if (fcastState.model === 'nam') return getNamFhrs();
-    if (fcastState.model === 'href') return getHrefFhrs();
-    if (fcastState.model === 'nbm') return getNbmFhrs();
-    if (fcastState.model === 'gefs') return getGefsFhrs();
+    // Get full FHR array for the model
+    var allFhrs;
+    if (fcastState.model === 'nam_hires') allFhrs = getNamHiresFhrs();
+    else if (fcastState.model === 'hrrr') allFhrs = getHrrrFhrs();
+    else if (fcastState.model === 'nam') allFhrs = getNamFhrs();
+    else if (fcastState.model === 'href') allFhrs = getHrefFhrs();
+    else if (fcastState.model === 'nbm') allFhrs = getNbmFhrs();
+    else if (fcastState.model === 'gefs') allFhrs = getGefsFhrs();
+    else {
+      // GFS special products
+      if (fcastState.product === '10mb'){
+        allFhrs = [];
+        for (var i = 0; i <= 384; i += 24) allFhrs.push(i.toString().padStart(3,'0'));
+      } else if (fcastState.product === '500mb'){
+        allFhrs = [];
+        for (var i = 0; i <= 384; i += 6) allFhrs.push(i.toString().padStart(3,'0'));
+      } else {
+        allFhrs = fcastState.allFhrs;
+      }
+    }
 
-    // GFS: 500mb uses same 6-hourly intervals as allFhrs
-    // 10mb uses 24-hourly intervals
-    if (fcastState.product === '10mb'){
-      var arr10 = [];
-      for (var i = 0; i <= 384; i += 24) arr10.push(i.toString().padStart(3,'0'));
-      return arr10;
-    }
-    if (fcastState.product === '500mb'){
-      var arr500 = [];
-      for (var i = 0; i <= 384; i += 6) arr500.push(i.toString().padStart(3,'0'));
-      return arr500;
-    }
+    // Apply range filter to ALL models
     if (fcastState.range === 'tomorrow'){
       var cycleHour = parseInt(fcastState.cycle, 10);
       var now = new Date();
@@ -9632,17 +9634,14 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       if (cycleDate > now) cycleDate.setUTCDate(cycleDate.getUTCDate() - 1);
       var tomorrowStart = new Date(now); tomorrowStart.setDate(tomorrowStart.getDate() + 1); tomorrowStart.setHours(0,0,0,0);
       var tomorrowEnd = new Date(tomorrowStart); tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
-      var minH = Math.max(3, Math.ceil((tomorrowStart.getTime() - cycleDate.getTime()) / 3600000));
+      var minH = Math.max(1, Math.ceil((tomorrowStart.getTime() - cycleDate.getTime()) / 3600000));
       var maxH = Math.ceil((tomorrowEnd.getTime() - cycleDate.getTime()) / 3600000);
-      var result = fcastState.allFhrs.filter(function(f){ var h = parseInt(f,10); return h >= minH && h <= maxH; });
-      // Fallback: if empty, show first 24h worth
-      if (result.length === 0) {
-        result = fcastState.allFhrs.filter(function(f){ return parseInt(f,10) <= 48; });
-      }
+      var result = allFhrs.filter(function(f){ var h = parseInt(f,10); return h >= minH && h <= maxH; });
+      if (result.length === 0) result = allFhrs.filter(function(f){ return parseInt(f,10) <= 48; });
       return result;
     }
     var maxH = fcastState.range === '48h' ? 48 : fcastState.range === '72h' ? 72 : (fcastState.range === '7d' ? 168 : 9999);
-    return fcastState.allFhrs.filter(function(f){ return parseInt(f,10) <= maxH; });
+    return allFhrs.filter(function(f){ return parseInt(f,10) <= maxH; });
   }
 
   function buildFcastUrl(fhrIdx){
@@ -9785,6 +9784,10 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     return prefix + ' ' + mon + '/' + date + ' ' + hr + ampm + '  (+' + h + 'H)';
   }
 
+  var lastGoodSrc = ''; // Track last successfully loaded frame
+  var lastGoodSrc = ''; // Last successfully loaded frame
+  var loopGeneration = 0; // Increments each time playback loops back to frame 0
+
   function loadFcastRadar(){
     var fhrs = getActiveFhrs();
     var img = document.getElementById('fcast-radar-img');
@@ -9800,8 +9803,8 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       var frameNum = fhrs[fcastState.idx] || '0';
       var url = 'https://radar.weather.gov/ridge/standard/' + region + '_' + frameNum + '.gif?cb=' + Math.floor(Date.now()/60000);
       if (img) {
-        img.onerror = function(){ img.style.opacity = '0.3'; };
-        img.onload = function(){ img.style.opacity = '1'; };
+        img.onerror = function(){ if (lastGoodSrc && img.src !== lastGoodSrc) img.src = lastGoodSrc; else img.style.opacity = '0.3'; };
+        img.onload = function(){ img.style.opacity = '1'; lastGoodSrc = img.src; };
         img.src = url;
         img.style.top = '50%';
         img.style.left = '50%';
@@ -9817,10 +9820,11 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       return;
     }
     
+    // Always attempt the real URL — even if it failed last loop, server may have caught up
     var url = buildFcastUrl(fcastState.idx);
     if (img) {
-      img.onerror = function(){ img.style.opacity = '0.3'; };
-      img.onload = function(){ img.style.opacity = '1'; };
+      img.onerror = function(){ if (lastGoodSrc && img.src !== lastGoodSrc) img.src = lastGoodSrc; else img.style.opacity = '0.3'; };
+      img.onload = function(){ img.style.opacity = '1'; lastGoodSrc = img.src; };
       img.src = url;
     }
     if (label) label.textContent = getFcastLabel(fcastState.idx);
@@ -10042,6 +10046,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   }
 
   function switchFcastRange(range){
+    lastGoodSrc = "";
     if (fcastState.playing) fcastRadarTogglePlay();
     fcastState.range = range;
     fcastState.idx = 0;
@@ -10172,13 +10177,14 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   }
 
   function switchFcastProduct(prod){
+    lastGoodSrc = "";
     if (fcastState.playing) fcastRadarTogglePlay();
     fcastState.product = prod;
     fcastState.idx = 0;
     
     // If in LIVE mode and user clicks a product, switch to default forecast range
     if (fcastState.range === 'live'){
-      var modelMaxH = {'gfs':384,'gefs':384,'nam':84,'nam_hires':60,'hrrr':48,'href':48,'nbm':264};
+      var modelMaxH = {'gfs':384,'gefs':384,'nam':84,'nam_hires':60,'hrrr':48,'href':48,'nbm':192};
       var maxH = modelMaxH[fcastState.model] || 384;
       fcastState.range = maxH >= 384 ? '16d' : (maxH >= 168 ? '7d' : (maxH >= 72 ? '72h' : '48h'));
       // Re-style range buttons
@@ -10258,6 +10264,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   var gfsLikeModels = ['gfs','nam','nbm','gefs'];
 
   function switchFcastModel(model){
+    lastGoodSrc = "";
     if (fcastState.playing) fcastRadarTogglePlay();
     fcastState.model = model;
     fcastState.idx = 0;
@@ -10296,13 +10303,23 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     if (rangeArea) {
       rangeArea.style.display = 'flex';
       // Show range buttons appropriate for model's max forecast hours
-      var modelMaxH = {'gfs':384,'gefs':384,'nam':84,'nam_hires':60,'hrrr':48,'href':48,'nbm':264};
+      var modelMaxH = {'gfs':384,'gefs':384,'nam':84,'nam_hires':60,'hrrr':48,'href':48,'nbm':192};
       var maxH = modelMaxH[model] || 384;
       var rangeHours = {'tomorrow':48,'48h':48,'72h':72,'7d':168,'16d':384};
       ['tomorrow','48h','72h','7d','16d'].forEach(function(r){
         var btn = document.getElementById('fcast-range-' + r);
         if (btn) btn.style.display = rangeHours[r] <= maxH ? '' : 'none';
       });
+      // If current range exceeds model's max, fall back to highest valid range
+      if (fcastState.range !== 'live') {
+        var currentRangeH = rangeHours[fcastState.range] || 9999;
+        if (currentRangeH > maxH) {
+          var validRanges = ['7d','72h','48h','tomorrow'];
+          for (var ri = 0; ri < validRanges.length; ri++) {
+            if (rangeHours[validRanges[ri]] <= maxH) { fcastState.range = validRanges[ri]; break; }
+          }
+        }
+      }
     }
 
     // Show/hide hires-only product tabs
@@ -10387,6 +10404,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   var allAreaIds = ['conus','namer','us-ne','us-se','us-nc','us-sc','us-nw','us-sw','alaska','hawaii','pr','guam','upper-ms','south-ms','n-rockies','s-rockies','s-plains','north-pac','east-pac','west-atl','atlantic','arctic','europe','asia','africa'];
 
   function switchFcastArea(area){
+    lastGoodSrc = "";
     if (fcastState.playing) fcastRadarTogglePlay();
     fcastState.area = area;
     fcastState.idx = 0;
