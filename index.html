@@ -799,6 +799,7 @@
     background:rgba(220,38,38,1);
     color:#fff;
     border-left:3px solid rgba(180,20,20,1);
+    box-shadow:0 0 12px rgba(220,38,38,.4),0 0 24px rgba(220,38,38,.2);
   }
   
   .weather-alert.tornado{
@@ -806,29 +807,31 @@
     color:#fff;
     border-left:4px solid #ff0000;
     animation: tornado-alert-pulse 1.5s ease-in-out infinite;
-    box-shadow: 0 0 12px rgba(255,0,0,.3);
   }
   @keyframes tornado-alert-pulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(255,0,0,.2); }
-    50% { box-shadow: 0 0 16px rgba(255,0,0,.5); }
+    0%, 100% { box-shadow: 0 0 12px rgba(255,0,0,.3), 0 0 30px rgba(255,0,0,.15); }
+    50% { box-shadow: 0 0 20px rgba(255,0,0,.6), 0 0 40px rgba(255,0,0,.3); }
   }
   
   .weather-alert.watch{
     background:rgba(234,88,12,1);
     color:#fff;
     border-left:3px solid rgba(194,65,12,1);
+    box-shadow:0 0 10px rgba(234,88,12,.35),0 0 20px rgba(234,88,12,.15);
   }
   
   .weather-alert.advisory{
     background:rgba(202,138,4,1);
     color:#fff;
     border-left:3px solid rgba(161,98,7,1);
+    box-shadow:0 0 8px rgba(202,138,4,.3),0 0 16px rgba(202,138,4,.12);
   }
   
   .weather-alert.statement{
     background:rgba(59,130,246,1);
     color:#fff;
     border-left:3px solid rgba(37,99,235,1);
+    box-shadow:0 0 8px rgba(59,130,246,.25),0 0 16px rgba(59,130,246,.1);
   }
   
   .weather-alert-icon{
@@ -6648,6 +6651,11 @@ function dayRangeAround(d, days){
           weatherCode = hourly.weathercode ? (hourly.weathercode[matchIdx] || 0) : 0;
         }
         
+        // Get precip amounts for this hour
+        var hPrecipAmt = (matchIdx >= 0 && hourly.precipitation) ? (hourly.precipitation[matchIdx] || 0) : 0;
+        var hSnowAmt = (matchIdx >= 0 && hourly.snowfall) ? (hourly.snowfall[matchIdx] || 0) : 0;
+        var hRainAmt = (matchIdx >= 0 && hourly.rain) ? (hourly.rain[matchIdx] || 0) : 0;
+        
         var weatherInfo = getWeatherAnimClass(weatherCode, isNightHour);
         var precipClass = precip >= 50 ? "active" : "";
         
@@ -6694,6 +6702,33 @@ function dayRangeAround(d, days){
           windDirColor = "rgba(255,255,255,.4)";
         }
         
+        // Format hourly precip amount with climate-aware intensity color
+        // Uses same regional thresholds computed for top timeline
+        if (!window._precipThresholds) {
+          window._precipThresholds = { drizzle:0.03, light:0.08, moderate:0.15, heavy:0.30, extreme:0.50 };
+        }
+        var pt2 = window._precipThresholds;
+        
+        var hPrecipStr = "";
+        var hPrecipColor = "rgba(80,190,100,.7)";
+        if (hSnowAmt > 0){
+          hPrecipStr = hSnowAmt >= 0.1 ? hSnowAmt.toFixed(1) + '"' : 'MIN';
+          if (hSnowAmt >= 1.0) hPrecipColor = "rgba(255,60,60,.9)";
+          else if (hSnowAmt >= 0.5) hPrecipColor = "rgba(255,140,50,.85)";
+          else if (hSnowAmt >= 0.2) hPrecipColor = "rgba(255,200,50,.8)";
+          else hPrecipColor = "rgba(200,220,255,.7)";
+        } else if (hPrecipAmt >= 0.01){
+          hPrecipStr = hPrecipAmt.toFixed(2) + '"';
+          if (hPrecipAmt >= pt2.extreme) hPrecipColor = "rgba(255,50,50,.95)";
+          else if (hPrecipAmt >= pt2.heavy) hPrecipColor = "rgba(255,100,40,.9)";
+          else if (hPrecipAmt >= pt2.moderate) hPrecipColor = "rgba(255,160,40,.85)";
+          else if (hPrecipAmt >= pt2.light) hPrecipColor = "rgba(255,210,50,.8)";
+          else if (hPrecipAmt >= pt2.drizzle) hPrecipColor = "rgba(100,210,120,.8)";
+          else hPrecipColor = "rgba(80,190,100,.7)";
+        } else if (hPrecipAmt > 0){
+          hPrecipStr = 'MIN';
+        }
+        
         weatherHtml += '<div class="' + hourClass + '">' +
           '<span class="today-tl-weather-time">' + timeLabel + '</span>' +
           '<span class="today-tl-weather-icon ' + weatherInfo.animClass + '">' + weatherInfo.emoji + '</span>' +
@@ -6702,6 +6737,7 @@ function dayRangeAround(d, days){
           '<span style="font-size:.55rem;font-weight:600;color:' + windColor + ';display:block;text-align:center;width:100%;text-transform:uppercase;letter-spacing:.3px;">' + windStr + '</span>' +
           '<span style="font-size:.5rem;font-weight:600;color:' + windDirColor + ';display:block;text-align:center;width:100%;letter-spacing:.3px;">' + windDirStr + '</span>' +
           '<span class="today-tl-weather-precip ' + precipClass + '">' + precip + '%</span>' +
+          (hPrecipStr ? '<span style="font-size:.6rem;font-weight:800;color:' + hPrecipColor + ';display:block;text-align:center;width:100%;letter-spacing:.03em;text-shadow:0 0 8px ' + hPrecipColor + ',0 0 16px ' + hPrecipColor + ';">' + hPrecipStr + '</span>' : '') +
         '</div>';
       }
       
@@ -6989,6 +7025,10 @@ function dayRangeAround(d, days){
         var timeLabel = h === 0 ? "12AM" : (h < 12 ? h + "AM" : (h === 12 ? "12PM" : (h - 12) + "PM"));
         var temp = "--";
         var precip = 0;
+        var precipAmt = 0;
+        var snowAmt = 0;
+        var rainAmt = 0;
+        var wcode = 0;
         var icon = "";
         
         // Determine if this hour is during night/twilight
@@ -6999,11 +7039,30 @@ function dayRangeAround(d, days){
         if (matchIdx >= 0){
           temp = Math.round(hourly.temperature_2m[matchIdx]) + "°";
           precip = hourly.precipitation_probability[matchIdx] || 0;
+          precipAmt = hourly.precipitation ? (hourly.precipitation[matchIdx] || 0) : 0;
+          snowAmt = hourly.snowfall ? (hourly.snowfall[matchIdx] || 0) : 0;
+          rainAmt = hourly.rain ? (hourly.rain[matchIdx] || 0) : 0;
+          wcode = hourly.weathercode ? (hourly.weathercode[matchIdx] || 0) : 0;
           
-          // Determine icon based on conditions
+          // Determine icon based on weather code for precise precip type
           var cc = hourly.cloudcover ? hourly.cloudcover[matchIdx] : 0;
+          var isThunder = (wcode === 95 || wcode === 96 || wcode === 99);
+          var isFreezingRain = (wcode === 66 || wcode === 67);
+          var isSleet = (wcode === 68 || wcode === 69 || wcode === 83 || wcode === 84 || wcode === 85 || wcode === 86);
+          var isSnow = (wcode >= 70 && wcode <= 77) || wcode === 85 || wcode === 86 || snowAmt > 0.1;
+          var isRain = (wcode >= 51 && wcode <= 65) || (wcode >= 80 && wcode <= 82) || rainAmt > 0;
           
-          if (precip >= 60){
+          if (isThunder){
+            icon = METEO_BASE + "thunderstorms-rain.svg";
+          } else if (isFreezingRain){
+            icon = METEO_BASE + "sleet.svg";
+          } else if (isSnow && rainAmt > 0){
+            icon = METEO_BASE + "sleet.svg";
+          } else if (isSnow){
+            icon = METEO_BASE + "snow.svg";
+          } else if (isSleet){
+            icon = METEO_BASE + "sleet.svg";
+          } else if (precipAmt > 0 || precip >= 60){
             icon = METEO_BASE + "rain.svg";
           } else if (precip >= 30){
             icon = METEO_BASE + "drizzle.svg";
@@ -7011,9 +7070,7 @@ function dayRangeAround(d, days){
             icon = METEO_BASE + "overcast.svg";
           } else if (cc >= 30){
             icon = isNight ? METEO_BASE + "partly-cloudy-night.svg" : METEO_BASE + "partly-cloudy-day.svg";
-          } else if (isDeepNight){
-            icon = METEO_BASE + "clear-night.svg";
-          } else if (isTwilight){
+          } else if (isDeepNight || isTwilight){
             icon = METEO_BASE + "clear-night.svg";
           } else {
             icon = METEO_BASE + "clear-day.svg";
@@ -7024,6 +7081,71 @@ function dayRangeAround(d, days){
         if (precip >= 60) precipClass = "high";
         else if (precip >= 30) precipClass = "med";
         
+        // Format precip amount string (API already returns inches with precipitation_unit=inch)
+        // Climate-aware intensity thresholds based on region
+        // Arid/semi-arid areas flash flood at lower rates than tropical areas
+        if (!window._precipThresholds) {
+          var lat = LOCATION.lat, lon = LOCATION.lon;
+          // Classify climate zone by location
+          // Arid West: low thresholds (desert flash flood risk)
+          // Gulf/Southeast: high thresholds (used to heavy rain)
+          // Pacific NW: moderate-low (persistent light rain, heavy is rare)
+          // Northeast/Midwest: moderate
+          // Tropical (Hawaii, PR, Guam): highest thresholds
+          var t = { drizzle:0.03, light:0.08, moderate:0.15, heavy:0.30, extreme:0.50 };
+          
+          if (lat > 19 && lat < 22 && lon > -161 && lon < -154) {
+            // Hawaii — tropical, used to heavy bursts
+            t = { drizzle:0.05, light:0.15, moderate:0.30, heavy:0.60, extreme:1.00 };
+          } else if (lat > 17 && lat < 19 && lon > -68 && lon < -65) {
+            // Puerto Rico — tropical
+            t = { drizzle:0.05, light:0.15, moderate:0.30, heavy:0.60, extreme:1.00 };
+          } else if (lat > 12 && lat < 15 && lon > 144 && lon < 146) {
+            // Guam — tropical
+            t = { drizzle:0.05, light:0.15, moderate:0.30, heavy:0.60, extreme:1.00 };
+          } else if (lat < 35 && lon > -105 && lon < -80) {
+            // Gulf Coast / Deep South — subtropical, heavy rain common
+            t = { drizzle:0.04, light:0.12, moderate:0.25, heavy:0.50, extreme:0.80 };
+          } else if (lat > 25 && lat < 35 && lon > -125 && lon < -105) {
+            // Desert Southwest (AZ, NM, SoCal inland, W TX) — flash flood at low rates
+            t = { drizzle:0.02, light:0.05, moderate:0.10, heavy:0.20, extreme:0.35 };
+          } else if (lat > 35 && lat < 49 && lon > -125 && lon < -118) {
+            // Pacific NW — persistent drizzle, heavy rare
+            t = { drizzle:0.02, light:0.06, moderate:0.12, heavy:0.25, extreme:0.40 };
+          } else if (lat > 32 && lat < 42 && lon > -122 && lon < -115) {
+            // CA/NV — Mediterranean/arid, atmospheric rivers hit hard
+            t = { drizzle:0.02, light:0.06, moderate:0.12, heavy:0.25, extreme:0.40 };
+          } else if (lat > 35 && lat < 49 && lon > -105 && lon < -80) {
+            // Midwest/Plains — moderate, but severe storms bring heavy
+            t = { drizzle:0.03, light:0.08, moderate:0.18, heavy:0.35, extreme:0.55 };
+          } else {
+            // Northeast / default — moderate
+            t = { drizzle:0.03, light:0.08, moderate:0.15, heavy:0.30, extreme:0.50 };
+          }
+          window._precipThresholds = t;
+        }
+        var pt = window._precipThresholds;
+        
+        var precipAmtStr = "";
+        var precipAmtColor = "rgba(80,190,100,.8)";
+        if (snowAmt > 0){
+          precipAmtStr = snowAmt >= 0.1 ? snowAmt.toFixed(1) + '"❄' : 'MIN❄';
+          if (snowAmt >= 1.0) precipAmtColor = "rgba(255,60,60,.9)";
+          else if (snowAmt >= 0.5) precipAmtColor = "rgba(255,140,50,.85)";
+          else if (snowAmt >= 0.2) precipAmtColor = "rgba(255,200,50,.8)";
+          else precipAmtColor = "rgba(200,220,255,.7)";
+        } else if (precipAmt >= 0.01){
+          precipAmtStr = precipAmt.toFixed(2) + '"';
+          if (precipAmt >= pt.extreme) precipAmtColor = "rgba(255,50,50,.95)";
+          else if (precipAmt >= pt.heavy) precipAmtColor = "rgba(255,100,40,.9)";
+          else if (precipAmt >= pt.moderate) precipAmtColor = "rgba(255,160,40,.85)";
+          else if (precipAmt >= pt.light) precipAmtColor = "rgba(255,210,50,.8)";
+          else if (precipAmt >= pt.drizzle) precipAmtColor = "rgba(100,210,120,.8)";
+          else precipAmtColor = "rgba(80,190,100,.7)";
+        } else if (precipAmt > 0){
+          precipAmtStr = 'MIN';
+        }
+        
         // Add night-hour class for dark background styling
         var hourClass = "tl-hour";
         if (isDeepNight || isTwilight) hourClass += " night-hour";
@@ -7033,6 +7155,7 @@ function dayRangeAround(d, days){
           '<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><img class="tl-hour-icon" src="' + icon + '" alt="" /></div>' +
           '<span class="tl-hour-temp">' + temp + '</span>' +
           (precip > 0 ? '<span class="tl-hour-precip ' + precipClass + '">' + precip + '%</span>' : '') +
+          (precipAmtStr ? '<span style="font-size:.45rem;font-weight:700;color:rgba(80,190,100,.8);letter-spacing:.02em;">' + precipAmtStr + '</span>' : '') +
         '</div>';;
       }
       
@@ -7621,7 +7744,7 @@ function dayRangeAround(d, days){
           var precipProb = daily.precipitation_probability_max[0];
 
           var precipSum = (daily.precipitation_sum && daily.precipitation_sum[0] != null) ? daily.precipitation_sum[0] : 0;
-          setText(precipAmtEl, precipSum.toFixed(2) + " in");
+          setText(precipAmtEl, precipSum >= 0.01 ? precipSum.toFixed(2) + " in" : (precipSum > 0 ? "MIN" : "0.00 in"));
           setText(forecastRowEl, (precipProb != null ? ("Max " + Math.round(precipProb) + "%") : "--"));
 
           // Weather icon/text (daily code)
@@ -7765,18 +7888,21 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   precipIcon = "❄️"; precipType = "SNOW";
                 } else if (showersSum > 0 && showersSum >= rainSum * 0.5) {
                   precipIcon = "🌦️"; precipType = "SHOWERS";
-                } else if (rainSum > 0.01 || precipSum > 0.01) {
+                } else if (rainSum > 0 || precipSum > 0) {
                   precipIcon = "🌧️"; precipType = "RAIN";
                 } else if (snowSum > 0 && rainSum > 0) {
                   precipIcon = "🌨️"; precipType = "MIX";
                 }
                 precipStr = precipIcon + ' ' + precipProb + '%';
                 if (precipType === "SNOW" && snowSum > 0) {
-                  precipStr += ' · ' + snowSum.toFixed(1) + '" SNOW';
+                  precipStr += ' · ' + (snowSum < 0.1 ? 'TRACE' : snowSum.toFixed(1) + '"') + ' SNOW';
                 } else if (precipType === "MIX" && snowSum > 0) {
                   precipStr += ' · ' + snowSum.toFixed(1) + '"❄ + ' + rainSum.toFixed(2) + '"🌧️';
-                } else if (precipSum > 0.01) {
+                } else if (precipSum >= 0.01) {
                   precipStr += ' · ' + precipSum.toFixed(2) + '"';
+                  if (precipType) precipStr += ' ' + precipType;
+                } else if (precipSum > 0 && precipSum < 0.01) {
+                  precipStr += ' · MIN';
                   if (precipType) precipStr += ' ' + precipType;
                 } else if (precipType) {
                   precipStr += ' ' + precipType;
@@ -10700,9 +10826,51 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       searchInput.setAttribute('placeholder', 'City, zip, park, place...');
       searchInput.setAttribute('autocomplete', 'off');
 
+      // Common city abbreviations/nicknames → full searchable names
+      var cityAliases = {
+        'la':'Los Angeles','nyc':'New York City','sf':'San Francisco','dc':'Washington DC',
+        'nola':'New Orleans','philly':'Philadelphia','vegas':'Las Vegas','lv':'Las Vegas',
+        'chi':'Chicago','atl':'Atlanta','bos':'Boston','dal':'Dallas','hou':'Houston',
+        'sa':'San Antonio','sd':'San Diego','sj':'San Jose','sjc':'San Jose',
+        'stl':'St Louis','kc':'Kansas City','nj':'Newark','det':'Detroit',
+        'msp':'Minneapolis','mke':'Milwaukee','cle':'Cleveland','pit':'Pittsburgh',
+        'pdx':'Portland','sea':'Seattle','den':'Denver','slc':'Salt Lake City',
+        'phx':'Phoenix','abq':'Albuquerque','okc':'Oklahoma City','jax':'Jacksonville',
+        'clt':'Charlotte','rdu':'Raleigh','ric':'Richmond','bwi':'Baltimore',
+        'mia':'Miami','ftl':'Fort Lauderdale','tpa':'Tampa','orl':'Orlando',
+        'msy':'New Orleans','mem':'Memphis','bna':'Nashville','sfo':'San Francisco',
+        'lax':'Los Angeles','jfk':'New York City','ord':'Chicago','dfw':'Dallas',
+        'iah':'Houston','phl':'Philadelphia','bklyn':'Brooklyn','queens':'Queens NY',
+        'soho':'Manhattan New York','dtla':'Downtown Los Angeles',
+        'the bay':'San Francisco Bay Area','twin cities':'Minneapolis Saint Paul',
+        'Silicon Valley':'San Jose California','hamptons':'East Hampton New York',
+        'cape cod':'Cape Cod Massachusetts','big island':'Hilo Hawaii',
+        'dmv':'Washington DC','tristate':'New York City','socal':'Los Angeles',
+        'norcal':'San Francisco','chiraq':'Chicago','hotlanta':'Atlanta',
+        'bean town':'Boston','motor city':'Detroit','the big easy':'New Orleans',
+        'mile high':'Denver','emerald city':'Seattle','windy city':'Chicago',
+        'city of angels':'Los Angeles','big apple':'New York City',
+        'charm city':'Baltimore','steel city':'Pittsburgh','space city':'Houston',
+        'sin city':'Las Vegas','alamo city':'San Antonio','river city':'Sacramento',
+        'indy':'Indianapolis','cincy':'Cincinnati','cbus':'Columbus Ohio',
+        'reno':'Reno Nevada','tuscon':'Tucson','ftw':'Fort Worth','mcallen':'McAllen Texas',
+        'anchorage':'Anchorage Alaska','honolulu':'Honolulu Hawaii',
+        'london':'London England','paris':'Paris France','tokyo':'Tokyo Japan',
+        'toronto':'Toronto Canada','montreal':'Montreal Canada','vancouver':'Vancouver Canada',
+        'cdmx':'Mexico City','mexico city':'Ciudad de Mexico','sydney':'Sydney Australia',
+        'melb':'Melbourne Australia','berlin':'Berlin Germany','madrid':'Madrid Spain',
+        'rome':'Rome Italy','amsterdam':'Amsterdam Netherlands','dubai':'Dubai UAE',
+        'hk':'Hong Kong','sg':'Singapore','bkk':'Bangkok Thailand'
+      };
+      
+      function expandCityAlias(q){
+        var lower = q.toLowerCase().trim();
+        return cityAliases[lower] || q;
+      }
+
       // Autocomplete on typing
       searchInput.addEventListener('input', function(){
-        var q = searchInput.value.trim();
+        var q = expandCityAlias(searchInput.value.trim());
         clearTimeout(suggestDebounce);
         if (q.length < 2){ hideSuggestions(); return; }
         suggestDebounce = setTimeout(function(){
@@ -10738,7 +10906,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
           } else if (suggestResults.length > 0){
             pickSuggestion(suggestResults[0]);
           } else {
-            var q = searchInput.value.trim();
+            var q = expandCityAlias(searchInput.value.trim());
             if (!q) return;
             searchInput.disabled = true;
             searchInput.placeholder = "Searching...";
