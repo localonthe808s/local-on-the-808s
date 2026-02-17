@@ -4207,9 +4207,9 @@ body > #dynamic-alert-modal {
 <!-- SITE LOADING SCREEN -->
 <div id="site-loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;overflow:hidden;pointer-events:none;">
   <!-- BLUISH at top -->
-  <div id="intro-bluish" style="position:absolute;top:5%;left:0;right:0;z-index:3;text-align:center;font-size:clamp(2rem, 10vw, 5rem);font-weight:400;letter-spacing:clamp(0.15em, 2vw, 0.4em);color:#4a9eff;font-family:'QelliaRegular','Bodoni Moda',Georgia,serif;text-shadow:0 0 60px rgba(74,158,255,.5),0 0 120px rgba(74,158,255,.25),0 0 180px rgba(74,158,255,.1);padding-left:clamp(0.15em, 2vw, 0.4em);text-transform:uppercase;">BLUISH</div>
+  <div id="intro-bluish" style="position:absolute;top:6%;left:0;right:0;z-index:3;text-align:center;font-size:clamp(2rem, 10vw, 5rem);font-weight:400;letter-spacing:clamp(0.15em, 2vw, 0.4em);color:#4a9eff;font-family:'QelliaRegular','Bodoni Moda',Georgia,serif;text-shadow:0 0 60px rgba(74,158,255,.5),0 0 120px rgba(74,158,255,.25),0 0 180px rgba(74,158,255,.1);padding-left:clamp(0.15em, 2vw, 0.4em);text-transform:uppercase;">BLUISH</div>
   <!-- VOID stacks down right side -->
-  <div id="intro-void-container" style="position:absolute;top:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:0;overflow:hidden;pointer-events:none;padding-right:clamp(0.75rem, 2vw, 1.5rem);"></div>
+  <div id="intro-void-container" style="position:absolute;top:-3%;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:0;overflow:hidden;pointer-events:none;padding-right:clamp(0.75rem, 2vw, 1.5rem);"></div>
 </div>
 <style>
   @keyframes void-in {
@@ -14383,8 +14383,8 @@ function initNowMicroTabs(){
 
     // Video crossfade
     // VOID cascades below BLUISH, centered. 7 VOIDs, dismiss when last one appears.
-    var maxVoids = 7;
-    var voidSpeed = 430;
+    var maxVoids = 12;
+    var voidSpeed = 250;
     var voidFilled = false;
 
     function addVoid(){
@@ -14392,7 +14392,7 @@ function initNowMicroTabs(){
       voidCount++;
       var d = document.createElement('div');
       var op = Math.max(0.35, 0.8 - (voidCount * 0.008));
-      d.style.cssText = 'font-family:QelliaRegular,Bodoni Moda,Georgia,serif;font-size:clamp(1.8rem, 6vw, 3.5rem);font-weight:700;letter-spacing:clamp(0.2em, 1.5vw, 0.5em);padding-right:clamp(0.2em, 1.5vw, 0.5em);line-height:2.9;color:rgba(74,158,255,' + op + ');white-space:nowrap';
+      d.style.cssText = 'font-family:QelliaRegular,Bodoni Moda,Georgia,serif;font-size:clamp(1.8rem, 6vw, 3.5rem);font-weight:700;letter-spacing:clamp(0.2em, 1.5vw, 0.5em);padding-right:clamp(0.2em, 1.5vw, 0.5em);line-height:1.7;color:rgba(74,158,255,' + op + ');white-space:nowrap';
       d.textContent = 'VOID';
       voidContainer.appendChild(d);
       if (voidCount >= maxVoids) { voidFilled = true; return false; }
