@@ -4572,21 +4572,26 @@ body > #dynamic-alert-modal {
                   <div id="fcast-area-selector" style="display:flex;flex-direction:column;gap:3px;max-width:150px;">
                     <button onclick="switchFcastArea('conus')" id="fcast-area-conus" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">CONTINENTAL US</button>
                     <button onclick="switchFcastArea('namer')" id="fcast-area-namer" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH AMERICA</button>
+                    <div id="fcast-area-sub-east" style="font-size:.32rem;font-weight:600;color:rgba(255,255,255,.2);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:4px;margin-top:2px;">EAST</div>
                     <button onclick="switchFcastArea('us-ne')" id="fcast-area-us-ne" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTHEAST</button>
                     <button onclick="switchFcastArea('us-se')" id="fcast-area-us-se" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTHEAST</button>
+                    <div id="fcast-area-sub-central" style="font-size:.32rem;font-weight:600;color:rgba(255,255,255,.2);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:4px;margin-top:2px;">CENTRAL</div>
                     <button onclick="switchFcastArea('us-nc')" id="fcast-area-us-nc" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GREAT LAKES</button>
                     <button onclick="switchFcastArea('us-sc')" id="fcast-area-us-sc" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH CENTRAL</button>
-                    <button onclick="switchFcastArea('us-nw')" id="fcast-area-us-nw" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC NW</button>
-                    <button onclick="switchFcastArea('us-sw')" id="fcast-area-us-sw" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC SW</button>
                     <button onclick="switchFcastArea('upper-ms')" id="fcast-area-upper-ms" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">UPPER MISS VALLEY</button>
                     <button onclick="switchFcastArea('south-ms')" id="fcast-area-south-ms" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH MISS VALLEY</button>
+                    <button onclick="switchFcastArea('s-plains')" id="fcast-area-s-plains" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH PLAINS</button>
+                    <div id="fcast-area-sub-west" style="font-size:.32rem;font-weight:600;color:rgba(255,255,255,.2);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:4px;margin-top:2px;">WEST</div>
+                    <button onclick="switchFcastArea('us-nw')" id="fcast-area-us-nw" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC NW</button>
+                    <button onclick="switchFcastArea('us-sw')" id="fcast-area-us-sw" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC SW</button>
                     <button onclick="switchFcastArea('n-rockies')" id="fcast-area-n-rockies" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH ROCKIES</button>
                     <button onclick="switchFcastArea('s-rockies')" id="fcast-area-s-rockies" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH ROCKIES</button>
-                    <button onclick="switchFcastArea('s-plains')" id="fcast-area-s-plains" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH PLAINS</button>
+                    <div id="fcast-area-sub-territories" style="font-size:.32rem;font-weight:600;color:rgba(255,255,255,.2);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:4px;margin-top:2px;">TERRITORIES</div>
                     <button onclick="switchFcastArea('alaska')" id="fcast-area-alaska" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ALASKA</button>
                     <button onclick="switchFcastArea('hawaii')" id="fcast-area-hawaii" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">HAWAII</button>
                     <button onclick="switchFcastArea('pr')" id="fcast-area-pr" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PUERTO RICO</button>
                     <button onclick="switchFcastArea('guam')" id="fcast-area-guam" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">GUAM</button>
+                    <div id="fcast-area-sub-global" style="display:none;font-size:.32rem;font-weight:600;color:rgba(255,255,255,.2);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:4px;margin-top:2px;">GLOBAL</div>
                     <button onclick="switchFcastArea('north-pac')" id="fcast-area-north-pac" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH PACIFIC</button>
                     <button onclick="switchFcastArea('east-pac')" id="fcast-area-east-pac" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EAST PACIFIC</button>
                     <button onclick="switchFcastArea('west-atl')" id="fcast-area-west-atl" style="display:none;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:rgba(255,255,255,.5);font-size:.42rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">WEST ATLANTIC</button>
@@ -9804,7 +9809,15 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     }
     // Source link
     var srcLink = document.getElementById('fcast-source-link');
-    if (srcLink) srcLink.style.display = isLive ? 'none' : '';
+    if (srcLink) {
+      if (isLive) {
+        srcLink.style.display = '';
+        srcLink.href = 'https://radar.weather.gov/';
+        srcLink.textContent = 'NWS RADAR';
+      } else {
+        srcLink.style.display = '';
+      }
+    }
     
     // Area buttons: show Ridge regions for LIVE, model regions for forecast
     if (isLive) {
@@ -9826,6 +9839,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
         var cb = document.getElementById('fcast-area-conus');
         if (cb) { cb.style.background = 'rgba(74,158,255,.3)'; cb.style.borderColor = 'rgba(74,158,255,.5)'; cb.style.color = '#4a9eff'; }
       }
+      updateAreaSubLabels(liveAreas);
     } else {
       // Fallback area if current area isn't valid for current model
       var cfg = modelAreaConfig[fcastState.model] || {areas:['conus'], default:'conus'};
@@ -10097,6 +10111,28 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
         btn.style.background = 'rgba(0,0,0,.3)'; btn.style.borderColor = 'rgba(255,255,255,.15)'; btn.style.color = 'rgba(255,255,255,.5)';
       }
     });
+    updateAreaSubLabels(cfg.areas);
+  }
+  
+  function updateAreaSubLabels(visibleAreas){
+    var eastAreas = ['us-ne','us-se'];
+    var centralAreas = ['us-nc','us-sc','upper-ms','south-ms','s-plains'];
+    var westAreas = ['us-nw','us-sw','n-rockies','s-rockies'];
+    var territoryAreas = ['alaska','hawaii','pr','guam'];
+    var globalAreas = ['north-pac','east-pac','west-atl','atlantic','arctic','europe','asia','africa'];
+    
+    var hasEast = eastAreas.some(function(a){ return visibleAreas.indexOf(a) !== -1; });
+    var hasCentral = centralAreas.some(function(a){ return visibleAreas.indexOf(a) !== -1; });
+    var hasWest = westAreas.some(function(a){ return visibleAreas.indexOf(a) !== -1; });
+    var hasTerritory = territoryAreas.some(function(a){ return visibleAreas.indexOf(a) !== -1; });
+    var hasGlobal = globalAreas.some(function(a){ return visibleAreas.indexOf(a) !== -1; });
+    
+    var el;
+    el = document.getElementById('fcast-area-sub-east'); if(el) el.style.display = hasEast ? '' : 'none';
+    el = document.getElementById('fcast-area-sub-central'); if(el) el.style.display = hasCentral ? '' : 'none';
+    el = document.getElementById('fcast-area-sub-west'); if(el) el.style.display = hasWest ? '' : 'none';
+    el = document.getElementById('fcast-area-sub-territories'); if(el) el.style.display = hasTerritory ? '' : 'none';
+    el = document.getElementById('fcast-area-sub-global'); if(el) el.style.display = hasGlobal ? '' : 'none';
   }
 
   window.fcastRadarStep = fcastRadarStep;
@@ -13951,10 +13987,17 @@ function initNowMicroTabs(){
   initWidgetPopups();
 
 
-  // Voyager 1 live distance updater (every 5 seconds)
+  // Voyager 1 live distance updater (every 1 second for real-time counting)
   setInterval(function(){
-    var voyagerBullet = document.querySelector('.bullet:last-child .bsub');
-    if (voyagerBullet && voyagerBullet.textContent.indexOf('mi • Light delay') > -1){
+    var bullets = document.querySelectorAll('.bullet');
+    var voyagerBullet = null;
+    bullets.forEach(function(b){
+      var name = b.querySelector('.bname');
+      if (name && name.textContent.indexOf('VOYAGER 1') > -1) voyagerBullet = b;
+    });
+    if (!voyagerBullet) return;
+    var bsub = voyagerBullet.querySelector('.bsub');
+    if (!bsub) return;
       var now = new Date();
       var refDate = new Date(Date.UTC(2025, 0, 1, 0, 0, 0));
       var refDistanceMiles = 15215899826.1;
@@ -13974,13 +14017,95 @@ function initNowMicroTabs(){
       var missionMonths = Math.floor((missionMs % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.44));
       var missionDays = Math.floor((missionMs % (1000 * 60 * 60 * 24 * 30.44)) / (1000 * 60 * 60 * 24));
       var missionStr = missionYears + "y " + missionMonths + "m " + missionDays + "d";
-      voyagerBullet.textContent = "Interstellar space • Local Interstellar Cloud • " + milesFormatted + " mi • Light delay " + lightTimeStr + " • " + speedMph.toLocaleString() + " mph";
+      bsub.textContent = "Interstellar space • Local Interstellar Cloud • " + milesFormatted + " mi • Light delay " + lightTimeStr + " • " + speedMph.toLocaleString() + " mph";
       
       // Update mission time in btime
-      var voyagerTime = document.querySelector('.bullet:last-child .btime');
+      var voyagerTime = voyagerBullet.querySelector('.btime');
       if (voyagerTime) voyagerTime.textContent = missionStr + " in flight";
+    
+  }, 1000);
+
+  // ISS live distance updater (interpolates between API refreshes)
+  (function(){
+    var issState = { lat:0, lon:0, alt:0, speed:0, vis:'', lastFetch:0, speedMph:0,
+                     velLat:0, velLon:0 };
+    
+    function haversineMi(lat1,lon1,lat2,lon2){
+      var R=3959,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+      var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     }
-  }, 5000);
+    function bearingDir(lat1,lon1,lat2,lon2){
+      var y=Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180);
+      var x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
+      var b=Math.atan2(y,x)*180/Math.PI; if(b<0)b+=360;
+      var dirs=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+      return dirs[Math.round(b/22.5)%16];
+    }
+    
+    function fetchISS(){
+      fetch("https://api.wheretheiss.at/v1/satellites/25544")
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var prevLat = issState.lat, prevLon = issState.lon;
+          issState.lat = data.latitude;
+          issState.lon = data.longitude;
+          issState.alt = Math.round(data.altitude * 0.621371);
+          issState.speedMph = Math.round(data.velocity * 0.621371);
+          issState.vis = data.visibility;
+          issState.lastFetch = Date.now();
+          // Estimate velocity in deg/sec based on orbital speed
+          // ISS completes 360 degrees longitude in ~92.68 min
+          var orbitPeriodSec = 92.68 * 60;
+          issState.velLon = -360 / orbitPeriodSec; // westward drift per sec (due to earth rotation)
+          // Lat oscillates sinusoidally with 51.6 deg inclination
+          var phase = Math.asin(Math.max(-1, Math.min(1, issState.lat / 51.6)));
+          issState.velLat = 51.6 * Math.cos(phase) * (2 * Math.PI / orbitPeriodSec);
+        })
+        .catch(function(){});
+    }
+    
+    // Fetch every 30 seconds
+    fetchISS();
+    setInterval(fetchISS, 30000);
+    
+    // Update display every 1 second by interpolating
+    setInterval(function(){
+      if (!issState.lastFetch) return;
+      var bullets = document.querySelectorAll('.bullet');
+      var issBullet = null;
+      bullets.forEach(function(b){
+        var name = b.querySelector('.bname');
+        if (name && name.textContent.indexOf('ISS TRACKER') > -1) issBullet = b;
+      });
+      if (!issBullet) return;
+      
+      var elapsed = (Date.now() - issState.lastFetch) / 1000;
+      var curLat = issState.lat + issState.velLat * elapsed;
+      var curLon = issState.lon + issState.velLon * elapsed;
+      while(curLon > 180) curLon -= 360;
+      while(curLon < -180) curLon += 360;
+      
+      var groundDist = Math.round(haversineMi(LOCATION.lat, LOCATION.lon, curLat, curLon));
+      var totalDist = Math.round(Math.sqrt(groundDist*groundDist + issState.alt*issState.alt));
+      var dirStr = bearingDir(LOCATION.lat, LOCATION.lon, curLat, curLon);
+      
+      var isNearby = groundDist < 500;
+      var btime = issBullet.querySelector('.btime');
+      if (btime) {
+        btime.textContent = isNearby ? "🟢 NEARBY!" : (totalDist.toLocaleString() + " mi " + dirStr);
+      }
+      
+      var bsub = issBullet.querySelector('.bsub');
+      if (bsub) {
+        // Preserve the next pass info if it exists
+        var existing = bsub.textContent;
+        var passIdx = existing.indexOf('NEXT PASS');
+        var passStr = passIdx > -1 ? ' • ' + existing.substring(passIdx) : '';
+        bsub.textContent = "Alt " + issState.alt + " mi • " + issState.speedMph.toLocaleString() + " mph • " + issState.vis + passStr;
+      }
+    }, 1000);
+  })();
 
   // refresh cadences
   setInterval(function(){ loadWeatherForLocation(LOCATION); }, 10 * 60 * 1000);
