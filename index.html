@@ -3052,21 +3052,21 @@
     display:none;
     position:fixed;
     z-index:200;
-    width:280px;
-    max-height:300px;
+    width:340px;
+    max-height:420px;
     overflow-y:auto;
-    background:rgba(12,12,28,.82);
+    background:rgba(12,12,28,.88);
     backdrop-filter:blur(24px) saturate(130%);
     -webkit-backdrop-filter:blur(24px) saturate(130%);
     border-radius:10px;
-    padding:10px 12px;
-    font-size:.55rem;
+    padding:12px 14px;
+    font-size:.56rem;
     font-weight:500;
-    color:rgba(255,255,255,.78);
-    line-height:1.55;
+    color:rgba(255,255,255,.80);
+    line-height:1.6;
     letter-spacing:.01em;
     text-transform:none;
-    box-shadow:0 12px 48px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+    box-shadow:0 12px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
     scrollbar-width:thin;
     scrollbar-color: rgba(255,255,255,.15) transparent;
     pointer-events:auto;
@@ -4684,13 +4684,26 @@ body > #dynamic-alert-modal {
                   <div style="width:30px;border-top:1px solid rgba(255,255,255,.1);margin:2px 0;"></div>
                   <!-- FORECAST label -->
                   <div id="fcast-forecast-label" style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">FORECAST</div>
-                  <div id="fcast-range-area" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">
-                    <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Tomorrow</button>
-                    <button onclick="switchFcastRange('48h')" id="fcast-range-48h" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">48 HOUR | 2 DAY</button>
-                    <button onclick="switchFcastRange('72h')" id="fcast-range-72h" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">72 HOUR | 3 DAY</button>
-                    <button onclick="switchFcastRange('7d')" id="fcast-range-7d" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">7 DAY | WEEK</button>
-                    <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">16 DAY | MAX</button>
+                  <div id="fcast-range-area" style="display:flex;flex-direction:column;align-items:stretch;gap:3px;width:100%;">
+                    <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Tomorrow</button>
+                    <div style="display:flex;gap:3px;">
+                      <button onclick="switchFcastRange('48h')" id="fcast-range-48h" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">48 HR</button>
+                      <button onclick="switchFcastRange('72h')" id="fcast-range-72h" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">72 HR</button>
+                    </div>
+                    <div style="display:flex;gap:3px;">
+                      <button onclick="switchFcastRange('7d')" id="fcast-range-7d" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">7 DAY</button>
+                      <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">16 DAY</button>
+                    </div>
                   </div>
+                  <!-- MODELS -->
+                  <div id="fcast-models-label" style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">MODELS</div>
+                  <button onclick="switchFcastModel('gfs')" id="fcast-model-gfs" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GFS 16D</button>
+                  <button onclick="switchFcastModel('nam')" id="fcast-model-nam" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 84H</button>
+                  <button onclick="switchFcastModel('nam_hires')" id="fcast-model-nam_hires" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 3KM 60H</button>
+                  <button onclick="switchFcastModel('hrrr')" id="fcast-model-hrrr" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HRRR 3KM 48H</button>
+                  <button onclick="switchFcastModel('href')" id="fcast-model-href" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HREF ENS 48H</button>
+                  <button onclick="switchFcastModel('nbm')" id="fcast-model-nbm" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NBM BLEND</button>
+                  <button onclick="switchFcastModel('gefs')" id="fcast-model-gefs" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GEFS SPREAD</button>
                   <!-- AREAS label -->
                   <div style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">AREAS</div>
                   <!-- Area selector -->
@@ -4711,7 +4724,6 @@ body > #dynamic-alert-modal {
                     <button onclick="switchFcastArea('us-sw')" id="fcast-area-us-sw" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">PACIFIC SW</button>
                     <button onclick="switchFcastArea('n-rockies')" id="fcast-area-n-rockies" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH ROCKIES</button>
                     <button onclick="switchFcastArea('s-rockies')" id="fcast-area-s-rockies" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">SOUTH ROCKIES</button>
-                    <div id="fcast-area-sub-global" style="display:none;font-size:.55rem;font-weight:700;color:rgba(43,34,244,.45);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:6px;">REGIONS</div>
                     <button onclick="switchFcastArea('north-pac')" id="fcast-area-north-pac" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH PACIFIC</button>
                     <button onclick="switchFcastArea('east-pac')" id="fcast-area-east-pac" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">EAST PACIFIC</button>
                     <button onclick="switchFcastArea('west-atl')" id="fcast-area-west-atl" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">WEST ATLANTIC</button>
@@ -4721,15 +4733,6 @@ body > #dynamic-alert-modal {
                     <button onclick="switchFcastArea('asia')" id="fcast-area-asia" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">ASIA</button>
                     <button onclick="switchFcastArea('africa')" id="fcast-area-africa" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">AFRICA</button>
                   </div>
-                  <!-- MODELS -->
-                  <div id="fcast-models-label" style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">MODELS</div>
-                  <button onclick="switchFcastModel('gfs')" id="fcast-model-gfs" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GFS 16D</button>
-                  <button onclick="switchFcastModel('nam')" id="fcast-model-nam" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 84H</button>
-                  <button onclick="switchFcastModel('nam_hires')" id="fcast-model-nam_hires" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 3KM 60H</button>
-                  <button onclick="switchFcastModel('hrrr')" id="fcast-model-hrrr" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HRRR 3KM 48H</button>
-                  <button onclick="switchFcastModel('href')" id="fcast-model-href" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">HREF ENS 48H</button>
-                  <button onclick="switchFcastModel('nbm')" id="fcast-model-nbm" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NBM BLEND</button>
-                  <button onclick="switchFcastModel('gefs')" id="fcast-model-gefs" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GEFS SPREAD</button>
                 </div>
                 <div id="fcast-right-panel" style="position:absolute;top:10px;right:6px;bottom:60px;z-index:10;display:flex;flex-direction:column;align-items:flex-end;gap:3px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px;opacity:.25;pointer-events:none;transition:opacity .3s;-webkit-mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);">
                   <!-- PRECIPITATION -->
@@ -10687,7 +10690,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     el = document.getElementById('fcast-area-sub-east'); if(el) { el.style.display = ''; el.style.opacity = hasEast ? '1' : '.25'; }
     el = document.getElementById('fcast-area-sub-central'); if(el) { el.style.display = ''; el.style.opacity = hasCentral ? '1' : '.25'; }
     el = document.getElementById('fcast-area-sub-west'); if(el) { el.style.display = ''; el.style.opacity = hasWest ? '1' : '.25'; }
-    el = document.getElementById('fcast-area-sub-global'); if(el) { el.style.display = ''; el.style.opacity = hasGlobal ? '1' : '.25'; }
+    
   }
 
   function toggleFcastInfo(){
@@ -10901,7 +10904,88 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     var wasActive = popup.classList.contains('active');
     // Close all popups first
     document.querySelectorAll('.space-info-popup.active').forEach(function(p){ p.classList.remove('active'); });
-    if (!wasActive) popup.classList.add('active');
+    if (!wasActive) {
+      // Inject live data for aurora popup
+      if (id === 'aurora-popup') injectLiveAuroraData(popup);
+      popup.classList.add('active');
+    }
+  }
+
+  function injectLiveAuroraData(popup) {
+    var kpEl = document.getElementById('sw-kp');
+    var bzEl = document.getElementById('sw-bz');
+    var windEl = document.getElementById('sw-wind');
+    var gEl = document.getElementById('sw-g');
+    var visEl = document.getElementById('sw-vis');
+    var kpStr = kpEl ? kpEl.textContent.trim() : '--';
+    var bzStr = bzEl ? bzEl.textContent.trim() : '--';
+    var windStr = windEl ? windEl.textContent.trim() : '--';
+    var gStr = gEl ? gEl.textContent.trim() : '--';
+    var visStr = visEl ? visEl.textContent.trim() : '--';
+    var kpNum = parseFloat(kpStr);
+    var bzNum = parseFloat(bzStr);
+    var windNum = parseFloat(windStr);
+
+    // Build live conditions banner
+    var live = '<div style="background:rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;margin-bottom:10px;border-left:3px solid ';
+
+    // Color based on conditions
+    var condColor = '#4a9';
+    var condLabel = 'Quiet';
+    var condDetail = 'Minimal geomagnetic activity. Aurora confined to high latitudes (>65°N).';
+    if (!isNaN(kpNum)) {
+      if (kpNum >= 7) { condColor = '#e44'; condLabel = 'Severe Storm'; condDetail = 'Aurora visible at mid-latitudes (40–50°N). Check for naked-eye visibility even from suburbs.'; }
+      else if (kpNum >= 5) { condColor = '#f90'; condLabel = 'Geomagnetic Storm'; condDetail = gStr + ' storm in progress. Aurora oval expanding equatorward. Dark sky sites at 50–55°N+ should look north.'; }
+      else if (kpNum >= 4) { condColor = '#cc0'; condLabel = 'Active'; condDetail = 'Elevated activity. Aurora possible from dark locations at 55–60°N.'; }
+      else if (kpNum >= 2) { condColor = '#4a9'; condLabel = 'Unsettled'; condDetail = 'Normal background activity. Aurora limited to latitudes above 65°N.'; }
+    }
+
+    live += condColor + ';">';
+    live += '<div style="font-weight:700;font-size:.62rem;color:' + condColor + ';margin-bottom:4px;">⚡ CURRENT CONDITIONS — ' + condLabel.toUpperCase() + '</div>';
+    live += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:5px;">';
+    live += '<span><b>Kp:</b> ' + kpStr + '</span>';
+    live += '<span><b>G:</b> ' + gStr + '</span>';
+    live += '<span><b>Bz:</b> ' + bzStr + '</span>';
+    live += '<span><b>Wind:</b> ' + windStr + '</span>';
+    live += '<span><b>Vis:</b> ' + visStr + '</span>';
+    live += '</div>';
+
+    // Bz interpretation
+    if (!isNaN(bzNum)) {
+      if (bzNum <= -10) live += '<div style="color:#f90;font-size:.52rem;">⚠ Bz is strongly southward — magnetic reconnection is active. Energy is pouring into Earth\'s magnetosphere. Prime aurora conditions.</div>';
+      else if (bzNum <= -5) live += '<div style="font-size:.52rem;">Bz is moderately southward — some magnetic coupling occurring. Aurora enhancement possible if sustained.</div>';
+      else if (bzNum < 0) live += '<div style="font-size:.52rem;">Bz is weakly southward — marginal coupling. Minor aurora enhancement at best.</div>';
+      else live += '<div style="font-size:.52rem;">Bz is northward (positive) — Earth\'s magnetic shield is closed. Even with high Kp, aurora will be muted until Bz turns south.</div>';
+    }
+
+    // Wind interpretation  
+    if (!isNaN(windNum)) {
+      if (windNum >= 700) live += '<div style="color:#f90;font-size:.52rem;margin-top:2px;">🌊 Solar wind speed is very fast (' + windStr + ') — consistent with CME arrival or strong coronal hole stream.</div>';
+      else if (windNum >= 500) live += '<div style="font-size:.52rem;margin-top:2px;">Solar wind elevated (' + windStr + ') — coronal hole stream or CME influence likely.</div>';
+    }
+
+    // Location-specific note
+    var lat = LOCATION ? LOCATION.lat : 40.7;
+    var minKpNeeded = lat >= 60 ? 2 : lat >= 55 ? 4 : lat >= 50 ? 5 : lat >= 45 ? 6 : lat >= 40 ? 7 : 8;
+    live += '<div style="font-size:.52rem;margin-top:4px;opacity:.8;">At your latitude (' + lat.toFixed(1) + '°N), visible aurora typically requires Kp ≥ ' + minKpNeeded + '. ';
+    if (!isNaN(kpNum)) {
+      if (kpNum >= minKpNeeded) live += '<b style="color:#4f8;">Current Kp meets your threshold — check for clear dark skies!</b>';
+      else live += 'Current Kp is ' + (minKpNeeded - kpNum).toFixed(0) + ' point' + (minKpNeeded - kpNum > 1 ? 's' : '') + ' below your threshold.';
+    }
+    live += '</div></div>';
+
+    // Find the first <br> after opening <b> tag and insert live data after the source line
+    var existingHTML = popup.innerHTML;
+    var sourceEnd = existingHTML.indexOf('DSCOVR satellite at L1.');
+    if (sourceEnd > 0) {
+      var insertAt = existingHTML.indexOf('<br><br>', sourceEnd);
+      if (insertAt > 0) {
+        popup.innerHTML = existingHTML.substring(0, insertAt) + '<br><br>' + live + existingHTML.substring(insertAt + 8);
+        return;
+      }
+    }
+    // Fallback: prepend
+    popup.innerHTML = live + existingHTML;
   }
   // Close on outside click
   document.addEventListener('click', function(e){
@@ -10983,20 +11067,461 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     'fcast-tab-10mb': '<b>10mb Stratospheric Analysis</b><br><br><span class="k">What it shows:</span> Conditions at the 10mb level (~100,000 ft / 31 km) — deep in the stratosphere, far above the weather-producing troposphere. This shows the <b>polar vortex</b> — the massive upper-atmosphere circulation of cold air over the pole.<br><br><span class="k">Why it matters:</span> The stratospheric polar vortex influences tropospheric weather on <b>2-6 week timescales</b>. A strong, symmetrical polar vortex tends to produce mild, zonal (west to east) weather patterns across North America and Europe. A disrupted or displaced polar vortex (Sudden Stratospheric Warming, SSW) can trigger <b>prolonged cold outbreaks and winter storms</b> at the surface 2-6 weeks later as the signal propagates downward.<br><br><span class="k">What to watch for:</span> When the polar vortex splits into two lobes or is displaced off the pole, prepare for a significant pattern change toward cold and active weather. These events are rare (a few per winter) but have outsized impacts lasting weeks.<br><br><span class="k">Best for:</span> Sub-seasonal forecasting, cold outbreak prediction, pattern change detection.',
 
     // MODELS - LEFT PANEL
-    'fcast-model-gfs': '<b>GFS — Global Forecast System</b><br><br><span class="k">Source:</span> NOAA/NCEP (National Centers for Environmental Prediction). The American global model, running 4× daily (00, 06, 12, 18 UTC).<br><br><span class="k">Resolution:</span> 0.25° (~28 km) globally. <b>Forecast range: 16 days (384 hours).</b><br><br><span class="k">Strengths:</span> Longest forecast range of any deterministic model. Good at large-scale pattern evolution — jet stream, trough/ridge positions, storm track. The GFS is the workhorse of American medium-range forecasting.<br><br><span class="k">Weaknesses:</span> Coarse resolution means it struggles with mesoscale features — convective precipitation, frontal boundaries, terrain effects, tropical cyclone intensity. Known to occasionally "flip-flop" — dramatically changing solutions between runs, especially beyond Day 5.<br><br><span class="k">Best use:</span> Days 3-10 pattern forecasting. Compare with the European model (ECMWF) for better medium-range confidence.',
+    'fcast-model-gfs': '<b>GFS — Global Forecast System</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP Environmental Modeling Center (EMC). The flagship American global model, first deployed in 1980, running on NOAA supercomputers in Reston, VA and Orlando, FL.' +
+      '<br><br><span class="k">Schedule:</span> 4× daily at 00, 06, 12, 18 UTC. Data available ~3.5–4 hrs after init. All cycles run to 384 hours.' +
+      '<br><br><span class="k">Resolution:</span> 0.25° (~28 km) globally, 127 vertical levels extending to 80 km (mesosphere). One of the higher-resolution global models, though too coarse to resolve thunderstorms.' +
+      '<br><br><span class="k">Forecast range:</span> <b>16 days (384 hours)</b> — the longest of any deterministic model. Meaningful skill degrades significantly after Day 7–8.' +
+      '<br><br><span class="k">Physics:</span> FV3 (Finite-Volume Cubed-Sphere) dynamical core since the v15 upgrade (June 2019). Uses GFDL microphysics, scale-aware Arakawa-Wu deep convection, Noah-MP land surface model, and RRTMGP radiation. The FV3 core replaced the legacy spectral model, improving terrain handling and gravity wave representation.' +
+      '<br><br><span class="k">Strengths:</span> Excellent at large-scale pattern evolution — jet stream, trough/ridge amplification, storm tracks, tropical cyclone genesis. Its 127 vertical levels give strong stratospheric representation for polar vortex monitoring. The GFS is the workhorse of all NOAA extended guidance.' +
+      '<br><br><span class="k">Known weaknesses:</span> Can "flip-flop" dramatically between runs beyond Day 5, especially with cutoff lows. Historical warm and wet bias in winter. Misses mesoscale features — individual storm cells, terrain-forced precip, sea breeze fronts. Often underperforms the ECMWF in medium-range pattern forecasting.' +
+      '<br><br><span class="k">Best use:</span> Days 3–10 pattern forecasting. Always compare with ECMWF. Trust the GFS more for large-scale pattern calls than for precise precip amounts.' +
+      '<br><br><span class="k">Source:</span> <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gfs.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC GFS</a> · <a href="https://nomads.ncep.noaa.gov/" target="_blank" style="color:rgba(120,160,255,.95);">NOMADS Data</a>',
 
-    'fcast-model-nam': '<b>NAM — North American Mesoscale</b><br><br><span class="k">Source:</span> NOAA/NCEP. Regional model covering North America, running 4× daily.<br><br><span class="k">Resolution:</span> 12 km parent domain. <b>Forecast range: 84 hours (3.5 days).</b><br><br><span class="k">Strengths:</span> Better than GFS at mesoscale features — frontal precipitation bands, orographic effects, lake-effect snow, sea breeze circulations. Improved terrain interaction due to higher resolution. Good at 12-48 hour QPF.<br><br><span class="k">Weaknesses:</span> Known for precipitation biases — tends to over-predict QPF ("wet NAM"). Shorter range than GFS. Can struggle with convective timing. The NAM\'s convective parameterization has been a persistent challenge.<br><br><span class="k">Best use:</span> 12-48 hour regional forecasting, winter storm QPF, terrain-influenced weather.',
+    'fcast-model-nam': '<b>NAM — North American Mesoscale Model</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP EMC. NOAA\'s primary regional model since 2006, replacing the Eta model. Bridges the gap between the coarse global GFS and high-res convection-allowing models.' +
+      '<br><br><span class="k">Schedule:</span> 4× daily at 00, 06, 12, 18 UTC. Data available ~1.5–2 hrs after init.' +
+      '<br><br><span class="k">Resolution:</span> 12 km parent domain covering North America, Central America, and surrounding oceans. 60 vertical levels.' +
+      '<br><br><span class="k">Forecast range:</span> <b>84 hours (3.5 days)</b> for 00Z/12Z. 06Z/18Z run to 60 hours.' +
+      '<br><br><span class="k">Physics:</span> NEMS/NMMB (Nonhydrostatic Multiscale Model on the B-grid) dynamical core with Ferrier-Aligo microphysics, Betts-Miller-Janjic (BMJ) convective parameterization, and Noah land surface model. The BMJ scheme is the source of many known biases.' +
+      '<br><br><span class="k">Strengths:</span> Better than GFS at mesoscale features: frontal precipitation bands, orographic enhancement, lake-effect snow, sea breeze circulations, and coastal fronts. At 12km it captures terrain interactions the 28km GFS misses.' +
+      '<br><br><span class="k">Known weaknesses:</span> The infamous "wet NAM" — systematically over-predicts precipitation by 50–100%. BMJ convection fires too early and too broadly. Can produce unrealistic runaway convective feedback loops. Has been largely surpassed by the HRRR for short-range work.' +
+      '<br><br><span class="k">Best use:</span> 12–48 hr regional forecasting, winter storm QPF, terrain-influenced weather. Mentally discount its convective precip by ~30%.' +
+      '<br><br><span class="k">Source:</span> <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/nam.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC NAM</a> · <a href="https://nomads.ncep.noaa.gov/" target="_blank" style="color:rgba(120,160,255,.95);">NOMADS Data</a>',
 
-    'fcast-model-nam_hires': '<b>NAM 3km — High-Resolution Nest</b><br><br><span class="k">Source:</span> NOAA/NCEP. A convection-allowing nested domain within the NAM, running on multiple regional domains.<br><br><span class="k">Resolution:</span> 3 km — fine enough to explicitly resolve individual thunderstorm cells without convective parameterization. <b>Forecast range: 60 hours.</b><br><br><span class="k">Strengths:</span> Resolves individual storm cells, mesoscale banding in winter storms, convective outflow boundaries, and terrain-forced precipitation. No convective parameterization = more realistic storm structures. Produces simulated radar that closely matches real radar patterns.<br><br><span class="k">Weaknesses:</span> Limited domain (regional, not CONUS-wide). Can overdo convection once initiated. 60-hour limit.<br><br><span class="k">Best use:</span> Short-range convective forecasting, storm mode prediction, winter banding.',
+    'fcast-model-nam_hires': '<b>NAM 3km — Convection-Allowing Nest</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP EMC. A high-resolution inner nest within the NAM parent, using the same NMMB core at a resolution fine enough to explicitly simulate individual thunderstorm cells.' +
+      '<br><br><span class="k">Schedule:</span> Runs with NAM parent cycle (4× daily).' +
+      '<br><br><span class="k">Resolution:</span> <b>3 km</b> — the critical threshold for "convection-allowing" modeling. At 3km, the model directly simulates updrafts, downdrafts, and storm-scale circulations using fluid dynamics rather than statistical parameterization. Multiple nested domains cover different CONUS regions.' +
+      '<br><br><span class="k">Forecast range:</span> <b>60 hours.</b>' +
+      '<br><br><span class="k">Why convection-allowing matters:</span> Convective parameterization (used in GFS, NAM 12km, etc.) is the #1 source of error in weather models. It approximates thunderstorms with statistical assumptions. At 3km, the model grows storms from actual physics — producing realistic supercell structures, squall lines, MCSs, and mesoscale snow bands that parameterized models simply cannot capture.' +
+      '<br><br><span class="k">Strengths:</span> Resolves individual storm cells, winter mesoscale banding, outflow boundaries, and terrain-forced features. Simulated radar closely matches reality. Far superior to NAM 12km for convective weather.' +
+      '<br><br><span class="k">Known weaknesses:</span> Inherits NAM physics biases. Limited regional domains (not CONUS-wide). Doesn\'t assimilate radar data like the HRRR, so initial hours are less accurate. Can overdo convection once initiated.' +
+      '<br><br><span class="k">Best use:</span> Short-range storm mode and winter banding when HRRR isn\'t available for a particular cycle.' +
+      '<br><br><span class="k">Source:</span> <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/nam.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC NAM</a>',
 
-    'fcast-model-hrrr': '<b>HRRR — High-Resolution Rapid Refresh</b><br><br><span class="k">Source:</span> NOAA/NCEP. America\'s premier short-range, convection-allowing model. Runs <b>every hour</b> — the fastest refresh of any operational model.<br><br><span class="k">Resolution:</span> 3 km, convection-allowing (no parameterization). <b>Forecast range: 48 hours.</b> Assimilates real-time radar data, surface observations, aircraft data, and satellite retrievals every hour.<br><br><span class="k">Strengths:</span> <b>The best model for 0-18 hour forecasting.</b> Radar data assimilation means the first few forecast hours closely match reality — the HRRR "knows" where storms are right now and extrapolates them forward. Excellent at convective mode, timing, and evolution. Best model for simulated radar. Extremely useful for day-of severe weather operations.<br><br><span class="k">Weaknesses:</span> Beyond 18 hours, skill degrades toward NAM/GFS levels. Can struggle with convective initiation timing (when new storms will fire). Hourly updates mean rapid changes between runs — use the latest run.<br><br><span class="k">Best use:</span> Same-day and next-day forecasting, real-time storm tracking, event operations.',
+    'fcast-model-hrrr': '<b>HRRR — High-Resolution Rapid Refresh</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP EMC + NOAA Global Systems Laboratory (GSL), Boulder, CO. America\'s premier short-range weather model and arguably the most innovative operational NWP system in the world. Operational since 2014, continuously upgraded.' +
+      '<br><br><span class="k">Schedule:</span> Runs <b>every single hour</b>, 24/7 — the fastest operational cycle in the world. 00/06/12/18Z extend to 48 hrs; all other hourly runs go to 18 hrs.' +
+      '<br><br><span class="k">Resolution:</span> <b>3 km</b> convection-allowing, CONUS domain, 80 vertical levels. Uses the WRF-ARW dynamical core with Thompson aerosol-aware microphysics — a sophisticated mixed-phase ice scheme that tracks 5 hydrometeor species.' +
+      '<br><br><span class="k">The secret weapon — data assimilation:</span> What makes the HRRR special is its <span class="k">data assimilation</span>. Every hour it ingests:' +
+      '<br>• 3D radar reflectivity from the entire NEXRAD network' +
+      '<br>• Satellite radiance data (GOES-16/17/18)' +
+      '<br>• Aircraft observations (AMDAR/ACARS, ~750,000 obs/day)' +
+      '<br>• Surface METAR, mesonet, and buoy observations' +
+      '<br>• GPS precipitable water retrievals' +
+      '<br>• Lightning data (GLM/NLDN)' +
+      '<br>It uses hybrid ensemble-variational (EnVar) analysis to blend everything. Result: the HRRR\'s first few hours are remarkably accurate because it <i>knows</i> where storms are right now.' +
+      '<br><br><span class="k">Strengths:</span> <b>The undisputed best model for 0–18 hour forecasting.</b> Exceptional at convective mode (discrete cells vs. squall lines vs. MCSs), storm timing, evolution, and simulated radar. Thompson microphysics produces realistic precipitation type discrimination. Used operationally by every NWS office, the SPC, and the Aviation Weather Center.' +
+      '<br><br><span class="k">Known weaknesses:</span> Beyond 18 hrs, skill degrades toward NAM/GFS levels as the data assimilation advantage fades. Struggles with convective <i>initiation</i> timing — knows where storms are, but predicting where new ones form is harder. Hourly updates mean rapidly changing solutions. Difficulty with fog and low stratus.' +
+      '<br><br><span class="k">Best use:</span> Same-day and next-day forecasting, real-time severe operations, precise precip timing — any time "the next 12 hours" is what matters.' +
+      '<br><br><span class="k">Source:</span> <a href="https://rapidrefresh.noaa.gov/hrrr/" target="_blank" style="color:rgba(120,160,255,.95);">NOAA GSL HRRR</a> · <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/hrrr.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC HRRR</a> · <a href="https://nomads.ncep.noaa.gov/" target="_blank" style="color:rgba(120,160,255,.95);">NOMADS</a>',
 
-    'fcast-model-href': '<b>HREF — High-Resolution Ensemble Forecast</b><br><br><span class="k">Source:</span> NOAA/NCEP. An ensemble combining multiple convection-allowing models (HRRR, NAM 3km, and others) with time-lagged runs to create probabilistic guidance.<br><br><span class="k">Resolution:</span> 3 km members. <b>Forecast range: 48 hours.</b><br><br><span class="k">Strengths:</span> <b>Addresses the single biggest problem in deterministic modeling — overconfidence.</b> No single model run is correct everywhere. By running multiple high-res models and combining their output, HREF shows where models agree (high confidence) vs disagree (uncertainty). Probability of exceeding thresholds (e.g., >1" rain, >50 dBZ reflectivity) is more actionable than a single deterministic forecast.<br><br><span class="k">Weaknesses:</span> Ensemble spread can be too narrow (members too similar) because they share similar physics. Limited to 48 hours.<br><br><span class="k">Best use:</span> Probabilistic severe weather, confidence assessment, ensemble-based QPF.',
+    'fcast-model-href': '<b>HREF — High-Resolution Ensemble Forecast</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP EMC. NOAA\'s convection-allowing ensemble — multiple high-res runs combined for probabilistic severe weather and heavy rainfall guidance.' +
+      '<br><br><span class="k">Schedule:</span> 2× daily (00Z, 12Z). Data available ~5–6 hrs after init.' +
+      '<br><br><span class="k">Resolution:</span> All members at <b>3 km</b> convection-allowing. <b>Forecast range: 48 hours.</b>' +
+      '<br><br><span class="k">Members (~8–10):</span>' +
+      '<br>• HRRR (current + previous run)' +
+      '<br>• NAM 3km Nest (current + previous run)' +
+      '<br>• HiResW ARW (WRF core, 2 members)' +
+      '<br>• HiResW NMMB (2 members)' +
+      '<br>Time-lagging adds diversity without running extra models.' +
+      '<br><br><span class="k">Why ensembles matter:</span> A single deterministic model gives one answer — and it\'s wrong somewhere. An ensemble gives a <i>range</i> of answers. Where members agree = high confidence. Where they diverge = real uncertainty. The HREF addresses <b>the biggest problem in convective forecasting: overconfidence</b>.' +
+      '<br><br><span class="k">Key products:</span> Ensemble mean, Probability-Matched Mean (PMM — preserves realistic intensities the simple mean smooths out), exceedance probabilities for precip and reflectivity thresholds, ensemble maximum, and spread.' +
+      '<br><br><span class="k">Known weaknesses:</span> Members share similar physics, so spread can be too narrow (under-dispersive). Limited to 48 hrs. Less member diversity than a "true" perturbed-IC ensemble.' +
+      '<br><br><span class="k">Best use:</span> Day 1–2 probabilistic severe/heavy rain forecasting, confidence assessment, SPC mesoscale discussion support.' +
+      '<br><br><span class="k">Source:</span> <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/href.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC HREF</a>',
 
-    'fcast-model-nbm': '<b>NBM — National Blend of Models</b><br><br><span class="k">Source:</span> NOAA/NCEP. A post-processed statistical blend of multiple models (GFS, NAM, ECMWF, Canadian, HRRR, and others) bias-corrected against observations and calibrated for local climatology.<br><br><span class="k">Resolution:</span> 2.5 km (CONUS). <b>Forecast range: 10 days.</b><br><br><span class="k">Strengths:</span> <b>The most accurate single-source forecast for sensible weather elements</b> (temperature, wind, precipitation probability, sky cover). Bias correction removes systematic model errors. Calibrated probabilities are statistically reliable — when NBM says 40% chance of rain, it rains ~40% of the time. Better than any single raw model for point forecasts.<br><br><span class="k">Weaknesses:</span> Limited product set (no simulated radar, no upper-air charts). Statistical smoothing loses mesoscale detail. Not available for all parameters.<br><br><span class="k">Best use:</span> Temperature and PoP forecasting, bias-corrected guidance, NWS forecast grids.',
+    'fcast-model-nbm': '<b>NBM — National Blend of Models</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP / MDL (Meteorological Development Laboratory). The NBM is fundamentally different — it\'s not a weather model. It\'s a <b>statistical post-processing system</b> that blends multiple models, bias-corrects against observations, and produces calibrated probabilistic guidance.' +
+      '<br><br><span class="k">Schedule:</span> Updates hourly with latest model guidance.' +
+      '<br><br><span class="k">Resolution:</span> <b>2.5 km</b> (CONUS). <b>Forecast range: 10+ days.</b>' +
+      '<br><br><span class="k">Input models blended:</span>' +
+      '<br>• GFS + GEFS (American global + ensemble)' +
+      '<br>• ECMWF + ENS (European — world\'s best global model)' +
+      '<br>• CMC + GEPS (Canadian global + ensemble)' +
+      '<br>• NAM, HRRR, HREF (American regional)' +
+      '<br>• RAP (Rapid Refresh, 13km)' +
+      '<br>• MOS (Model Output Statistics)' +
+      '<br><br><span class="k">How it works:</span> Applies MOS regression, bias correction, and Bayesian Model Averaging to weight each model based on its recent performance for each specific element and location. If ECMWF has been better at temperature recently, it gets more weight for temperature. If HRRR has been better at precip, it gets more weight there.' +
+      '<br><br><span class="k">Strengths:</span> <b>The most accurate single source for sensible weather</b> — temperature, dewpoint, wind, PoP, sky cover. Calibrated probabilities are statistically reliable: when NBM says 40% rain, it rains ~40% of the time. This calibration is invaluable for decisions. The NBM drives the NWS hourly forecast grids that power weather.gov and most weather apps.' +
+      '<br><br><span class="k">Known weaknesses:</span> No simulated radar, no upper-air charts, no severe parameters. Statistical smoothing loses mesoscale detail. Performs poorly during rare/unprecedented events (trained on historical data). Cannot capture "black swan" scenarios.' +
+      '<br><br><span class="k">Best use:</span> The best starting point for any point forecast. Use as baseline, then adjust with raw model data for details NBM can\'t capture.' +
+      '<br><br><span class="k">Source:</span> <a href="https://vlab.noaa.gov/web/mdl/nbm" target="_blank" style="color:rgba(120,160,255,.95);">NOAA MDL NBM</a> · <a href="https://blend.mdl.nws.noaa.gov/" target="_blank" style="color:rgba(120,160,255,.95);">NBM Viewer</a>',
 
-    'fcast-model-gefs': '<b>GEFS — Global Ensemble Forecast System</b><br><br><span class="k">Source:</span> NOAA/NCEP. A 31-member ensemble (1 control + 30 perturbed members) running the GFS model with slightly different initial conditions and physics.<br><br><span class="k">Resolution:</span> 0.5° (~50 km). <b>Forecast range: 16 days.</b><br><br><span class="k">Strengths:</span> Shows the <b>range of possible outcomes</b> for the medium range. When members cluster tightly = high forecast confidence. When members diverge widely = pattern is uncertain. The ensemble mean (average of all members) outperforms any single member beyond Day 5. Ensemble spread is the best available measure of forecast uncertainty.<br><br><span class="k">Weaknesses:</span> Low resolution misses mesoscale features. Can under-disperse (members too similar) in some flow regimes.<br><br><span class="k">Best use:</span> Days 5-16 pattern forecasting, forecast confidence assessment, extreme event probability.'
+    'fcast-model-gefs': '<b>GEFS — Global Ensemble Forecast System</b>' +
+      '<br><br><span class="k">Operator:</span> NOAA / NCEP EMC. The ensemble version of the GFS — instead of one run, it runs <b>31 times simultaneously</b> with slightly different starting conditions and physics to map out the range of possible outcomes.' +
+      '<br><br><span class="k">Schedule:</span> 4× daily (00, 06, 12, 18 UTC). Data available ~5 hrs after init.' +
+      '<br><br><span class="k">Resolution:</span> 0.25° (~28 km) Days 0–10, degrading to 0.5° (~50 km) Days 10–16. 64 vertical levels. <b>Forecast range: 16 days (384 hours).</b>' +
+      '<br><br><span class="k">Members:</span> 1 control (unperturbed GFS) + 30 perturbed members. Perturbations use Ensemble Transform with Rescaling (ETR) for initial conditions + stochastic physics (SPPT, SHUM, SKEB) during integration. Each member = a plausible alternative atmosphere.' +
+      '<br><br><span class="k">Reading ensemble output:</span>' +
+      '<br>• <b>Ensemble mean:</b> Average of all 31 members. Beyond Day 5, it outperforms any single deterministic run by filtering out chaos.' +
+      '<br>• <b>Spread:</b> How much members disagree. Low = high confidence. High = multiple outcomes possible, don\'t trust any single solution.' +
+      '<br>• <b>Spaghetti plots:</b> One contour tracked across all members. Tight = reliable. Wild spaghetti = chaos.' +
+      '<br><br><span class="k">Strengths:</span> The best tool for <b>forecast uncertainty</b>. Essential for Days 5–16. Identifies high-impact, low-probability scenarios. Used for TC track uncertainty cones, winter storm probabilities, and Week 2 outlooks.' +
+      '<br><br><span class="k">Known weaknesses:</span> Can be under-dispersive (members cluster too tightly). Coarse resolution misses mesoscale detail. Individual members aren\'t skillful alone; value is in the collective.' +
+      '<br><br><span class="k">Best use:</span> Days 5–16 pattern forecasting, uncertainty assessment, tropical cyclone guidance — any time you need "how confident should I be?"' +
+      '<br><br><span class="k">Source:</span> <a href="https://www.emc.ncep.noaa.gov/emc/pages/numerical_forecast_systems/gefs.php" target="_blank" style="color:rgba(120,160,255,.95);">NCEP/EMC GEFS</a> · <a href="https://nomads.ncep.noaa.gov/" target="_blank" style="color:rgba(120,160,255,.95);">NOMADS Data</a>'
   };
+  // ── RIGHT-SIDE PRODUCT TAB TOOLTIPS ──
+  var productTooltips = {
+
+    // ═══════════════════════════════════
+    // PRECIPITATION
+    // ═══════════════════════════════════
+
+    'fcast-tab-sim': '<b>Simulated Composite Reflectivity</b>' +
+      '<br><br><span class="k">What this is:</span> The model calculates where rain, snow, ice, and graupel will exist in the atmosphere, then converts those hydrometeor concentrations into the equivalent radar reflectivity (dBZ) that a real WSR-88D would observe. This is the single most intuitive forecast product — it looks like radar because it <i>is</i> simulated radar.' +
+      '<br><br><span class="k">The dBZ scale:</span>' +
+      '<br><span style="color:#00e600">▮</span> <b>Green (20–35 dBZ)</b> — Light to moderate rain at ~0.01–0.15 in/hr, or moderate snow. Broad green areas = stratiform precipitation from a warm/cold front or overrunning pattern.' +
+      '<br><span style="color:#e6e600">▮</span> <b>Yellow (35–45 dBZ)</b> — Moderate to heavy rain ~0.15–0.50 in/hr. Embedded convective cells within a frontal rain shield. Snowfall rates of 1–2 in/hr possible.' +
+      '<br><span style="color:#e69000">▮</span> <b>Orange (45–50 dBZ)</b> — Heavy rain ~0.5–1.0 in/hr. Small hail possible. Urban drainage systems start struggling at this intensity.' +
+      '<br><span style="color:#e62000">▮</span> <b>Red (50–60 dBZ)</b> — Very heavy rain >1 in/hr, hail likely (≥0.5\"). Severe thunderstorm criteria met. Flash flood risk is high.' +
+      '<br><span style="color:#e600e6">▮</span> <b>Magenta (60–70 dBZ)</b> — Extreme intensity. Large hail (≥1\"), damaging winds, tornado-producing supercells. Almost always warrants severe/tornado warnings.' +
+      '<br><span style="color:#c8a0ff">▮</span> <b>Purple/White (70+ dBZ)</b> — Giant hail (≥2\"), extremely violent storms. May indicate lofted debris (tornado debris signature).' +
+      '<br><br><span class="k">How to use it:</span> Compare the model\'s current-hour simulated radar against the live radar to grade model performance. If it\'s nailing the placement and intensity of current storms, trust its forecast hours more. If it\'s off by 50+ miles or missing key features, weight other models more heavily. Animate the full loop to see where storms develop, intensify, and weaken.',
+
+    'fcast-tab-maxref': '<b>Composite Maximum Reflectivity</b>' +
+      '<br><br><span class="k">What this is:</span> At every grid point, the model scans the <i>entire</i> vertical atmospheric column from surface to tropopause and reports the single highest reflectivity value found at any altitude. This catches features that surface-level or low-level radar would completely miss — especially hail cores suspended in powerful updrafts miles above the ground.' +
+      '<br><br><span class="k">Why it matters:</span> A storm can have 65 dBZ returns at 25,000 ft (where grapefruit-sized hail is growing) while showing only 45 dBZ near the surface (because the hail hasn\'t fallen yet). Max reflectivity reveals what\'s happening <i>inside</i> the storm, not just what\'s near ground level.' +
+      '<br><br><span class="k">Thresholds:</span> >50 dBZ = severe potential. >60 dBZ = large hail (≥1\") almost certain. >65 dBZ = giant hail (≥2\"), a genuine threat to life and property. A compact, isolated core of 60+ dBZ embedded in a broader storm complex is the hallmark of a supercell updraft.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF — convection-allowing models only. GFS/NAM 12km are too coarse to explicitly simulate individual storm cores.',
+
+    'fcast-tab-radar1km': '<b>1km AGL (Above Ground Level) Reflectivity</b>' +
+      '<br><br><span class="k">What this is:</span> Simulated radar returns at exactly 1 kilometer above the terrain surface — the altitude closest to what a real weather radar sees on its lowest elevation scan (~0.5° tilt). While composite reflectivity tells you what\'s happening anywhere in the atmosphere, 1km reflectivity tells you what\'s actually reaching the ground.' +
+      '<br><br><span class="k">The key insight — virga:</span> When composite reflectivity shows strong returns but 1km reflectivity is weak or absent, that\'s <span class="k">virga</span> — precipitation evaporating or sublimating before reaching the surface. Virga is common in the Desert Southwest, the High Plains, and during elevated convection events. You might see a dramatic-looking composite radar display, but nothing is falling at the ground.' +
+      '<br><br><span class="k">Why forecasters love it:</span> It\'s the most honest representation of what you\'ll actually experience at ground level. It strips away the noise of upper-level ice and elevated returns. If 1km shows 50+ dBZ, that heavy rain or hail IS reaching you. If it\'s blank while composite is screaming, everything is evaporating aloft.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-echotop': '<b>Echo Tops</b>' +
+      '<br><br><span class="k">What this is:</span> The altitude (in feet above sea level) where the highest detectable radar echo exists in the column. It directly measures the vertical extent of precipitation and, by proxy, the strength of the storm\'s updraft — the engine that powers every thunderstorm. The stronger the updraft, the higher it lofts precipitation particles.' +
+      '<br><br><span class="k">Reading the thresholds:</span>' +
+      '<br>• <b>20,000–30,000 ft</b> — Normal convection. Typical summer showers. No severe threat.' +
+      '<br>• <b>30,000–40,000 ft</b> — Vigorous convection. Moderate-heavy rain, small hail possible. Avoid for aviation.' +
+      '<br>• <b>40,000–50,000 ft</b> — Powerful updraft. Large hail, damaging winds likely. These storms are severe or becoming severe.' +
+      '<br>• <b>50,000+ ft</b> — Explosive updraft punching into the stratosphere (<span class="k">overshooting top</span>). The tropopause over the CONUS is typically at 35,000–40,000 ft, so a 50,000+ ft echo overshoots by 10,000–15,000 ft. This takes incredible energy.' +
+      '<br><br><span class="k">Critical pattern — rapidly rising tops:</span> Echo tops jumping 10,000+ ft in 15–30 minutes signal a storm undergoing explosive intensification. This often happens right before a storm becomes severe. It\'s one of the earliest indicators available to forecasters, often preceding radar rotation signatures by 15–30 minutes.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-ptype': '<b>Precipitation Type</b>' +
+      '<br><br><span class="k">What this is:</span> The model analyzes the complete temperature profile from cloud level down to the surface and categorizes every grid point\'s precipitation as rain, snow, freezing rain, or sleet. This is the product that answers the question every winter storm generates: "Will it be rain, snow, or ice?"' +
+      '<br><br><span class="k">How precipitation type is determined:</span> Snow forms in clouds and falls toward the ground. What happens next depends entirely on the thermal layers it passes through:' +
+      '<br>• <b>All cold below</b> → <span class="k">Snow</span>. The flake never melts. You get pure snowfall.' +
+      '<br>• <b>Deep warm layer aloft + deep cold near surface</b> → <span class="k">Sleet (ice pellets)</span>. Snow melts completely in the warm layer, then the raindrop refreezes during a long fall through deep cold air. You hear it bouncing off hard surfaces.' +
+      '<br>• <b>Deep warm layer aloft + shallow cold near surface</b> → <span class="k">Freezing rain</span>. Snow melts but the cold surface layer isn\'t deep enough to refreeze it. The drop remains liquid and <i>instantly freezes on contact</i> with any surface at or below 32°F. Silent. Invisible. Deadly.' +
+      '<br>• <b>All warm below</b> → <span class="k">Rain</span>.' +
+      '<br><br><span class="k">Why freezing rain is the worst:</span> Even 0.25\" of ice accumulation can snap tree limbs, collapse power lines, and make every surface a sheet of glass. A half-inch of ice has brought entire metro areas to a standstill for days. Ice storms cause more power outages than any other weather event — recovery often takes 1–3 weeks.' +
+      '<br><br><span class="k">Model limitations:</span> The rain/snow line is one of the hardest things to forecast. It depends on the exact depth and temperature of boundary-layer cold air, which can be influenced by terrain, urban heat islands, and cold air damming. A 1°F error in the warm nose temperature can flip the entire forecast.',
+
+    'fcast-tab-ptot': '<b>Total QPF (Quantitative Precipitation Forecast)</b>' +
+      '<br><br><span class="k">What this is:</span> The grand total of all liquid-equivalent precipitation accumulated over the entire forecast period. All frozen precipitation is melted down — 12 inches of fluffy powder snow shows up as roughly 0.8–1.0 inches. Think of it as "how much water is this storm delivering to the landscape?"' +
+      '<br><br><span class="k">Flash flood assessment:</span> Compare the QPF total against your county\'s <span class="k">Flash Flood Guidance (FFG)</span> values, published by your local NWS River Forecast Center. FFG tells you how much rain is needed over 1, 3, or 6 hours to cause flooding given current soil moisture and stream levels. If model QPF exceeds FFG, flash flooding becomes likely — and if it exceeds FFG by a wide margin, catastrophic flooding is possible.' +
+      '<br><br><span class="k">Regional context:</span>' +
+      '<br>• <b>Eastern US:</b> 4–6\" in 24 hrs is a major flood event. Soils are often already moist; terrain funnels runoff efficiently.' +
+      '<br>• <b>Arid West:</b> 1–2\" can be catastrophic. Desert soils don\'t absorb water, and canyons concentrate flash floods into lethal walls of water moving 15–20 mph.' +
+      '<br>• <b>Gulf Coast:</b> Can tolerate 6–10+\" due to flat terrain and high-capacity drainage — but anything beyond overwhelms those systems too.' +
+      '<br><br><span class="k">Snow conversion:</span> Multiply QPF by the snow-to-liquid ratio (SLR) to estimate snow depth. Typical SLR is 10–13:1, but cold fluffy snow can be 15–20:1 and warm wet snow as low as 5–8:1.',
+
+    'fcast-tab-precip1hr': '<b>1-Hour Precipitation</b>' +
+      '<br><br><span class="k">What this is:</span> The predicted rainfall (or liquid-equivalent snowfall) for each individual forecast hour. This is the temporal precision product — it tells you not just <i>how much</i> but <i>exactly when</i> the heaviest precipitation hits your location.' +
+      '<br><br><span class="k">Intensity scale:</span>' +
+      '<br>• <b>0.10–0.25 in/hr</b> — Moderate rain. Streets wet, drainage handles it.' +
+      '<br>• <b>0.25–0.50 in/hr</b> — Heavy rain. Puddles form, low-lying roads begin flooding.' +
+      '<br>• <b>0.50–1.00 in/hr</b> — Very heavy. Urban flooding begins. Storm drains overwhelmed. Poor visibility for driving.' +
+      '<br>• <b>1.00–2.00 in/hr</b> — Intense. Flash flooding in most terrain. Rapid creek rises. Life-threatening driving conditions.' +
+      '<br>• <b>>2.00 in/hr</b> — Extreme. Flash flooding is almost certain on any terrain. Walls of water in ravines and draws.' +
+      '<br><br><span class="k">For snow:</span> Rates above 1 in/hr liquid equivalent can produce <span class="k">thundersnow</span> and near-zero visibility (whiteout). At a 12:1 SLR, that\'s 12 in/hr of snow accumulation — roads become impassable within minutes.' +
+      '<br><br><span class="k">Tip:</span> Step through frames one at a time to pinpoint the exact hour the heaviest precip arrives at your location. This is how NWS forecasters determine warning timing.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-precip6hr': '<b>6-Hour Precipitation</b>' +
+      '<br><br><span class="k">What this is:</span> Accumulated precipitation in 6-hour windows — the standard operational interval used by NCEP for model verification and NWS inter-office coordination. This is the "official" QPF resolution that forecasters build their warnings around.' +
+      '<br><br><span class="k">Why 6 hours?</span> Hourly precipitation is noisy because individual convective cells come and go on 30–60 minute timescales. By accumulating over 6 hours, you see the persistent, organized precipitation pattern — the frontal rain band, the overrunning shield, the mesoscale convective system\'s total footprint — with the short-lived noise filtered out.' +
+      '<br><br><span class="k">Thresholds:</span> >2\" in 6 hrs = significant event warranting a Flood Watch. >3\" = approaches flash flood emergency levels for most eastern US locations. >4\" = extreme, exceeds flash flood guidance for nearly everywhere east of the Rockies.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM, GEFS.',
+
+    'fcast-tab-precip24hr': '<b>24-Hour Precipitation</b>' +
+      '<br><br><span class="k">What this is:</span> Full-day accumulation totals that capture an entire storm\'s liquid-equivalent water delivery. This is the product you compare against historical records and engineering design standards.' +
+      '<br><br><span class="k">Benchmarking your storm:</span> NOAA Atlas 14 publishes precipitation frequency estimates for every location in the US — you can look up what a "100-year storm" means for your county in terms of 24-hour rainfall. If the model QPF approaches or exceeds that value, you\'re looking at a genuinely rare and dangerous event.' +
+      '<br><br><span class="k">Regional benchmarks:</span>' +
+      '<br>• <b>Northeast:</b> 3–4\" is significant, 6+\" is exceptional (often tropical remnants).' +
+      '<br>• <b>Southeast:</b> 4–6\" is common with tropical moisture; 8–10+\" causes widespread catastrophic flooding.' +
+      '<br>• <b>Central Plains:</b> 3–5\" from MCS complexes; training cells can produce 8+\" in narrow swaths.' +
+      '<br>• <b>West:</b> 2–3\" is a major event; atmospheric rivers can deliver 5–10+\" on windward mountain slopes over 24–48 hrs.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM, GEFS.',
+
+    'fcast-tab-snow': '<b>Snowfall Accumulation</b>' +
+      '<br><br><span class="k">What this is:</span> Forecast snow depth in inches, accounting for the <span class="k">snow-to-liquid ratio (SLR)</span> — the factor that converts liquid water into actual snow depth on the ground. The SLR is critically important because the same amount of moisture can produce wildly different snow amounts depending on temperature.' +
+      '<br><br><span class="k">Snow-to-liquid ratio by temperature:</span>' +
+      '<br>• <b>30–32°F:</b> SLR 5–8:1. Heavy, wet, "heart attack snow." Packs dense, extremely heavy to shovel (~20 lbs per cubic foot). Clings to trees and power lines, causing widespread damage.' +
+      '<br>• <b>25–30°F:</b> SLR 10–12:1. Classic "normal" snow. Good packing snow. Standard assumption in most models.' +
+      '<br>• <b>15–25°F:</b> SLR 12–15:1. Light, fluffy snow. Drifts easily in even moderate wind.' +
+      '<br>• <b>0–15°F:</b> SLR 15–20:1. Very fluffy powder. 1\" of liquid = 15–20\" of snow. Blows around with any wind, creating ground blizzard conditions.' +
+      '<br>• <b>Below 0°F:</b> SLR can reach 25–40:1 with tiny "diamond dust" crystals. The air is so cold it holds very little moisture, so amounts are small but incredibly fluffy.' +
+      '<br><br><span class="k">Model caveat:</span> Most models use a simplified SLR around 10–13:1. If your storm is particularly cold or warm, actual accumulation will differ significantly. Also, settling is real — 12\" falling over 6 hours may only measure 8\" on the ground because the weight of new snow compresses what fell earlier.',
+
+    'fcast-tab-cape': '<b>CAPE & CIN / Precipitable Water</b>' +
+      '<br><br><span class="k">This product shows different things depending on which model you\'re using:</span>' +
+      '<br><br><span class="k">On GFS/GEFS — Precipitable Water (PWAT):</span> The total amount of moisture in the entire atmospheric column, as if you squeezed every drop of water vapor from surface to tropopause into a bucket. Measured in inches.' +
+      '<br>• <b><1.0\":</b> Dry atmosphere. Fair skies, or very efficient precipitation (moisture wrung out quickly).' +
+      '<br>• <b>1.0–1.5\":</b> Moderate moisture. Scattered showers possible but not prolific rain producers.' +
+      '<br>• <b>1.5–2.0\":</b> Moisture-rich. Sustained heavy rainfall possible. Flood risk elevates considerably.' +
+      '<br>• <b>>2.0\":</b> Anomalously moist — in the top 10% for your region and season. Extreme rainfall rates likely if a lifting mechanism triggers convection. Tropical moisture connections (atmospheric rivers, tropical moisture exports).' +
+      '<br><br><span class="k">On Hi-Res Models — CAPE + CIN:</span>' +
+      '<br><span class="k">CAPE (Convective Available Potential Energy)</span> measures the fuel available for thunderstorms — the total positive buoyancy a rising air parcel can tap. Measured in Joules per kilogram:' +
+      '<br>• <b>0–500 J/kg:</b> Marginal. Weak storms at best, usually not severe.' +
+      '<br>• <b>500–1500:</b> Moderate. Ordinary thunderstorms; isolated severe possible with good shear.' +
+      '<br>• <b>1500–3000:</b> Strong. Organized severe weather likely if shear is sufficient. Supercells favored.' +
+      '<br>• <b>3000–5000:</b> Very strong. Intense storms almost certain when triggered.' +
+      '<br>• <b>>5000:</b> Extreme. The atmosphere is loaded with energy — but only matters if something breaks through the cap.' +
+      '<br><br><span class="k">CIN (Convective Inhibition)</span> is the cap — the energy barrier preventing air parcels from rising freely. Moderate CIN (50–150 J/kg) can actually make severe weather <i>worse</i>: it prevents early weak storms from firing and consuming instability, allowing CAPE to build all day until something finally breaks through late afternoon, producing fewer but much more violent storms.',
+
+    // ═══════════════════════════════════
+    // TEMPERATURE
+    // ═══════════════════════════════════
+
+    'fcast-tab-temp': '<b>1000–500mb Thickness & Precipitation Type</b>' +
+      '<br><br><span class="k">What this is:</span> Thickness is the distance in decameters between two pressure surfaces. Because warm air expands and cold air contracts, the thickness of a layer is directly proportional to its mean temperature. This product overlays thickness contours with precipitation shading to reveal the rain/snow transition zone across the map.' +
+      '<br><br><span class="k">The 540-decameter rule:</span> The <span class="k">540 dam line</span> on the 1000–500mb thickness chart is the most famous rule of thumb in meteorology. North of it, the mean tropospheric temperature supports snow. South of it, rain. Forecasters have used this single contour since the 1940s.' +
+      '<br><br><span class="k">When the rule breaks:</span>' +
+      '<br>• <b>Elevation:</b> Higher terrain is colder, so snow occurs south of the 540 line in mountains.' +
+      '<br>• <b>Warm noses:</b> A shallow warm layer aloft can melt snow into freezing rain even when the 1000–500mb mean is cold enough for snow.' +
+      '<br>• <b>Cold air damming:</b> East of the Appalachians, cold air gets trapped against the mountains while warm air overrides above — producing ice storms well south of the 540 line.' +
+      '<br>• <b>Lake effect:</b> Near the Great Lakes, the warm lake surface modifies the lowest layers, pushing the rain/snow line further north than thickness alone would suggest.',
+
+    'fcast-tab-wndtemp': '<b>10m Wind & 2-Meter Temperature</b>' +
+      '<br><br><span class="k">What this is:</span> The most direct "sensible weather" product — surface temperature at 2 meters above ground combined with wind barbs at 10 meters. This is what you feel when you step outside.' +
+      '<br><br><span class="k">Identifying fronts:</span> Frontal boundaries appear as sharp temperature gradients where colors change dramatically over a short distance. A 10–20°F temperature drop coinciding with a wind shift from southerly to northwesterly is the textbook signature of a cold front passage. Gradual warming with veering winds (SE → S → SW) marks a warm front approach.' +
+      '<br><br><span class="k">Wind chill reference:</span>' +
+      '<br>• 30°F + 20 mph wind → feels like 17°F' +
+      '<br>• 10°F + 25 mph → feels like −7°F' +
+      '<br>• 0°F + 30 mph → frostbite on exposed skin in 10–15 minutes' +
+      '<br>• −10°F + 30 mph → frostbite in under 5 minutes' +
+      '<br>Wind chill becomes dangerous faster than most people realize — and it is the #1 cause of hypothermia emergencies in winter storms.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM.',
+
+    'fcast-tab-lowthick': '<b>1000–850mb Thickness (Low-Level)</b>' +
+      '<br><br><span class="k">What this is:</span> Temperature of the lowest ~5,000 feet of the atmosphere — the layer that ultimately determines what precipitation type reaches the ground. While the 1000–500mb "540 line" gives the big picture, low-level thickness reveals the critical near-surface details that control rain vs. snow vs. ice.' +
+      '<br><br><span class="k">Thresholds:</span>' +
+      '<br>• <b><1280m:</b> Deep cold at the surface. Pure snow, no questions.' +
+      '<br>• <b>1280–1300m:</b> <span class="k">The danger zone.</span> This is where freezing rain, sleet, and the dreaded "wintry mix" live. Small changes within this range dramatically change precipitation type — a 10m difference can flip an entire county from snow to ice.' +
+      '<br>• <b>>1300m:</b> Warm enough at the surface for rain. Any snow melts before reaching the ground.' +
+      '<br><br><span class="k">Cold air damming (CAD):</span> East of the Appalachians, cold air from the north gets channeled southward along the mountain barrier and becomes trapped in the Piedmont. This creates a shallow cold wedge at the surface while warm, moist air overruns it above. Low-level thickness stays in the 1280–1300m danger zone for days, producing devastating ice storms from Virginia to the Carolinas even when the free atmosphere above is well above freezing. CAD is one of the most persistently misforecast weather patterns in the eastern US.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM.',
+
+    'fcast-tab-midthick': '<b>850–700mb Thickness (Mid-Level)</b>' +
+      '<br><br><span class="k">What this is:</span> Temperature of the mid-level layer between approximately 5,000 and 10,000 feet — the critical zone where falling snow encounters (or doesn\'t encounter) above-freezing air. The behavior of precipitation in this layer determines whether you get snow, sleet, or freezing rain.' +
+      '<br><br><span class="k">The "warm nose":</span> When a warm layer exists in this mid-level zone (thickness >1540m), falling snow <i>completely melts</i> into raindrops. What happens next depends entirely on the surface layer below:' +
+      '<br>• If the surface cold layer is <b>deep (>1000 ft)</b>, the raindrop has enough time to refreeze → <span class="k">sleet</span>. You hear it clicking and bouncing.' +
+      '<br>• If the surface cold layer is <b>shallow (<1000 ft)</b>, the drop doesn\'t have time to refreeze. It hits the ground as supercooled liquid and <i>instantly</i> freezes on any surface → <span class="k">freezing rain</span>.' +
+      '<br><br><span class="k">Why this matters so much:</span> Freezing rain is the most damaging winter weather event per occurrence. A half-inch of ice accumulation adds roughly 500 pounds of weight per span of power line. Trees become coated in a crystalline shell that exceeds what their branches can support. Ice storms routinely cause multi-day to multi-week power outages affecting millions.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM.',
+
+    'fcast-tab-gfs850temp': '<b>GFS 850mb Temperature (Global)</b>' +
+      '<br><br><span class="k">What this is:</span> Temperature at approximately 5,000 feet elevation on the GFS global grid, showing large-scale thermal patterns across continents and oceans. At this altitude, you\'re above the messy surface boundary layer where local heating, terrain, and urban effects create noise — the 850mb temperature reveals the true character of the air mass overhead.' +
+      '<br><br><span class="k">How to use it:</span> Animate the forecast frames and watch the isotherms (temperature contour lines) move:' +
+      '<br>• Isotherms surging northward = <span class="k">warm air advection (WAA)</span> → overrunning precipitation, warm front development, thickening clouds.' +
+      '<br>• Isotherms plunging southward = <span class="k">cold air advection (CAA)</span> → post-frontal clearing, gusty NW winds, temperature drops.' +
+      '<br><br><span class="k">The 0°C isotherm:</span> This single line at 850mb roughly marks the surface rain/snow transition (with caveats for elevation). Tracking its position across forecast frames tells you how the rain/snow line will evolve over the coming days. When the 0°C line retreats northward, the rain/snow line shifts north too.' +
+      '<br><br><span class="k">Available on:</span> GFS, GEFS.',
+
+    'fcast-tab-850temp': '<b>850mb Temperature (Hi-Res Regional)</b>' +
+      '<br><br><span class="k">What this is:</span> Same physical measurement as the GFS 850mb temperature, but on the 3km regional grid. The finer resolution captures terrain-influenced temperature patterns that the GFS smooths over — cold air pooling in valleys, mountain wave lee-side warming, lake-enhanced temperature gradients, and sea/bay breeze boundaries.' +
+      '<br><br><span class="k">Severe weather application:</span> The warmer the 850mb air ahead of an advancing dryline or cold front, the greater the potential instability. A tongue of 20°C+ air at 850mb in the warm sector of a developing cyclone is a strong indicator that explosive thunderstorm development is possible. Forecasters call this a "warm advection pattern" or "elevated mixed layer" — warm, dry air riding atop a cooler, moist surface layer creates an inherently unstable sandwich that releases violently when the cap breaks.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km only.',
+
+    // ═══════════════════════════════════
+    // WIND & DYNAMICS
+    // ═══════════════════════════════════
+
+    'fcast-tab-wind': '<b>10-Meter Wind & Mean Sea Level Pressure (MSLP)</b>' +
+      '<br><br><span class="k">What this is:</span> Wind barbs show speed and direction at 10 meters above ground — the standard measurement height. Overlaid isobars (lines of constant pressure) show the sea-level-corrected pressure field in millibars. Together, these two fields reveal the structure and intensity of every weather system on the map.' +
+      '<br><br><span class="k">Reading wind barbs:</span> The barb points in the direction the wind is coming FROM. A half line = 5 knots. A full line = 10 knots. A pennant/flag = 50 knots. Example: a barb with 2 full lines + 1 half = 25 knots. Multiply knots × 1.15 = mph.' +
+      '<br><br><span class="k">Reading isobars:</span> Wind flows roughly parallel to isobars, with a slight inward angle (toward lower pressure) due to surface friction. <span class="k">Tightly packed isobars = strong pressure gradient = high winds.</span> The closer the lines, the harder the wind blows. A 4mb gradient across 100 miles is very tight and produces dangerous winds.' +
+      '<br><br><span class="k">What to look for:</span>' +
+      '<br>• <b>Low pressure centers:</b> Counterclockwise circulation (Northern Hemisphere). The lower the central pressure, the stronger the system.' +
+      '<br>• <b>Frontal boundaries:</b> Sharp wind direction shifts — where direction changes 90°+ over a short distance marks a front. S→NW = cold front. SE→S veering = approaching warm front.' +
+      '<br>• <b>High pressure:</b> Clockwise flow, calm weather. Strong winter highs produce clear, cold conditions with radiation fog in valleys.' +
+      '<br>• <b>Pressure falls:</b> Animate frames — rapidly dropping pressure (>4mb in 3 hrs) at your location = an intensifying storm is approaching.',
+
+    'fcast-tab-maxwind': '<b>Maximum Surface Wind Gust</b>' +
+      '<br><br><span class="k">What this is:</span> The predicted peak instantaneous wind gust at 10 meters above ground — the absolute strongest gust the model expects. This accounts for convective downdraft mixing (thunderstorm outflow), pressure gradient forces, terrain channeling through gaps and canyons, and downslope windstorms.' +
+      '<br><br><span class="k">Damage scale:</span>' +
+      '<br>• <b>40–57 mph:</b> Tree limbs down, loose objects airborne, minor structural damage. Difficult to walk against.' +
+      '<br>• <b>58–74 mph:</b> <span class="k">NWS Severe Thunderstorm Warning threshold (58 mph / 50 kt).</span> Large limbs broken, shallow-rooted trees uprooted, significant roof damage. Flying debris becomes dangerous.' +
+      '<br>• <b>75–95 mph:</b> EF0–EF1 tornado equivalent. Extensive tree damage, roof sections peeled, mobile homes heavily damaged. Widespread power outages.' +
+      '<br>• <b>95–110 mph:</b> EF1–EF2 equivalent. Major structural roof damage, vehicles shifted, mobile homes destroyed.' +
+      '<br>• <b>>110 mph:</b> EF2+ equivalent. Well-built homes sustain major damage, vehicles thrown, devastating destruction.' +
+      '<br><br><span class="k">Microbursts:</span> A collapsing thunderstorm updraft can produce a localized downburst (<span class="k">microburst</span>) with gusts exceeding 100 mph concentrated in an area less than 2.5 miles across. These are extremely dangerous — they can exceed tornado wind speeds at the surface while having no visible funnel cloud. They\'re also a major cause of aviation accidents during landing and takeoff.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-jet': '<b>250mb Jet Stream Wind</b>' +
+      '<br><br><span class="k">What this is:</span> Upper-level winds at approximately 34,000 feet (250 millibars) — the altitude of the jet stream, where winds regularly exceed 100 mph. The jet stream is the primary driver of all mid-latitude surface weather. Understanding its position, intensity, and embedded features is the key to forecasting weather days in advance.' +
+      '<br><br><span class="k">Jet streaks and the four-quadrant model:</span> Within the broad jet stream, you\'ll find embedded wind maxima called <span class="k">jet streaks</span> — compact zones where winds spike above 100–150+ knots. Each jet streak has four quadrants with dramatically different effects on the atmosphere below:' +
+      '<br>• <b>Right entrance region</b> — Upper-level divergence → air must rise from below to compensate → surface low development, clouds, precipitation.' +
+      '<br>• <b>Left exit region</b> — Same divergence effect → rising motion → storm development.' +
+      '<br>• <b>Left entrance / Right exit</b> — Convergence aloft → air sinks → fair weather, clearing, high pressure.' +
+      '<br><br><span class="k">Coupled jet streaks:</span> When two jet streaks interact such that the left exit of one overlaps the right entrance of another, the combined divergence is extremely powerful. This coupling produces <span class="k">explosive cyclogenesis</span> — surface pressure dropping 24+ mb in 24 hours (a "bomb cyclone"). These are the setups behind the most powerful nor\'easters and Great Lakes storms.' +
+      '<br><br><span class="k">Aviation note:</span> Jet stream winds affect flight times by 1–2+ hours on transcontinental routes. Clear air turbulence (CAT) is most frequent near jet stream boundaries where wind shear is greatest.',
+
+    'fcast-tab-gfs500wind': '<b>GFS 500mb Wind</b>' +
+      '<br><br><span class="k">What this is:</span> The mid-level steering flow at approximately 18,000 feet. The 500mb wind field is the single most important tool for predicting <i>where weather systems will go</i>, because surface lows generally move in the direction of 500mb flow at roughly 50–75% of the 500mb wind speed.' +
+      '<br><br><span class="k">Speed regimes:</span>' +
+      '<br>• <b>Strong flow (50+ knots):</b> Systems move quickly. Storms are intense but brief. "Progressive" patterns produce weather that comes and goes.' +
+      '<br>• <b>Moderate flow (25–50 kt):</b> Normal steering. Weather systems take 1–2 days to cross a region.' +
+      '<br>• <b>Weak flow (<20 kt):</b> Systems stall. Cutoff lows wander erratically or park for days. Flash flood risk skyrockets because precipitation keeps falling on the same area.' +
+      '<br><br><span class="k">Cutoff lows:</span> When a trough detaches from the main jet stream flow, it becomes a "cutoff low" steered only by weak local gradients. These are the most unpredictable features in weather forecasting — they can meander, loop, or stagnate for a week. The classic weather forecaster frustration: "the models can\'t agree on the cutoff."' +
+      '<br><br><span class="k">Available on:</span> GFS, GEFS.',
+
+    'fcast-tab-250wind': '<b>250mb Upper-Level Winds (Hi-Res)</b>' +
+      '<br><br><span class="k">What this is:</span> Jet stream analysis on the high-resolution 3km grid, resolving finer details of jet streak structure, interaction, and terrain-forced flow accelerations that the coarser GFS misses.' +
+      '<br><br><span class="k">Advanced application:</span> Identify jet streak cores exceeding 80 knots and mentally divide each into four quadrants. The <span class="k">right entrance</span> and <span class="k">left exit</span> quadrants produce upper-level divergence that forces air to rise below, creating the large-scale lift that triggers cyclogenesis and severe weather. When a divergent quadrant passes over an area already primed with high surface CAPE and sufficient wind shear, conditions are maximized for tornado outbreaks and long-track supercells.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km only.',
+
+    'fcast-tab-gfs4panel': '<b>4-Panel Composite</b>' +
+      '<br><br><span class="k">What this is:</span> A multi-level diagnostic chart combining 850mb vorticity (low-level spin), 500mb geopotential heights and vorticity (mid-level pattern), and 200mb winds (jet stream) on a single display. This is the same chart type that operational NWS forecasters at the Weather Prediction Center (WPC), Storm Prediction Center (SPC), and local offices use daily to assess the three-dimensional state of the atmosphere at a glance.' +
+      '<br><br><span class="k">The key concept — vertical stacking:</span> Look at how features at different levels relate to each other vertically:' +
+      '<br>• <b>Tilted system</b> (upper feature west of surface low) — The system is still intensifying. Upper-level divergence is positioned ahead of and above the surface low, creating strong lift. The most significant weather is still ahead.' +
+      '<br>• <b>Vertically stacked</b> (all levels aligned over same spot) — The system has reached <span class="k">peak intensity</span> and is beginning to occlude and weaken. The upper-level support is no longer positioned to enhance the surface low.' +
+      '<br><br><span class="k">When all three levels show features overlapping geographically</span> — strong 850mb vorticity, a deep 500mb trough, and jet-level divergence above — that\'s where the most significant weather will develop. This chart lets you see that alignment instantly.' +
+      '<br><br><span class="k">GFS only.</span>',
+
+    // ═══════════════════════════════════
+    // SEVERE
+    // ═══════════════════════════════════
+
+    'fcast-tab-bestcape': '<b>Most Unstable CAPE (MUCAPE)</b>' +
+      '<br><br><span class="k">What this is:</span> Unlike standard surface-based CAPE (which lifts the surface air parcel), MUCAPE searches the lowest 300mb (~3km) of the atmosphere to find the single air parcel with the <i>most</i> energy available for convection, regardless of altitude. This catches a critical scenario surface CAPE misses entirely: <span class="k">elevated instability</span>.' +
+      '<br><br><span class="k">Why this matters:</span> Sometimes the most unstable air isn\'t at the surface. Above a frontal boundary, a warm, moist layer can exist at 2,000–5,000 ft while surface air is stable and cool. Surface CAPE reads zero — no thunderstorm threat. But MUCAPE reveals 2,000+ J/kg of energy sitting right there, waiting for a trigger.' +
+      '<br><br><span class="k">Elevated convection:</span> Storms rooted above the surface in an elevated unstable layer behave differently — they\'re harder to detect with surface observations, they often fire at night (when surface cooling strengthens the inversion trapping the elevated moisture), and they can still produce heavy rain, hail, and occasionally tornadoes. Many deadly nighttime flash flood events come from elevated convection that surface CAPE never hinted at.' +
+      '<br><br><span class="k">Thresholds are the same as surface CAPE:</span> 500–1500 = moderate, 1500–3000 = strong, >3000 = very strong, >5000 = extreme. But even moderate MUCAPE (1000–1500) with strong shear can produce significant severe weather when it\'s elevated.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-helicity': '<b>0–3km Storm-Relative Helicity (SRH)</b>' +
+      '<br><br><span class="k">What this is:</span> A measure of the rotational potential of the lowest 3 kilometers of the atmosphere <i>relative to a moving thunderstorm</i>. When wind changes speed and/or direction with height (wind shear), it creates horizontal tubes of spinning air. A thunderstorm\'s updraft can tilt these horizontal tubes into the vertical — creating rotation within the storm (a mesocyclone). SRH quantifies how much raw rotation is available for storms to ingest.' +
+      '<br><br><span class="k">Threshold scale:</span>' +
+      '<br>• <b>50–100 m²/s²:</b> Marginal. Brief gustnadoes or landspouts possible, but not organized mesocyclones.' +
+      '<br>• <b>100–200:</b> Weak to moderate rotation. Supercell mesocyclones can develop. Brief, weak tornadoes (EF0–EF1) possible.' +
+      '<br>• <b>200–300:</b> Significant rotation. Persistent mesocyclones. Strong tornadoes (EF2–EF3) possible.' +
+      '<br>• <b>300–450:</b> Extreme rotation. <span class="k">Strongly favors significant tornadoes (EF2+)</span> when combined with CAPE >1000 J/kg.' +
+      '<br>• <b>>450:</b> Off the charts. If CAPE is even moderate, violent tornadoes (EF4–EF5) are on the table. These are the values seen during major tornado outbreaks like April 27, 2011.' +
+      '<br><br><span class="k">The Significant Tornado Parameter (STP):</span> Forecasters don\'t use SRH in isolation. STP combines SRH, CAPE, 0–6km bulk wind shear, and the lifting condensation level (cloud base height) into a single composite. Low cloud bases (<1000m LCL) are crucial — they mean the rotating mesocyclone is close to the ground, making tornado development more likely. When STP >1, conditions favor significant tornadoes. When all ingredients overlap geographically and temporally, the risk is maximized.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-updraft': '<b>Updraft Helicity (UH)</b>' +
+      '<br><br><span class="k">What this is:</span> A computed field that identifies <i>where rotating updrafts exist within model-simulated storms</i>. Mathematically, it\'s the integral of (vertical velocity × vertical vorticity) through the 2–5km layer above ground. In plain language: it finds exactly where the model is producing supercell-like rotating thunderstorms.' +
+      '<br><br><span class="k">This is the tornado surrogate field.</span> Because models can\'t explicitly resolve tornadoes (which are ~100m wide, far smaller than the 3km grid), forecasters use UH as a proxy. Research published by the Storm Prediction Center shows a strong statistical correlation between UH tracks in convection-allowing models and observed severe weather reports, including tornadoes.' +
+      '<br><br><span class="k">Reading UH tracks:</span>' +
+      '<br>• <b>25–50 m²/s²:</b> Storm-scale rotation present. Ordinary rotating cells.' +
+      '<br>• <b>50–100:</b> Supercell-like structures. Organized mesocyclones, hail likely, tornado possible.' +
+      '<br>• <b>100–200:</b> Strong supercells. Significant hail, tornado likely.' +
+      '<br>• <b>>200:</b> Intense mesocyclones. <span class="k">High probability of significant or violent tornado.</span> The model is screaming that this storm is dangerous.' +
+      '<br><br><span class="k">Track analysis:</span> Animate UH and study the tracks. Long, continuous UH swaths stretching 50–100+ miles indicate long-lived supercells capable of producing long-track tornadoes. Short, scattered UH blips suggest disorganized or short-lived rotation. When the HRRR paints a 150+ m²/s² UH track stretching across multiple counties, that\'s the model\'s way of forecasting a potentially violent, long-lived supercell.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    'fcast-tab-lightning': '<b>Lightning Threat Index</b>' +
+      '<br><br><span class="k">What this is:</span> A model-derived field estimating lightning potential based on ice-phase microphysics inside simulated thunderstorms. Lightning is generated by collisions between rising ice crystals and falling graupel pellets in the mixed-phase zone of the storm (−10°C to −20°C) — these collisions strip electrons and create the electrical charge separation that eventually discharges as lightning.' +
+      '<br><br><span class="k">What drives lightning:</span> Three ingredients are needed:' +
+      '<br>1. A strong updraft to loft ice and water into the mixed-phase zone' +
+      '<br>2. Sufficient graupel (soft hail) production' +
+      '<br>3. Vigorous vertical mixing to maximize particle collisions' +
+      '<br>The strongest lightning producers are severe thunderstorms with powerful updrafts. Some tropical maritime storms produce minimal lightning despite heavy rain because their updrafts are broad and gentle rather than narrow and explosive.' +
+      '<br><br><span class="k">Practical applications:</span>' +
+      '<br>• <b>Outdoor events:</b> If the model shows lightning threat over your location during your planned time outside, plan for shelter. The 30/30 rule: if the time between flash and thunder is <30 seconds, go inside. Wait 30 minutes after the last thunder.' +
+      '<br>• <b>Wildfire ignition:</b> Dry thunderstorms (lightning with minimal rain) are the #1 natural cause of wildfire in the western US. Look for lightning threat areas that DON\'T overlap significant precipitation — those are the dry lightning zones.' +
+      '<br>• <b>Safety radius:</b> Lightning can strike 10+ miles from the nearest rain shaft — well outside the visible storm. If you can hear thunder, you are within strike range. Lightning kills ~20 people per year in the US and injures hundreds more.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km, HREF only.',
+
+    // ═══════════════════════════════════
+    // UPPER AIR
+    // ═══════════════════════════════════
+
+    'fcast-tab-rh': '<b>700mb Relative Humidity</b>' +
+      '<br><br><span class="k">What this is:</span> Moisture content at approximately 10,000 feet — the mid-troposphere. The 700mb RH field is one of the most diagnostically powerful tools in meteorology because it reveals the large-scale cloud pattern, dry air intrusions, and the internal structure of developing cyclones.' +
+      '<br><br><span class="k">Reading the field:</span>' +
+      '<br>• <b>>80% (dark shading):</b> Saturated air. Expect clouds and precipitation. Broad >80% areas = the main precipitation shield of a storm system.' +
+      '<br>• <b>50–80%:</b> Partly cloudy. Marginal for precipitation. May support light drizzle or patchy fog.' +
+      '<br>• <b><40% (clear areas):</b> Dry air. Fair skies — or diagnostically important, a <span class="k">dry slot</span> within a storm system.' +
+      '<br><br><span class="k">The dry slot:</span> In a developing extratropical cyclone, a tongue of dry air wraps around the west and south side of the low center. This is the <span class="k">dry conveyor belt</span> — descending air from the upper troposphere. When this dry slot wraps completely behind the surface low, the storm has reached maturity and is beginning to occlude.' +
+      '<br><br><span class="k">Severe weather context:</span> Dry air at 700mb overlying moist surface air is a setup called an "inverted-V" sounding. Thunderstorms in this environment entrain dry mid-level air into their downdrafts, causing intense evaporative cooling that accelerates downdrafts to produce damaging surface winds. Some of the most violent microbursts occur in this "dry over moist" pattern — common over the High Plains and Desert Southwest.',
+
+    'fcast-tab-gfs500rh': '<b>GFS 500mb Relative Humidity</b>' +
+      '<br><br><span class="k">What this is:</span> Moisture at ~18,000 ft on the GFS global grid — showing the large-scale cloud pattern from a higher perspective than 700mb. At 500mb, you see the mid-tropospheric moisture that shapes the cloud patterns visible on satellite imagery.' +
+      '<br><br><span class="k">Key diagnostic features:</span>' +
+      '<br>• <b>The dry slot:</b> The pronounced dry area wrapping around the west side of an extratropical cyclone marks descending upper-tropospheric air — one of three main airstreams in a cyclone (alongside the warm and cold conveyor belts).' +
+      '<br>• <b>The comma head:</b> The high-RH region wrapping N and W of the surface low creates the classic comma-shaped satellite cloud. This is where the heaviest, most persistent precipitation occurs.' +
+      '<br>• <b>Instability signal:</b> Dry air at 500mb over moist 700mb air and a moist surface creates steep lapse rates and high convective instability. This configuration ahead of an approaching trough favors explosive thunderstorm development once the cap breaks.' +
+      '<br><br><span class="k">Available on:</span> GFS, GEFS.',
+
+    'fcast-tab-gfs850vort': '<b>GFS 850mb Vorticity</b>' +
+      '<br><br><span class="k">What this is:</span> Low-level atmospheric spin at approximately 5,000 feet — showing surface fronts, developing lows, and mesoscale vortices. At 850mb, vorticity is more directly connected to surface weather than the 500mb field — you can literally see fronts, lows, and deformation zones in the vorticity pattern.' +
+      '<br><br><span class="k">Vertical stacking analysis:</span> Compare 850mb vort max positions with 500mb vort maxes:' +
+      '<br>• <b>500mb feature WEST of 850mb feature:</b> System is <span class="k">tilted</span> — still intensifying. The most significant weather is still ahead.' +
+      '<br>• <b>Features aligned vertically:</b> System is <span class="k">vertically stacked</span> at peak intensity, beginning to weaken and occlude.' +
+      '<br><br><span class="k">Frontal bands:</span> Strong 850mb vorticity maxima elongated into narrow bands correspond to intense frontal zones where air masses are colliding. These produce the heavy, banded precipitation that causes the worst winter storm impacts.' +
+      '<br><br><span class="k">Available on:</span> GFS, NAM.',
+
+    'fcast-tab-500vort': '<b>500mb Vorticity (Hi-Res)</b>' +
+      '<br><br><span class="k">What this is:</span> Atmospheric spin at the ~18,000 ft steering level on the high-resolution 3km grid. Resolves finer-scale vorticity features — small shortwaves, mesoscale vortices, and terrain-induced spin that the GFS smooths over.' +
+      '<br><br><span class="k">How to use it:</span> Track vorticity maxima frame by frame. The area of maximum <span class="k">Positive Vorticity Advection (PVA)</span> — just ahead (east) of each vort max — is where the atmosphere is forced to rise, triggering surface low development and precipitation. When a vort max crosses your area, expect increasing clouds, lowering pressure, and onset of precipitation.' +
+      '<br><br><span class="k">Phasing:</span> When two separate vorticity maxima merge ("phase"), their combined energy produces a much stronger surface storm than either alone. Phasing shortwaves are behind many of the most impactful cyclones.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km only.',
+
+    'fcast-tab-500mb': '<b>500mb Geopotential Heights & Absolute Vorticity</b>' +
+      '<br><br><span class="k">What this is:</span> The 500mb surface (~18,000 ft) is the <span class="k">"steering level"</span> — it controls where surface weather systems travel. Height contours show the large-scale wave pattern (ridges and troughs), while vorticity shading reveals the energy embedded in that flow.' +
+      '<br><br><span class="k">Troughs and ridges:</span> Southward dips in height contours = <span class="k">troughs</span> → unsettled, stormier weather. Northward bulges = <span class="k">ridges</span> → fair, warmer weather. High-amplitude troughs bring intense cold and storms; high-amplitude ridges bring heat waves and drought.' +
+      '<br><br><span class="k">Vorticity maxima ("shortwaves"):</span> Warm-colored (red) blobs embedded in the trough are individual packets of energy moving through the jet stream. The area of maximum <span class="k">PVA</span> — just ahead of each vort max — is where surface cyclogenesis and precipitation are triggered.' +
+      '<br><br><span class="k">How to forecast:</span> Animate frames and track the vort maxes. Where they go, weather follows. When multiple shortwaves phase together, the resulting surface storm can be explosive. A 500mb trough that deepens (height values drop lower) as it approaches signals an intensifying storm system.' +
+      '<br><br><span class="k">GFS only.</span>',
+
+    // ═══════════════════════════════════
+    // AVIATION
+    // ═══════════════════════════════════
+
+    'fcast-tab-vis': '<b>Surface Visibility</b>' +
+      '<br><br><span class="k">What this is:</span> Forecast horizontal visibility in miles, accounting for precipitation, fog, haze, blowing snow, and smoke. Visibility is one of the most directly impactful weather variables — it determines safe driving, whether planes can land, and outdoor work feasibility.' +
+      '<br><br><span class="k">Aviation flight categories (FAA):</span>' +
+      '<br>• <b>VFR:</b> Visibility >3 statute miles, ceiling >3000 ft. Normal operations.' +
+      '<br>• <b>MVFR (Marginal):</b> Visibility 3–5 miles, ceiling 1000–3000 ft. Caution.' +
+      '<br>• <b>IFR (Instrument):</b> Visibility ½–3 miles, ceiling 200–1000 ft. Instrument approaches required. Many small airports close.' +
+      '<br>• <b>LIFR (Low IFR):</b> Visibility <½ mile, ceiling <200 ft. Only CAT III airports/aircraft can operate.' +
+      '<br><br><span class="k">Fog types:</span>' +
+      '<br>• <b>Radiation fog:</b> Forms overnight in valleys under clear skies and light winds (<5 mph). Ground radiates heat, cooling air to dewpoint. Usually burns off by mid-morning.' +
+      '<br>• <b>Advection fog:</b> Warm, moist air moves over cold surface (ocean, snow cover). Can persist for days. Common along coastlines.' +
+      '<br>• <b>Freezing fog:</b> Fog below 32°F. Deposits rime ice on bridges, overpasses, aircraft, and power lines. Creates invisible black ice.' +
+      '<br><br><span class="k">Driving safety:</span> Below ¼ mile visibility, multi-vehicle pileups become likely. Use low beams only — high beams reflect off particles and <i>worsen</i> visibility.' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km only.',
+
+    'fcast-tab-ceiling': '<b>Cloud Ceiling Height</b>' +
+      '<br><br><span class="k">What this is:</span> The altitude above ground level (AGL) of the lowest cloud layer classified as broken (5/8–7/8 sky coverage) or overcast (8/8). Scattered clouds don\'t count — you can see through the gaps. The ceiling is the effective "roof" above you.' +
+      '<br><br><span class="k">Impact thresholds:</span>' +
+      '<br>• <b>>3000 ft:</b> VFR. Normal conditions.' +
+      '<br>• <b>1000–3000 ft:</b> MVFR. Low overcast. Mountain ridges may be in cloud.' +
+      '<br>• <b>500–1000 ft:</b> Low IFR. Tall buildings enter clouds. Hilly terrain obscured.' +
+      '<br>• <b>200–500 ft:</b> IFR. Very low overcast. Instrument approaches required.' +
+      '<br>• <b><200 ft:</b> LIFR. Near-zero ceiling. Fog-like conditions at the surface.' +
+      '<br><br><span class="k">Terrain hazard — the critical danger:</span> When ceiling heights drop below local terrain elevation, clouds engulf the terrain. Mountain passes, ridgeline roads, and high-elevation highways become extremely dangerous — drivers enter and exit cloud with no warning, losing all visual reference. This is a leading cause of mountain road fatalities in winter. <b>Always check ceiling forecasts before mountain travel.</b>' +
+      '<br><br><span class="k">Available on:</span> HRRR, NAM 3km only.',
+
+    // ═══════════════════════════════════
+    // STRATOSPHERE
+    // ═══════════════════════════════════
+
+    'fcast-tab-10mb': '<b>10mb Stratospheric Analysis</b>' +
+      '<br><br><span class="k">What this is:</span> Conditions at ~31 km (100,000 ft) in the middle stratosphere — above all weather and above commercial aircraft. This shows the <span class="k">stratospheric polar vortex</span>, the massive cyclonic circulation of extremely cold air (−80°C and below) over the winter pole.' +
+      '<br><br><span class="k">Why the stratosphere controls YOUR weather:</span> Normally, a strong polar vortex keeps the tropospheric jet stream organized and zonal (west-to-east), producing a "normal" winter pattern. But when a massive wave energy pulse from the troposphere disrupts the vortex — a <span class="k">Sudden Stratospheric Warming (SSW)</span> — temperatures at 10mb spike 30–50°C in days and the vortex weakens or reverses direction entirely.' +
+      '<br><br><span class="k">The downward cascade:</span> The disruption propagates downward through the atmosphere over 2–6 weeks. As it reaches the troposphere, it weakens the jet stream, makes it highly amplified (wavy), and produces persistent <span class="k">blocking patterns</span> where high pressure parks over a region and deflects storms for weeks. The result: prolonged cold outbreaks, extended storminess, and weather patterns that get "stuck" for 2–4 weeks.' +
+      '<br><br><span class="k">What to watch for on this chart:</span>' +
+      '<br>• <b>Tight, circular vortex on the pole:</b> Normal, strong. Winter weather proceeds as expected.' +
+      '<br>• <b>Elongated or displaced vortex:</b> Weakening. Increased cold outbreak and blocking risk in coming weeks.' +
+      '<br>• <b>Split vortex (two separate lobes):</b> Major SSW event. Expect significant cold/stormy impacts at the surface 2–6 weeks later. This is one of the most reliable extended-range predictors available in meteorology.' +
+      '<br><br><span class="k">GFS only.</span>'
+
+  };
+  // Merge product tooltips into radarInfoData
+  Object.keys(productTooltips).forEach(function(k){ radarInfoData[k] = productTooltips[k]; });
+
   Object.keys(radarInfoData).forEach(function(id){
     var btn = document.getElementById(id);
     if (!btn) return;
@@ -11021,20 +11546,128 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
   var radarTooltip = document.getElementById('radar-info-tooltip');
   var radarTooltipTimer = null;
 
+  // ── DYNAMIC LIVE DATA INJECTION FOR TOOLTIPS ──
+  function injectLiveModelState(id, content) {
+    // Extract model key from id: 'fcast-model-hrrr' → 'hrrr'
+    var modelKey = id.replace('fcast-model-', '');
+    var isActiveModel = fcastState && fcastState.model === modelKey;
+
+    var live = '<div style="background:rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;margin-bottom:10px;border-left:3px solid ';
+
+    if (isActiveModel) {
+      // This model is currently selected — show full status
+      var cycle = fcastState.cycle || '?';
+      var idx = fcastState.idx || 0;
+      var allFhrs = fcastState.allFhrs || [];
+      var currentFhr = allFhrs[idx] || '?';
+      var fhrNum = parseInt(currentFhr, 10);
+      var totalFrames = allFhrs.length;
+      var maxFhr = allFhrs.length > 0 ? parseInt(allFhrs[allFhrs.length - 1], 10) : '?';
+
+      // Calculate init time in local
+      var cycleH = parseInt(cycle, 10);
+      var now = new Date();
+      var todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), cycleH, 0, 0));
+      if (todayUTC > now) todayUTC.setUTCDate(todayUTC.getUTCDate() - 1);
+      var initLocal = todayUTC.toLocaleString('en-US', {timeZone: LOCATION.tz, hour:'numeric', minute:'2-digit', hour12:true, month:'short', day:'numeric'});
+      var hoursAgo = Math.round((now - todayUTC) / 3600000);
+
+      // Valid time
+      var validTime = new Date(todayUTC.getTime() + fhrNum * 3600000);
+      var validLocal = validTime.toLocaleString('en-US', {timeZone: LOCATION.tz, weekday:'short', hour:'numeric', minute:'2-digit', hour12:true, month:'short', day:'numeric'});
+
+      // Model freshness assessment  
+      var freshColor = '#4f8';
+      var freshLabel = 'FRESH';
+      if (hoursAgo >= 10) { freshColor = '#f66'; freshLabel = 'STALE'; }
+      else if (hoursAgo >= 6) { freshColor = '#f90'; freshLabel = 'AGING'; }
+
+      // Forecast hour quality (model-specific)
+      var qualColor = '#4f8';
+      var qualLabel = 'Sweet spot';
+      if (modelKey === 'hrrr') {
+        if (fhrNum > 36) { qualColor = '#f66'; qualLabel = 'Low confidence'; }
+        else if (fhrNum > 18) { qualColor = '#f90'; qualLabel = 'Degrading skill'; }
+        else { qualLabel = 'Peak accuracy (radar-assimilated)'; }
+      } else if (modelKey === 'nam' || modelKey === 'nam_hires') {
+        if (fhrNum > 60) { qualColor = '#f90'; qualLabel = 'Extended range'; }
+        else if (fhrNum > 36) { qualColor = '#cc0'; qualLabel = 'Good'; }
+        else { qualLabel = 'Best performance window'; }
+      } else if (modelKey === 'gfs' || modelKey === 'gefs') {
+        if (fhrNum > 240) { qualColor = '#f66'; qualLabel = 'Low confidence — pattern only'; }
+        else if (fhrNum > 168) { qualColor = '#f90'; qualLabel = 'Moderate confidence'; }
+        else if (fhrNum > 72) { qualColor = '#cc0'; qualLabel = 'Good for synoptic pattern'; }
+        else { qualLabel = 'Best accuracy range'; }
+      } else if (modelKey === 'href') {
+        if (fhrNum > 36) { qualColor = '#f90'; qualLabel = 'Extended'; }
+        else { qualLabel = 'Peak ensemble value'; }
+      } else if (modelKey === 'nbm') {
+        if (fhrNum > 168) { qualColor = '#f90'; qualLabel = 'Extended blend'; }
+        else { qualLabel = 'Calibrated guidance'; }
+      }
+
+      live += '#4a9;">';
+      live += '<div style="font-weight:700;font-size:.62rem;color:#4a9;margin-bottom:5px;">📡 ACTIVE — VIEWING NOW</div>';
+      live += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:.52rem;">';
+      live += '<span style="opacity:.7;">Init:</span><span>' + cycle + 'Z · ' + initLocal + ' <span style="color:' + freshColor + ';">(' + hoursAgo + 'h ago · ' + freshLabel + ')</span></span>';
+      live += '<span style="opacity:.7;">Frame:</span><span>Hour +' + fhrNum + ' of ' + maxFhr + ' (frame ' + (idx + 1) + '/' + totalFrames + ')</span>';
+      live += '<span style="opacity:.7;">Valid:</span><span>' + validLocal + '</span>';
+      live += '<span style="opacity:.7;">Skill:</span><span style="color:' + qualColor + ';">' + qualLabel + '</span>';
+      live += '</div>';
+      live += '</div>';
+    } else {
+      // Not the active model — show comparison note
+      var activeModelName = {gfs:'GFS', nam:'NAM', nam_hires:'NAM 3km', hrrr:'HRRR', href:'HREF', nbm:'NBM', gefs:'GEFS'};
+      var thisName = activeModelName[modelKey] || modelKey.toUpperCase();
+      var activeName = fcastState ? (activeModelName[fcastState.model] || fcastState.model.toUpperCase()) : '?';
+
+      live += 'rgba(100,120,160,.5);">';
+      live += '<div style="font-size:.52rem;opacity:.8;">Currently viewing <b>' + activeName + '</b>. Click to switch to ' + thisName + '.</div>';
+      live += '</div>';
+    }
+
+    // Insert after the first <b>...</b> title + first <br><br>
+    var firstBreak = content.indexOf('<br><br>');
+    if (firstBreak > 0) {
+      return content.substring(0, firstBreak + 8) + live + content.substring(firstBreak + 8);
+    }
+    return live + content;
+  }
+
   function showRadarTooltip(id, anchor){
     if (!radarInfoData[id] || !radarTooltip) return;
-    radarTooltip.innerHTML = radarInfoData[id];
+    var content = radarInfoData[id];
+    // Inject live model state for model tooltips
+    var isModel = id.indexOf('fcast-model-') === 0;
+    if (isModel) content = injectLiveModelState(id, content);
+    radarTooltip.innerHTML = content;
     radarTooltip.style.display = 'block';
-    // Position in bottom-right of radar map area
+    // Determine if this is a left-panel (model) or right-panel (product) icon
+    var isRightPanel = id.indexOf('fcast-tab-') === 0;
     var mapEl = document.getElementById('fcast-img-container');
+    var anchorRect = anchor.getBoundingClientRect();
+    var ttH = radarTooltip.offsetHeight;
+    var winH = window.innerHeight;
     if (mapEl) {
       var mapRect = mapEl.getBoundingClientRect();
-      radarTooltip.style.left = (mapRect.right - 290) + 'px';
-      radarTooltip.style.top = (mapRect.bottom - radarTooltip.offsetHeight - 8) + 'px';
+      if (isRightPanel) {
+        // Position to the left of the right panel, vertically near the anchor
+        var rightPanel = document.getElementById('fcast-right-panel');
+        var rpLeft = rightPanel ? rightPanel.getBoundingClientRect().left : mapRect.right - 130;
+        radarTooltip.style.left = (rpLeft - 348) + 'px';
+      } else {
+        // Left-panel icons: position to the right of left panel
+        var leftPanel = document.getElementById('fcast-left-panel');
+        var lpRight = leftPanel ? leftPanel.getBoundingClientRect().right : mapRect.left + 140;
+        radarTooltip.style.left = (lpRight + 8) + 'px';
+      }
+      // Vertical: center on anchor, clamped to viewport
+      var idealTop = anchorRect.top + anchorRect.height / 2 - ttH / 2;
+      var clampedTop = Math.max(mapRect.top + 4, Math.min(idealTop, winH - ttH - 8));
+      radarTooltip.style.top = clampedTop + 'px';
     } else {
-      var rect = anchor.getBoundingClientRect();
-      radarTooltip.style.left = (rect.left - 330) + 'px';
-      radarTooltip.style.top = rect.top + 'px';
+      radarTooltip.style.left = (anchorRect.left - 350) + 'px';
+      radarTooltip.style.top = Math.max(8, anchorRect.top - ttH / 2) + 'px';
     }
     clearTimeout(radarTooltipTimer);
   }
