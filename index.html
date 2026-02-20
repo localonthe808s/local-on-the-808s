@@ -2022,139 +2022,212 @@
     display:none;
   }
 
-  /* ─── Stratosphere CLOUDS button ─── */
-  @keyframes seamlessDrift1 {
-    0% { transform:translateX(0); }
-    100% { transform:translateX(-33.333%); }
-  }
-  @keyframes seamlessDrift2 {
-    0% { transform:translateX(-33.333%); }
-    100% { transform:translateX(0); }
-  }
-  .clouds-btn-active {
-    position:relative !important;
-    border:1px solid rgba(255,255,255,.2) !important;
-    color:#fff !important;
-    text-shadow:0 1px 3px rgba(0,30,80,.4);
-    background:linear-gradient(180deg, rgba(135,206,235,.35) 0%, rgba(74,158,255,.25) 100%) !important;
-    box-shadow:0 3px 16px rgba(74,158,255,.15), inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.05) !important;
-    overflow:hidden !important;
-    z-index:1;
-  }
-  .clouds-btn-active::before {
-    content:'';
-    position:absolute;
-    top:0; left:0;
-    width:300%; height:100%;
-    background:
-      radial-gradient(ellipse 40px 16px at 8% 50%, rgba(255,255,255,.28) 0%, transparent 100%),
-      radial-gradient(ellipse 30px 12px at 38% 35%, rgba(255,255,255,.22) 0%, transparent 100%),
-      radial-gradient(ellipse 35px 14px at 58% 60%, rgba(255,255,255,.2) 0%, transparent 100%),
-      radial-gradient(ellipse 32px 13px at 75% 42%, rgba(255,255,255,.24) 0%, transparent 100%),
-      radial-gradient(ellipse 28px 11px at 92% 55%, rgba(255,255,255,.18) 0%, transparent 100%);
-    animation: seamlessDrift1 12s linear infinite;
-    z-index:-1;
-    pointer-events:none;
-  }
-  .clouds-btn-active::after {
-    content:'';
-    position:absolute;
-    top:0; left:0;
-    width:300%; height:100%;
-    background:
-      radial-gradient(ellipse 25px 10px at 12% 40%, rgba(255,255,255,.15) 0%, transparent 100%),
-      radial-gradient(ellipse 42px 16px at 42% 65%, rgba(255,255,255,.18) 0%, transparent 100%),
-      radial-gradient(ellipse 30px 12px at 65% 38%, rgba(255,255,255,.14) 0%, transparent 100%),
-      radial-gradient(ellipse 36px 14px at 88% 58%, rgba(255,255,255,.16) 0%, transparent 100%);
-    animation: seamlessDrift2 18s linear infinite;
-    z-index:-1;
-    pointer-events:none;
-  }
-  .clouds-btn-inactive {
-    background: rgba(180,200,220,.4) !important;
-    color: rgba(80,140,220,.9) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
-    text-shadow: none;
-    overflow:hidden !important;
-  }
-  .clouds-btn-inactive::before,
-  .clouds-btn-inactive::after {
-    content:none !important;
-    animation:none !important;
-  }
-
-  /* ─── Radar Sweep LIVE button ─── */
+  /* ─── RADAR button — circular scope ─── */
   @keyframes radarSweep {
-    0% { transform:translate(-50%,-50%) rotate(0deg); }
-    100% { transform:translate(-50%,-50%) rotate(360deg); }
+    0% { transform:rotate(0deg); }
+    100% { transform:rotate(360deg); }
   }
-  @keyframes liveBlink {
-    0%,100% { opacity:1; }
-    50% { opacity:.3; }
+  /* Storm drifts slowly NE like a real system */
+  @keyframes stormDrift {
+    0%   { top:58%; left:38%; }
+    50%  { top:44%; left:52%; }
+    100% { top:58%; left:38%; }
   }
-  .live-btn-active {
+  /* Subtle internal pulsing - storm intensifies/weakens */
+  @keyframes stormPulse {
+    0%, 100% { opacity:.85; transform:scale(1); }
+    30%  { opacity:.95; transform:scale(1.04); }
+    70%  { opacity:.8;  transform:scale(.97); }
+  }
+  #fcast-range-radar {
     position:relative !important;
-    border:1px solid rgba(220,38,38,.4) !important;
-    color:#ff4444 !important;
-    text-shadow:0 0 8px rgba(220,38,38,.3);
-    background:rgba(220,38,38,.08) !important;
-    box-shadow:0 3px 16px rgba(220,38,38,.15), inset 0 1px 0 rgba(255,255,255,.08) !important;
+    width:110px; height:110px;
+    border:2px solid rgba(0,255,80,.3) !important;
+    border-radius:50% !important;
+    color:rgba(0,255,80,.95) !important;
+    text-shadow:0 0 12px rgba(0,255,80,.6), 0 0 24px rgba(0,255,80,.2);
+    background:radial-gradient(circle, rgba(0,22,0,.88) 0%, rgba(0,8,0,.96) 100%) !important;
+    box-shadow:0 0 24px rgba(0,255,80,.12), 0 0 48px rgba(0,255,80,.05), inset 0 0 40px rgba(0,255,80,.04) !important;
     overflow:hidden !important;
     z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 !important;
   }
-  .live-btn-active::before {
+  /* Range rings */
+  #fcast-range-radar .radar-rings {
+    position:absolute; inset:0;
+    pointer-events:none;
+  }
+  #fcast-range-radar .radar-rings::before {
     content:'';
     position:absolute;
-    width:250%; height:250%;
     top:50%; left:50%;
-    transform-origin:center center;
+    width:33%; height:33%;
     transform:translate(-50%,-50%);
+    border:1px solid rgba(0,255,80,.1);
+    border-radius:50%;
+  }
+  #fcast-range-radar .radar-rings::after {
+    content:'';
+    position:absolute;
+    top:50%; left:50%;
+    width:66%; height:66%;
+    transform:translate(-50%,-50%);
+    border:1px solid rgba(0,255,80,.08);
+    border-radius:50%;
+  }
+  #fcast-range-radar .radar-ring-outer {
+    position:absolute;
+    top:50%; left:50%;
+    width:92%; height:92%;
+    transform:translate(-50%,-50%);
+    border:1px solid rgba(0,255,80,.06);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  /* Crosshairs */
+  #fcast-range-radar .radar-cross {
+    position:absolute; inset:0;
+    pointer-events:none;
+  }
+  #fcast-range-radar .radar-cross::before {
+    content:'';
+    position:absolute;
+    top:50%; left:10%; right:10%;
+    height:1px;
+    background:rgba(0,255,80,.06);
+    transform:translateY(-50%);
+  }
+  #fcast-range-radar .radar-cross::after {
+    content:'';
+    position:absolute;
+    left:50%; top:10%; bottom:10%;
+    width:1px;
+    background:rgba(0,255,80,.06);
+    transform:translateX(-50%);
+  }
+  /* Sweep beam — slower rotation */
+  #fcast-range-radar .radar-beam {
+    position:absolute;
+    width:100%; height:100%;
+    top:0; left:0;
+    animation: radarSweep 4.5s linear infinite;
+    pointer-events:none;
+  }
+  #fcast-range-radar .radar-beam::before {
+    content:'';
+    position:absolute;
+    width:100%; height:100%;
     background:conic-gradient(
-      from 0deg,
+      from 0deg at 50% 50%,
       transparent 0deg,
-      transparent 310deg,
-      rgba(220,38,38,.03) 325deg,
-      rgba(220,38,38,.06) 335deg,
-      rgba(220,38,38,.1) 345deg,
-      rgba(220,38,38,.18) 352deg,
-      rgba(220,38,38,.28) 357deg,
-      rgba(220,38,38,.35) 359deg,
+      transparent 315deg,
+      rgba(0,255,80,.02) 330deg,
+      rgba(0,255,80,.05) 340deg,
+      rgba(0,255,80,.1) 348deg,
+      rgba(0,255,80,.2) 354deg,
+      rgba(0,255,80,.35) 358deg,
+      rgba(0,255,80,.45) 359.5deg,
       transparent 360deg
     );
     border-radius:50%;
-    animation: radarSweep 3s linear infinite;
-    z-index:-1;
+  }
+  #fcast-range-radar .radar-beam::after {
+    content:'';
+    position:absolute;
+    top:50%; left:50%;
+    width:46%; height:1px;
+    background:linear-gradient(90deg, rgba(0,255,80,.5), rgba(0,255,80,.1));
+    transform-origin:left center;
+    transform:translateY(-50%);
+  }
+  /* Storm system — single container drifting slowly NE */
+  #fcast-range-radar .storm-system {
+    position:absolute;
+    width:70px; height:60px;
+    top:58%; left:38%;
+    animation: stormDrift 30s ease-in-out infinite;
     pointer-events:none;
   }
-  .live-btn-active .live-blink {
-    display:inline-block;
-    width:6px; height:6px;
-    background:#ff3333;
+  /* Outer green shield — widespread light rain */
+  #fcast-range-radar .storm-outer {
+    position:absolute;
+    width:100%; height:100%;
+    top:0; left:0;
+    background:
+      radial-gradient(ellipse 100% 90% at 48% 52%, rgba(0,190,0,.45) 0%, rgba(0,160,0,.25) 40%, rgba(0,130,0,.1) 65%, transparent 85%);
+    border-radius:40% 55% 45% 60%;
+    filter:blur(2px);
+    animation: stormPulse 8s ease-in-out infinite;
+    pointer-events:none;
+  }
+  /* Mid yellow/orange band — moderate rain */
+  #fcast-range-radar .storm-mid {
+    position:absolute;
+    width:62%; height:58%;
+    top:18%; left:20%;
+    background:
+      radial-gradient(ellipse 100% 90% at 50% 50%, rgba(255,210,0,.55) 0%, rgba(255,160,0,.35) 50%, transparent 80%);
+    border-radius:45% 55% 50% 45%;
+    filter:blur(1.5px);
+    animation: stormPulse 6.5s ease-in-out infinite 1s;
+    pointer-events:none;
+  }
+  /* Inner red/magenta core — heavy rain/hail */
+  #fcast-range-radar .storm-core {
+    position:absolute;
+    width:32%; height:30%;
+    top:28%; left:30%;
+    background:
+      radial-gradient(ellipse 80% 90% at 50% 50%, rgba(200,0,60,.6) 0%, rgba(255,0,0,.5) 40%, rgba(255,80,0,.25) 70%, transparent 100%);
+    border-radius:50% 40% 55% 45%;
+    filter:blur(1px);
+    animation: stormPulse 5s ease-in-out infinite 0.5s;
+    pointer-events:none;
+  }
+  /* Secondary cell — trailing convection */
+  #fcast-range-radar .storm-cell2 {
+    position:absolute;
+    width:35%; height:32%;
+    top:55%; left:-10%;
+    background:
+      radial-gradient(ellipse 90% 80% at 50% 50%, rgba(0,200,0,.4) 0%, rgba(0,160,0,.2) 50%, transparent 75%);
+    border-radius:50% 45% 55% 50%;
+    filter:blur(1.5px);
+    animation: stormPulse 7s ease-in-out infinite 2s;
+    pointer-events:none;
+  }
+  /* Anvil/outflow — wispy leading edge */
+  #fcast-range-radar .storm-anvil {
+    position:absolute;
+    width:40%; height:25%;
+    top:-5%; left:50%;
+    background:
+      radial-gradient(ellipse 100% 80% at 40% 60%, rgba(0,150,0,.25) 0%, rgba(0,120,0,.1) 50%, transparent 80%);
+    border-radius:60% 40% 50% 50%;
+    filter:blur(2px);
+    animation: stormPulse 9s ease-in-out infinite 3s;
+    pointer-events:none;
+  }
+  /* Center dot */
+  #fcast-range-radar .radar-center {
+    position:absolute;
+    width:4px; height:4px;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    background:rgba(0,255,80,.6);
     border-radius:50%;
-    box-shadow:0 0 6px rgba(255,50,50,.6);
-    animation: liveBlink 2s ease-in-out infinite;
-    margin-right:4px;
-    vertical-align:middle;
+    box-shadow:0 0 6px rgba(0,255,80,.4);
+    pointer-events:none;
   }
-  .live-btn-inactive {
-    background: rgba(200,200,210,.25) !important;
-    color: rgba(220,38,38,.4) !important;
-    box-shadow: none !important;
-    text-shadow: none;
-    overflow:hidden !important;
-  }
-  .live-btn-inactive::before {
-    content:none !important;
-    animation:none !important;
-  }
-  .live-btn-inactive .live-blink {
-    display:inline-block;
-    width:5px; height:5px;
-    background:rgba(220,38,38,.4);
-    border-radius:50%;
-    margin-right:4px;
-    vertical-align:middle;
-    animation:none;
+  /* Label */
+  #fcast-range-radar .radar-label {
+    position:relative;
+    z-index:2;
+    font-size:.72rem;
+    font-weight:800;
+    letter-spacing:.12em;
+    pointer-events:none;
   }
 
   .today-tl-now-bubble{
@@ -5263,7 +5336,7 @@ body > #dynamic-alert-modal {
 
             <div class="widget">
               <div class="widget-head">
-                <div class="widget-title" id="radar-widget-title">CLOUDS <span class="live-tag" id="goes-live">• LIVE</span></div>
+                <div class="widget-title" id="radar-widget-title">CLOUDS <span class="live-tag" id="goes-live">• RADAR</span></div>
                 <a id="fcast-source-link" href="https://www.star.nesdis.noaa.gov/goes/index.php" target="_blank" rel="noopener" class="widget-sub" style="text-decoration:none;color:inherit;">NESDIS/STAR GOES</a>
               </div>
               <div class="widget-body" style="background:rgba(255,255,255,.06);position:relative;overflow:hidden;">
@@ -5286,11 +5359,13 @@ body > #dynamic-alert-modal {
                 <!-- GOES duration buttons (above right panel) -->
 
                 <!-- Left panel controls -->
-                <div id="fcast-left-panel" style="position:absolute;top:0;left:0;bottom:60px;z-index:12;display:flex;flex-direction:column;align-items:flex-start;gap:2px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding:30px 4px 4px 4px;-webkit-mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);">
-                  <!-- LIVE + FORECAST TIMES -->
-                  <button onclick="switchFcastRange('live')" id="fcast-range-live" class="live-btn-inactive" style="padding:8px 20px;border-radius:11px;border:none;font-size:.78rem;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em;"><span class="live-blink"></span>LIVE</button>
+                <div id="fcast-left-panel" style="position:absolute;top:0;left:0;bottom:10px;z-index:12;display:flex;flex-direction:column;align-items:flex-start;gap:2px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding:30px 4px 12px 14px;-webkit-mask-image:linear-gradient(to bottom, black 0%, black 94%, transparent 100%);mask-image:linear-gradient(to bottom, black 0%, black 94%, transparent 100%);">
+                  <!-- RADAR button - only thing visible on load -->
+                  <button onclick="switchFcastRange('live')" id="fcast-range-radar" style="padding:0;font-size:.72rem;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.12em;"><span class="radar-rings"></span><span class="radar-ring-outer"></span><span class="radar-cross"></span><span class="radar-beam"></span><div class="storm-system"><span class="storm-outer"></span><span class="storm-mid"></span><span class="storm-core"></span><span class="storm-cell2"></span><span class="storm-anvil"></span></div><span class="radar-center"></span><span class="radar-label">RADAR</span></button>
+                  <!-- Time buttons (hidden until RADAR clicked) -->
                   <div id="fcast-forecast-label" style="display:none;"></div>
                   <div id="fcast-range-area" style="display:none;flex-direction:column;align-items:stretch;gap:3px;width:100%;">
+                    <button onclick="switchFcastRange('live')" id="fcast-range-live" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Now</button>
                     <button onclick="switchFcastRange('tomorrow')" id="fcast-range-tomorrow" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Tomorrow</button>
                     <div style="display:flex;gap:3px;">
                       <button onclick="switchFcastRange('48h')" id="fcast-range-48h" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">48 HR</button>
@@ -5301,13 +5376,10 @@ body > #dynamic-alert-modal {
                       <button onclick="switchFcastRange('16d')" id="fcast-range-16d" style="flex:1;padding:5px 0;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:center;">16 DAY</button>
                     </div>
                   </div>
-                  <!-- CLOUDS (below LIVE + forecast times) -->
-                  <div style="width:30px;border-top:1px solid rgba(255,255,255,.1);margin:2px 0;"></div>
-                  <button onclick="switchFcastRange('clouds')" id="fcast-range-clouds" class="clouds-btn-active" style="padding:8px 20px;border-radius:10px;border:none;font-size:.78rem;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em;">CLOUDS</button>
                   <!-- SATELLITES & MODELS -->
-                  <div id="fcast-models-label" style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">SATELLITES</div>
-                  <button onclick="switchGoesSat('G19')" id="goes-sat-g19" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GOES-19 EAST</button>
-                  <button onclick="switchGoesSat('G18')" id="goes-sat-g18" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GOES-18 WEST</button>
+                  <div id="fcast-models-label" style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;display:none;">SATELLITES & MODELS</div>
+                  <button onclick="switchGoesSat('G19')" id="goes-sat-g19" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GOES-19 EAST</button>
+                  <button onclick="switchGoesSat('G18')" id="goes-sat-g18" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GOES-18 WEST</button>
                   <div id="fcast-models-divider" style="width:30px;border-top:1px solid rgba(255,255,255,.08);margin:2px 0;display:none;"></div>
                   <button onclick="switchFcastModel('gfs')" id="fcast-model-gfs" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(255,140,0,.15);backdrop-filter:blur(12px);color:rgba(255,140,0,.95);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GFS 16D</button>
                   <button onclick="switchFcastModel('nam')" id="fcast-model-nam" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NAM 84H</button>
@@ -5317,9 +5389,9 @@ body > #dynamic-alert-modal {
                   <button onclick="switchFcastModel('nbm')" id="fcast-model-nbm" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">NBM BLEND</button>
                   <button onclick="switchFcastModel('gefs')" id="fcast-model-gefs" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;">GEFS SPREAD</button>
                   <!-- AREAS label -->
-                  <div style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">AREAS</div>
+                  <div id="fcast-areas-label" style="display:none;font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-left:1px;margin-top:10px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;">AREAS</div>
                   <!-- Area selector -->
-                  <div id="fcast-area-selector" style="display:flex;flex-direction:column;gap:3px;max-width:130px;">
+                  <div id="fcast-area-selector" style="display:none;flex-direction:column;gap:3px;max-width:130px;">
                     <button onclick="switchFcastArea('conus')" id="fcast-area-conus" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">CONTINENTAL US</button>
                     <button onclick="switchFcastArea('namer')" id="fcast-area-namer" style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">NORTH AMERICA</button>
                     <div id="fcast-area-sub-east" style="font-size:.55rem;font-weight:700;color:rgba(43,34,244,.45);font-family:system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding-left:2px;margin-top:6px;">EAST</div>
@@ -5346,7 +5418,7 @@ body > #dynamic-alert-modal {
                     <button onclick="switchFcastArea('africa')" id="fcast-area-africa" style="display:none;padding:5px 10px;border-radius:8px;border:none;background:rgba(200,200,210,.25);backdrop-filter:blur(12px);color:rgba(43,34,244,.65);font-size:.58rem;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;text-transform:uppercase;letter-spacing:.5px;text-align:left;">AFRICA</button>
                   </div>
                 </div>
-                <div id="fcast-right-panel" style="position:absolute;top:10px;right:6px;bottom:60px;z-index:10;display:flex;flex-direction:column;align-items:flex-end;gap:3px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px;opacity:.25;pointer-events:none;transition:opacity .3s;width:130px;-webkit-mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);">
+                <div id="fcast-right-panel" style="position:absolute;top:10px;right:6px;bottom:60px;z-index:10;display:flex;flex-direction:column;align-items:flex-end;gap:3px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px;opacity:0;pointer-events:none;transition:opacity .3s;width:130px;-webkit-mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);mask-image:linear-gradient(to bottom, black 0%, black 80%, transparent 100%);">
                   <!-- GOES BANDS (shown in clouds mode) -->
                   <div id="goes-bands-panel" style="text-align:right;align-self:stretch;">
                     <div style="font-size:.62rem;font-weight:700;color:rgba(43,34,244,.55);font-family:system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding-right:2px;border-bottom:1px solid rgba(43,34,244,.15);padding-bottom:2px;margin-bottom:1px;align-self:stretch;text-align:right;">RGB COMPOSITES</div>
@@ -16839,6 +16911,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     'alaska':'ALASKA', 'hawaii':'HAWAII', 'pr':'CARIB', 'guam':'GUAM'
   };
 
+  var radarCleanStartup = true; // hide controls until RADAR clicked
   var fcastState = {
     cycle: getGfsCycle(),
     idx: 0,
@@ -17228,7 +17301,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     var modelName = (modelLabels[fcastState.model] || 'GFS') + ' ' + (areaLabels[fcastState.area] || '');
     if (fcastState.range === 'live'){
       var ridgeAreaLabels = {'conus':'CONUS','namer':'CONUS','us-ne':'NORTHEAST','us-se':'SOUTHEAST','us-nc':'CENT GL','us-sc':'S MISS VLY','us-nw':'PAC NW','us-sw':'PAC SW','upper-ms':'UP MISS VLY','south-ms':'S MISS VLY','n-rockies':'N ROCKIES','s-rockies':'S ROCKIES','s-plains':'S PLAINS','alaska':'ALASKA','hawaii':'HAWAII','pr':'CARIBBEAN','guam':'GUAM'};
-      badge.textContent = 'LIVE RADAR ' + (ridgeAreaLabels[fcastState.area] || 'CONUS');
+      badge.textContent = 'RADAR NOW ' + (ridgeAreaLabels[fcastState.area] || 'CONUS');
     } else {
       badge.textContent = modelName + ' ' + prod;
     }
@@ -17355,14 +17428,14 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
 
     // Build title line
     var areaFullNames = {'conus':'CONTINENTAL US','namer':'NORTH AMERICA','us-ne':'NORTHEAST','us-se':'SOUTHEAST','us-nc':'GREAT LAKES','us-sc':'SOUTH CENTRAL','us-nw':'PACIFIC NORTHWEST','us-sw':'PACIFIC SOUTHWEST','alaska':'ALASKA','hawaii':'HAWAII','pr':'PUERTO RICO','guam':'GUAM','upper-ms':'UPPER MISSISSIPPI VALLEY','south-ms':'SOUTH MISSISSIPPI VALLEY','n-rockies':'NORTHERN ROCKIES','s-rockies':'SOUTHERN ROCKIES','s-plains':'SOUTHERN PLAINS','north-pac':'NORTH PACIFIC','east-pac':'EAST PACIFIC','west-atl':'WEST ATLANTIC','atlantic':'ATLANTIC','arctic':'ARCTIC','europe':'EUROPE','asia':'ASIA','africa':'AFRICA'};
-    var rangeFullNames = {'live':'LIVE','tomorrow':'24 HOUR FORECAST','48h':'48 HOUR FORECAST','72h':'72 HOUR FORECAST','7d':'7 DAY FORECAST','16d':'16 DAY FORECAST'};
+    var rangeFullNames = {'live':'NOW','tomorrow':'24 HOUR FORECAST','48h':'48 HOUR FORECAST','72h':'72 HOUR FORECAST','7d':'7 DAY FORECAST','16d':'16 DAY FORECAST'};
     var modelFullNames = {'gfs':'GFS','nam':'NAM','nam_hires':'NAM 3KM','hrrr':'HRRR','href':'HREF ENSEMBLE','nbm':'NATIONAL BLEND','gefs':'GEFS ENSEMBLE'};
     var productFullNames = {'sim_radar':'SIMULATED RADAR','precip_type':'PRECIPITATION TYPE','snow_accum':'SNOW ACCUMULATION','precip_total':'PRECIPITATION TOTALS','wind':'WIND & PRESSURE','cape':'CAPE & INSTABILITY','temperature':'THICKNESS & PRECIP TYPE','jet_stream':'JET STREAM','humidity':'RELATIVE HUMIDITY','500mb':'500MB VORTICITY','10mb':'STRATOSPHERIC ANALYSIS','max_ref':'MAX REFLECTIVITY','radar_1km':'1KM REFLECTIVITY','precip_1hr':'HOURLY PRECIPITATION','best_cape':'MOST UNSTABLE CAPE','helicity':'STORM-RELATIVE HELICITY','updraft':'UPDRAFT HELICITY','echo_top':'ECHO TOPS','lightning':'LIGHTNING THREAT','max_wind':'MAX WIND GUST','visibility':'VISIBILITY','ceiling':'CLOUD CEILING','850temp':'850MB TEMPERATURE','500vort':'500MB VORTICITY','250wind':'250MB UPPER WINDS','precip_6hr':'6-HOUR PRECIPITATION','precip_24hr':'24-HOUR PRECIPITATION','low_thick':'LOW-LEVEL THICKNESS','mid_thick':'MID-LEVEL THICKNESS','wnd_temp':'WIND & TEMPERATURE','gfs_850temp':'GFS 850MB TEMPERATURE','gfs_850vort':'GFS 850MB VORTICITY','gfs_500wind':'GFS 500MB WIND','gfs_500rh':'GFS 500MB HUMIDITY','gfs_fourpanel':'4-PANEL COMPOSITE'};
 
     var areaName = areaFullNames[fcastState.area] || 'CONTINENTAL US';
     var title = '';
     if (fcastState.range === 'live') {
-      title = 'LIVE RADAR — ' + areaName;
+      title = 'RADAR NOW — ' + areaName;
     } else {
       var rangeName = rangeFullNames[fcastState.range] || 'FORECAST';
       var modelName = modelFullNames[fcastState.model] || 'GFS';
@@ -17437,7 +17510,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       if (goesLayer) goesLayer.style.display = '';
       if (imgContainer) imgContainer.style.display = 'none';
       if (playBar) { playBar.style.opacity = '0'; playBar.style.pointerEvents = 'none'; }
-      if (widgetTitle) widgetTitle.innerHTML = 'CLOUDS <span class="live-tag" id="goes-live">• LIVE</span>';
+      if (widgetTitle) widgetTitle.innerHTML = 'CLOUDS <span class="live-tag" id="goes-live">• RADAR</span>';
       if (srcLink) { srcLink.style.display = ''; srcLink.textContent = 'NESDIS/STAR GOES'; srcLink.href = 'https://www.star.nesdis.noaa.gov/goes/index.php'; }
       if (badge) { badge.textContent = 'GOES SATELLITE'; }
       // Hide forecast label + range buttons
@@ -17448,12 +17521,13 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       // Show GOES bands, hide forecast products
       if (goesBandsPanel) goesBandsPanel.style.display = '';
       if (fcastProductsPanel) fcastProductsPanel.style.display = 'none';
-      // Show right panel (GOES bands)
-      if (rightPanel) { rightPanel.style.opacity = '1'; rightPanel.style.pointerEvents = 'auto'; }
-      // Show satellite buttons, hide model buttons
-      if (satG19) satG19.style.display = '';
-      if (satG18) satG18.style.display = '';
+      // Show right panel (GOES bands) — but not on clean startup
+      if (rightPanel && !radarCleanStartup) { rightPanel.style.opacity = '1'; rightPanel.style.pointerEvents = 'auto'; }
+      // Show satellite buttons, hide model buttons — but not on clean startup
+      if (satG19 && !radarCleanStartup) satG19.style.display = '';
+      if (satG18 && !radarCleanStartup) satG18.style.display = '';
       if (modelsDivider) modelsDivider.style.display = 'none';
+      if (modelsLabel && !radarCleanStartup) modelsLabel.style.display = '';
       ['gfs','nam','nam_hires','hrrr','href','nbm','gefs'].forEach(function(m){
         var btn = document.getElementById('fcast-model-' + m);
         if (btn) btn.style.display = 'none';
@@ -17466,6 +17540,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       var infoPanel = document.getElementById('fcast-info-panel');
       if (infoPanel) infoPanel.style.display = 'none';
     } else {
+      radarCleanStartup = false; // controls now visible
       if (goesLayer) goesLayer.style.display = 'none';
       if (imgContainer) imgContainer.style.display = '';
       // Hide cloud intelligence pill + close panel, restore bottom info
@@ -17478,56 +17553,47 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       if (infoPanel2) infoPanel2.style.display = '';
       if (playBar) { playBar.style.opacity = ''; playBar.style.pointerEvents = ''; }
       if (widgetTitle) widgetTitle.textContent = 'RADAR';
-      if (badge) badge.textContent = range === 'live' ? 'LIVE RADAR' : 'FORECAST';
+      if (badge) badge.textContent = range === 'live' ? 'RADAR NOW' : 'RADAR FORECAST';
       // Show forecast label + range buttons
       if (fcLabel) fcLabel.style.display = '';
       if (rangeArea) rangeArea.style.display = 'flex';
-      // Rename label back
-      if (modelsLabel) modelsLabel.textContent = 'SATELLITES & MODELS';
+      // Show and rename label
+      if (modelsLabel) { modelsLabel.textContent = 'SATELLITES & MODELS'; modelsLabel.style.display = ''; }
       // Show forecast products, hide GOES bands
       if (goesBandsPanel) goesBandsPanel.style.display = 'none';
       if (fcastProductsPanel) fcastProductsPanel.style.display = '';
-      // Hide satellite buttons, show model buttons
-      if (satG19) satG19.style.display = 'none';
-      if (satG18) satG18.style.display = 'none';
-      if (modelsDivider) modelsDivider.style.display = 'none';
+      if (rightPanel) { rightPanel.style.opacity = '1'; rightPanel.style.pointerEvents = 'auto'; }
+      // Show satellite buttons alongside model buttons
+      if (satG19) satG19.style.display = '';
+      if (satG18) satG18.style.display = '';
+      if (modelsDivider) modelsDivider.style.display = '';
       ['gfs','nam','nam_hires','hrrr','href','nbm','gefs'].forEach(function(m){
         var btn = document.getElementById('fcast-model-' + m);
         if (btn) btn.style.display = '';
       });
+      // Show areas
+      var areasLabel = document.getElementById('fcast-areas-label');
+      var areaSelector = document.getElementById('fcast-area-selector');
+      if (areasLabel) areasLabel.style.display = '';
+      if (areaSelector) areaSelector.style.display = 'flex';
     }
     
-    // Style range buttons (including clouds)
-    var ranges = ['live','clouds','tomorrow','48h','72h','7d','16d'];
-    ranges.forEach(function(r){
+    // Hide RADAR button once clicked, style time buttons
+    var radarBtn = document.getElementById('fcast-range-radar');
+    if (range !== 'clouds' && radarBtn){ radarBtn.style.display='none'; }
+    ['live','tomorrow','48h','72h','7d','16d'].forEach(function(r){
       var btn = document.getElementById('fcast-range-' + r);
       if (!btn) return;
       if (r === range){
-        if (r === 'live'){
-          btn.classList.add('live-btn-active');
-          btn.classList.remove('live-btn-inactive');
-        } else if (r === 'clouds'){
-          btn.classList.add('clouds-btn-active');
-          btn.classList.remove('clouds-btn-inactive');
-        } else {
-          btn.style.background = 'rgba(255,140,0,.15)';
-          btn.style.borderColor = 'transparent';
-          btn.style.color = 'rgba(255,140,0,.95)';
-          btn.style.boxShadow = '0 0 12px rgba(255,140,0,.15)';
-        }
+        btn.style.background = 'rgba(255,140,0,.15)';
+        btn.style.borderColor = 'transparent';
+        btn.style.color = 'rgba(255,140,0,.95)';
+        btn.style.boxShadow = '0 0 12px rgba(255,140,0,.15)';
       } else {
-        if (r === 'live'){
-          btn.classList.remove('live-btn-active');
-          btn.classList.add('live-btn-inactive');
-        } else if (r === 'clouds'){
-          btn.classList.remove('clouds-btn-active');
-          btn.classList.add('clouds-btn-inactive');
-        } else {
-          btn.style.background = 'rgba(200,200,210,.25)';
-          btn.style.borderColor = 'transparent';
-          btn.style.color = 'rgba(43,34,244,.65)';
-          btn.style.boxShadow = 'none';
-        }
+        btn.style.background = 'rgba(200,200,210,.25)';
+        btn.style.borderColor = 'transparent';
+        btn.style.color = 'rgba(43,34,244,.65)';
+        btn.style.boxShadow = 'none';
       }
     });
 
@@ -17730,8 +17796,8 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
           panel.style.webkitMaskImage = 'none';
           panel.style.maskImage = 'none';
         } else {
-          panel.style.webkitMaskImage = 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)';
-          panel.style.maskImage = 'linear-gradient(to bottom, black 0%, black 80%, transparent 100%)';
+          panel.style.webkitMaskImage = 'linear-gradient(to bottom, black 0%, black 94%, transparent 100%)';
+          panel.style.maskImage = 'linear-gradient(to bottom, black 0%, black 94%, transparent 100%)';
         }
       });
     });
@@ -17778,7 +17844,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
 
     // Range buttons: only show for GFS and GEFS (long-range models)
     var rangeArea = document.getElementById('fcast-range-area');
-    if (rangeArea) {
+    if (rangeArea && fcastState.range !== 'clouds') {
       rangeArea.style.display = 'flex';
       // Show range buttons appropriate for model's max forecast hours
       var modelMaxH = {'gfs':384,'gefs':384,'nam':84,'nam_hires':60,'hrrr':48,'href':48,'nbm':192};
