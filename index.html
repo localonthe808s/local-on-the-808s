@@ -863,15 +863,7 @@
     -webkit-mask-image: none;
     mask-image: none;
   }
-  /* Popup scroll-more fade */
-  .popup-scroll-fade{
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
-  }
-  .popup-scroll-fade.scrolled-bottom{
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
+  /* Popup scroll-more glow (applied via JS inline box-shadow) */
 
   .weather-alerts-block.many-alerts:hover{
   }
@@ -2187,7 +2179,7 @@
   .today-tl-legend{
     display:flex;
     flex-wrap:wrap;
-    justify-content:center;
+    justify-content:flex-start;
     align-items:center;
     gap:10px;
     padding-top:6px;
@@ -4927,19 +4919,19 @@ body > #dynamic-alert-modal {
             <!-- Main timeline body -->
             <div class="today-tl-body">
               
-              <!-- Top bars: Kp, Cloud, Pressure -->
+              <!-- Top bars: Kp, Pressure, Cloud -->
               <div class="today-tl-top-bars">
                 <div class="today-tl-bar-row">
                   <div class="today-tl-bar-label">Kp <span id="today-tl-kp-val" style="font-size:.52rem;font-weight:700;opacity:.85"></span></div>
                   <div class="today-tl-bar-track" id="today-tl-kp-track"></div>
                 </div>
-                <div class="today-tl-bar-row" style="height:20px;">
-                  <div class="today-tl-bar-label">☁️ <span id="today-tl-cloud-pct" style="font-size:.52rem;font-weight:700;opacity:.85"></span></div>
-                  <div class="today-tl-bar-track cloud" id="today-tl-cloud-track" style="flex-direction:column;height:20px;"></div>
-                </div>
                 <div class="today-tl-bar-row">
                   <div class="today-tl-bar-label" id="today-tl-pressure-label">◉ <span id="today-tl-pressure-val" style="font-size:.52rem;font-weight:700;opacity:.85"></span></div>
                   <div class="today-tl-bar-track cloud" id="today-tl-pressure-track"></div>
+                </div>
+                <div class="today-tl-bar-row" style="height:20px;">
+                  <div class="today-tl-bar-label">☁️ <span id="today-tl-cloud-pct" style="font-size:.52rem;font-weight:700;opacity:.85"></span></div>
+                  <div class="today-tl-bar-track cloud" id="today-tl-cloud-track" style="flex-direction:column;height:20px;"></div>
                 </div>
               </div>
               
@@ -4971,28 +4963,174 @@ body > #dynamic-alert-modal {
             <!-- Legend -->
             <div class="today-tl-legend" id="today-tl-legend">
               <!-- Sun times: Sunrise/Sunset + Golden Hours -->
-              <div class="today-tl-legend-item" style="gap:2px;">
-                <div style="display:flex;align-items:center;gap:4px;font-size:.55rem;font-weight:700;color:var(--ink);">
-                  <span id="today-tl-sunrise" style="color:#e8a954;">--:--</span>
-                  <span style="color:rgba(var(--ink-rgb),.3);">|</span>
-                  <span id="today-tl-sunset" style="color:#e8a954;">--:--</span>
+              <div class="today-tl-legend-item" style="gap:0;cursor:pointer;padding:0;width:100%;max-width:440px;border-radius:14px;overflow:hidden;background:rgba(10,8,18,1);border:1px solid rgba(232,169,84,.12);position:relative;flex-shrink:0;align-self:flex-start;" id="golden-hour-legend-item" onclick="window.showGoldenInsight(event)">
+                <!-- Dual split-view SVG — NOW vs GOLDEN HOUR forecast -->
+                <div id="golden-hour-sky-scene" style="width:100%;position:relative;overflow:hidden;border-radius:13px;">
+                  <svg width="100%" viewBox="0 0 440 175" preserveAspectRatio="xMidYMid meet" id="golden-sky-svg" style="display:block;">
+                    <defs>
+                      <linearGradient id="ghNowGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" id="ghNow1" stop-color="#0a0820"/>
+                        <stop offset="35%" id="ghNow2" stop-color="#12103a"/>
+                        <stop offset="65%" id="ghNow3" stop-color="#1a1848"/>
+                        <stop offset="100%" id="ghNow4" stop-color="#20204a"/>
+                      </linearGradient>
+                      <linearGradient id="ghFcGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" id="ghFc1" stop-color="#1a1535"/>
+                        <stop offset="25%" id="ghFc2" stop-color="#3d2040"/>
+                        <stop offset="50%" id="ghFc3" stop-color="#c06830"/>
+                        <stop offset="75%" id="ghFc4" stop-color="#e08040"/>
+                        <stop offset="100%" id="ghFc5" stop-color="#d06030"/>
+                      </linearGradient>
+                      <radialGradient id="ghFcGlow" cx="35%" cy="78%" r="28%">
+                        <stop offset="0%" stop-color="rgba(255,200,80,.4)"/>
+                        <stop offset="60%" stop-color="rgba(255,140,50,.1)"/>
+                        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+                      </radialGradient>
+                      <filter id="ghBlur"><feGaussianBlur stdDeviation="1.5"/></filter>
+                      <filter id="ghBlur2"><feGaussianBlur stdDeviation="3"/></filter>
+                      <clipPath id="ghClipL"><rect x="0" y="0" width="220" height="175"/></clipPath>
+                      <clipPath id="ghClipR"><rect x="220" y="0" width="220" height="175"/></clipPath>
+                    </defs>
+                    <!-- LEFT PANEL: NOW -->
+                    <g clip-path="url(#ghClipL)">
+                      <rect x="0" y="0" width="220" height="175" fill="url(#ghNowGrad)"/>
+                      <!-- Now: stars (visible at night/pre-dawn) -->
+                      <g id="ghNowStars" opacity="0">
+                        <circle cx="30" cy="18" r=".7" fill="rgba(255,255,255,.3)"/>
+                        <circle cx="80" cy="12" r=".5" fill="rgba(255,255,255,.2)"/>
+                        <circle cx="140" cy="25" r=".6" fill="rgba(255,255,255,.22)"/>
+                        <circle cx="55" cy="40" r=".4" fill="rgba(255,255,255,.15)"/>
+                        <circle cx="170" cy="15" r=".5" fill="rgba(255,255,255,.18)"/>
+                        <circle cx="110" cy="48" r=".3" fill="rgba(255,255,255,.1)"/>
+                        <circle cx="190" cy="38" r=".4" fill="rgba(255,255,255,.12)"/>
+                      </g>
+                      <!-- Now: sun arc -->
+                      <path id="ghNowArc" d="M10 100 Q60 10 110 8 Q160 10 210 100" fill="none" stroke="rgba(255,200,80,.04)" stroke-width=".4" stroke-dasharray="2,3"/>
+                      <!-- Now: sun -->
+                      <circle id="ghNowSunOuter" cx="110" cy="35" r="10" fill="rgba(255,220,100,.08)" filter="url(#ghBlur2)"/>
+                      <circle id="ghNowSun" cx="110" cy="35" r="4.5" fill="rgba(255,220,100,.7)"/>
+                      <!-- Now: cloud layers -->
+                      <ellipse id="ghNowCloudH1" cx="60" cy="28" rx="40" ry="3" fill="rgba(0,0,0,0)"/>
+                      <ellipse id="ghNowCloudH2" cx="160" cy="24" rx="35" ry="2.5" fill="rgba(0,0,0,0)"/>
+                      <ellipse id="ghNowCloudM1" cx="80" cy="52" rx="40" ry="7" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghNowCloudM2" cx="170" cy="48" rx="35" ry="6" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghNowCloudL1" cx="80" cy="70" rx="70" ry="10" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghNowCloudL2" cx="175" cy="66" rx="50" ry="8" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <!-- Now: precipitation -->
+                      <g id="ghNowRain" opacity="0">
+                        <line x1="40" y1="68" x2="36" y2="90" stroke="rgba(150,160,180,.06)" stroke-width=".5"/>
+                        <line x1="80" y1="65" x2="76" y2="92" stroke="rgba(150,160,180,.05)" stroke-width=".5"/>
+                        <line x1="120" y1="70" x2="116" y2="94" stroke="rgba(150,160,180,.06)" stroke-width=".5"/>
+                        <line x1="160" y1="67" x2="156" y2="91" stroke="rgba(150,160,180,.05)" stroke-width=".5"/>
+                        <line x1="200" y1="69" x2="196" y2="92" stroke="rgba(150,160,180,.04)" stroke-width=".5"/>
+                      </g>
+                      <g id="ghNowSnow" opacity="0">
+                        <circle cx="35" cy="72" r="1" fill="rgba(255,255,255,.06)"/>
+                        <circle cx="75" cy="66" r=".8" fill="rgba(255,255,255,.05)"/>
+                        <circle cx="115" cy="74" r="1" fill="rgba(255,255,255,.06)"/>
+                        <circle cx="155" cy="68" r=".8" fill="rgba(255,255,255,.04)"/>
+                        <circle cx="195" cy="72" r="1" fill="rgba(255,255,255,.05)"/>
+                      </g>
+                      <!-- Now: terrain -->
+                      <path d="M0 100 Q50 95 100 98 Q150 93 200 96 Q210 95 220 97 L220 175 L0 175 Z" fill="rgba(10,8,18,.97)"/>
+                      <path d="M15 98 L18 90 L21 98" fill="rgba(10,8,18,.97)"/>
+                      <path d="M35 97 L39 88 L43 97" fill="rgba(10,8,18,.97)"/>
+                      <path d="M55 98 L58 93 L61 98" fill="rgba(10,8,18,.97)"/>
+                      <!-- NOW label -->
+                      <text x="12" y="14" fill="rgba(255,255,255,.22)" font-size="5" font-weight="800" letter-spacing="1.5" font-family="system-ui">NOW</text>
+                      <text id="ghNowSub" x="12" y="23" fill="rgba(255,255,255,.1)" font-size="3.8" font-family="system-ui"></text>
+                      <!-- Now: sun altitude -->
+                      <text id="ghNowSunAlt" x="110" y="24" text-anchor="middle" fill="rgba(255,220,170,.35)" font-size="4.5" font-weight="800" font-family="system-ui"></text>
+                      <!-- Now: layer labels -->
+                      <text id="ghNowLayerH" x="12" y="60" fill="rgba(130,100,200,.12)" font-size="3.8" font-weight="700" font-family="system-ui"></text>
+                      <text id="ghNowLayerM" x="12" y="70" fill="rgba(200,170,100,.12)" font-size="3.8" font-weight="700" font-family="system-ui"></text>
+                      <text id="ghNowLayerL" x="12" y="80" fill="rgba(180,180,190,.3)" font-size="3.8" font-weight="800" font-family="system-ui"></text>
+                      <!-- Now: conditions data -->
+                      <text id="ghNowCond1" x="12" y="118" fill="rgba(255,255,255,.12)" font-size="3.5" font-family="system-ui"></text>
+                      <!-- Now: countdown -->
+                      <text id="ghNowCountLabel" x="12" y="142" fill="rgba(232,169,84,.18)" font-size="3.5" font-weight="700" font-family="system-ui"></text>
+                      <text id="ghNowCountVal" x="12" y="158" fill="rgba(232,169,84,.35)" font-size="12" font-weight="800" font-family="system-ui"></text>
+                      <text id="ghNowCountTime" x="80" y="158" fill="rgba(232,169,84,.18)" font-size="4.5" font-weight="600" font-family="system-ui"></text>
+                      <!-- Sunrise/set big text (for night mode) -->
+                      <text id="ghNowBigRise" x="12" y="130" fill="#e8a954" font-size="14" font-weight="800" font-family="system-ui" opacity="0"></text>
+                      <text id="ghNowBigSet" x="90" y="130" fill="#e87030" font-size="14" font-weight="800" font-family="system-ui" opacity="0"></text>
+                      <text id="ghNowBigPipe" x="78" y="130" fill="rgba(255,255,255,.06)" font-size="14" font-family="system-ui" opacity="0">|</text>
+                    </g>
+                    <!-- DIVIDER -->
+                    <line x1="220" y1="0" x2="220" y2="175" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+                    <rect x="213" y="52" width="14" height="16" rx="4" fill="rgba(10,8,18,.8)" stroke="rgba(255,255,255,.08)" stroke-width=".4"/>
+                    <text x="220" y="63" text-anchor="middle" fill="rgba(255,255,255,.22)" font-size="6" font-family="system-ui">→</text>
+                    <!-- RIGHT PANEL: AT GOLDEN HOUR forecast -->
+                    <g clip-path="url(#ghClipR)">
+                      <rect x="220" y="0" width="220" height="175" fill="url(#ghFcGrad)"/>
+                      <!-- Forecast: sun glow -->
+                      <ellipse id="ghFcGlowE" cx="310" cy="92" rx="60" ry="22" fill="url(#ghFcGlow)"/>
+                      <!-- Forecast: smoke haze -->
+                      <rect id="ghFcSmoke" x="220" y="15" width="220" height="50" fill="rgba(180,60,20,0)"/>
+                      <!-- Forecast: sun -->
+                      <circle id="ghFcSunOuter" cx="310" cy="86" r="14" fill="rgba(255,180,50,.15)" filter="url(#ghBlur2)"/>
+                      <circle id="ghFcSun" cx="310" cy="86" r="5" fill="rgba(255,210,80,.8)"/>
+                      <text id="ghFcSunAlt" x="310" y="73" text-anchor="middle" fill="rgba(255,220,170,.45)" font-size="5" font-weight="800" font-family="system-ui"></text>
+                      <!-- Forecast: cloud layers -->
+                      <ellipse id="ghFcCloudH1" cx="340" cy="22" rx="50" ry="4" fill="rgba(0,0,0,0)" transform="rotate(-1 340 22)"/>
+                      <ellipse id="ghFcCloudH2" cx="280" cy="26" rx="35" ry="3" fill="rgba(0,0,0,0)"/>
+                      <ellipse id="ghFcCloudM1" cx="340" cy="50" rx="40" ry="8" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghFcCloudM2" cx="280" cy="56" rx="30" ry="6" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghFcCloudM3" cx="400" cy="52" rx="25" ry="5" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghFcCloudL1" cx="340" cy="72" rx="75" ry="10" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <ellipse id="ghFcCloudL2" cx="270" cy="68" rx="45" ry="7" fill="rgba(0,0,0,0)" filter="url(#ghBlur)"/>
+                      <!-- Forecast: precipitation -->
+                      <g id="ghFcRain" opacity="0">
+                        <line x1="260" y1="70" x2="256" y2="92" stroke="rgba(150,160,180,.06)" stroke-width=".5"/>
+                        <line x1="300" y1="68" x2="296" y2="94" stroke="rgba(150,160,180,.05)" stroke-width=".5"/>
+                        <line x1="340" y1="72" x2="336" y2="96" stroke="rgba(150,160,180,.06)" stroke-width=".5"/>
+                        <line x1="380" y1="69" x2="376" y2="93" stroke="rgba(150,160,180,.05)" stroke-width=".5"/>
+                        <line x1="420" y1="71" x2="416" y2="94" stroke="rgba(150,160,180,.04)" stroke-width=".5"/>
+                      </g>
+                      <!-- Forecast: terrain -->
+                      <path d="M220 98 Q270 93 320 96 Q370 91 420 95 Q435 94 440 96 L440 175 L220 175 Z" fill="rgba(10,8,18,.97)"/>
+                      <path d="M410 95 L414 86 L418 95" fill="rgba(10,8,18,.97)"/>
+                      <path d="M425 96 L428 89 L431 96" fill="rgba(10,8,18,.97)"/>
+                      <!-- AT GOLDEN HOUR label -->
+                      <text id="ghFcLabel" x="232" y="14" fill="rgba(232,169,84,.38)" font-size="5" font-weight="800" letter-spacing="1.2" font-family="system-ui">AT GOLDEN HOUR</text>
+                      <text id="ghFcSub" x="232" y="23" fill="rgba(255,255,255,.13)" font-size="3.8" font-family="system-ui"></text>
+                      <!-- Forecast: layer labels -->
+                      <text id="ghFcLayerH" x="232" y="42" fill="rgba(130,100,200,.15)" font-size="3.8" font-weight="700" font-family="system-ui"></text>
+                      <text id="ghFcLayerM" x="232" y="52" fill="rgba(200,170,100,.15)" font-size="3.8" font-weight="700" font-family="system-ui"></text>
+                      <text id="ghFcLayerL" x="232" y="62" fill="rgba(180,180,190,.3)" font-size="3.8" font-weight="800" font-family="system-ui"></text>
+                      <!-- Forecast: conditions -->
+                      <text id="ghFcCond1" x="232" y="114" fill="rgba(255,255,255,.1)" font-size="3.5" font-family="system-ui"></text>
+                      <!-- Forecast: score badge -->
+                      <rect id="ghFcScoreBg" x="232" y="122" width="55" height="15" rx="4" fill="rgba(136,136,136,.1)" stroke="rgba(136,136,136,.12)" stroke-width=".4"/>
+                      <text id="ghFcScoreLabel" x="241" y="133" fill="#888" font-size="6" font-weight="900" font-family="system-ui"></text>
+                      <text id="ghFcScoreNum" x="283" y="133" fill="rgba(255,255,255,.15)" font-size="5" font-weight="700" font-family="system-ui"></text>
+                      <!-- Forecast: reason lines -->
+                      <text id="ghFcReason1" x="232" y="150" fill="rgba(255,255,255,.08)" font-size="3.3" font-family="system-ui"></text>
+                      <text id="ghFcReason2" x="232" y="158" fill="rgba(255,255,255,.08)" font-size="3.3" font-family="system-ui"></text>
+                      <text id="ghFcReason3" x="232" y="166" fill="rgba(255,255,255,.06)" font-size="3.3" font-family="system-ui"></text>
+                    </g>
+                  </svg>
                 </div>
-                <div style="font-size:.48rem;font-weight:600;color:rgba(var(--ink-rgb),.5);">AM <span id="today-tl-golden-am" style="color:#e8a954;">--</span></div>
-                <div style="font-size:.48rem;font-weight:600;color:rgba(var(--ink-rgb),.5);">PM <span id="today-tl-golden-pm" style="color:#e8a954;">--</span></div>
               </div>
+              <!-- Hidden elements for sunrise/sunset/golden times (referenced by other code) -->
+              <span id="today-tl-sunrise" style="display:none;">--:--</span>
+              <span id="today-tl-sunset" style="display:none;">--:--</span>
+              <span id="today-tl-golden-am" style="display:none;">--</span>
+              <span id="today-tl-golden-pm" style="display:none;">--</span>
+              <span id="golden-hour-score-preview" style="display:none;"></span>
               <!-- Daylight -->
-              <div class="today-tl-legend-item" style="gap:2px;">
+              <div class="today-tl-legend-item" style="gap:2px;cursor:pointer;" onclick="window.showDaylightInsight(event)">
                 <div style="font-size:.55rem;font-weight:700;color:var(--ink);" id="today-tl-daylight">--</div>
                 <div style="font-size:.48rem;font-weight:600;color:#4ecdc4;" id="today-tl-daylight-change">--</div>
               </div>
-              <!-- Moon -->
-              <div class="today-tl-legend-item" style="gap:1px;">
-                <div style="font-size:.5rem;font-weight:700;color:var(--ink);" id="today-tl-moon-name">--</div>
-                <div style="font-size:.48rem;font-weight:600;color:rgba(var(--ink-rgb),.5);" id="today-tl-moon-illum">--%</div>
-              </div>
-              <div class="today-tl-legend-item" id="today-tl-legend-moon-item" style="cursor:pointer;" onclick="showPlanetInsight('moon','#e8e8f0',event)">
-                <div class="today-tl-legend-top"><div class="today-tl-legend-moon" id="today-tl-legend-moon"></div>Moon</div>
-                <span class="today-tl-legend-dir" id="legend-dir-moon"></span>
+              <!-- Moon (merged: phase + icon + direction) -->
+              <div class="today-tl-legend-item" id="today-tl-legend-moon-item" style="cursor:pointer;padding:5px 12px;" onclick="showPlanetInsight('moon','#e8e8f0',event)">
+                <div class="today-tl-legend-top"><div class="today-tl-legend-moon" id="today-tl-legend-moon"></div><span style="font-size:.58rem;">Moon</span></div>
+                <div style="font-size:.44rem;font-weight:500;color:var(--ink);opacity:.75;letter-spacing:.02em;text-transform:none;" id="today-tl-moon-name">--</div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="font-size:.44rem;font-weight:500;color:rgba(var(--ink-rgb),.45);" id="today-tl-moon-illum">--%</span>
+                  <span class="today-tl-legend-dir" id="legend-dir-moon"></span>
+                </div>
               </div>
               <div class="today-tl-legend-item" style="cursor:pointer;" onclick="showPlanetInsight('mercury','#9A9A9A',event)">
                 <div class="today-tl-legend-top"><div class="today-tl-legend-dot" style="background:#9A9A9A;"></div>Mercury</div>
@@ -5039,15 +5177,12 @@ body > #dynamic-alert-modal {
                   <span>9</span>
                 </div>
               </div>
-              <!-- Cloud scale -->
+              <!-- Cloud layers legend -->
               <div class="today-tl-legend-item">
-                <div class="today-tl-kp-scale">
-                  <span>✦</span>
-                  <div class="today-tl-kp-box" style="background:#ffffff;border:1px solid rgba(0,0,0,0.1);"></div>
-                  <div class="today-tl-kp-box" style="background:#c8c8c8;"></div>
-                  <div class="today-tl-kp-box" style="background:#8c8c8c;"></div>
-                  <div class="today-tl-kp-box" style="background:#5a5a5a;"></div>
-                  <span>☁️</span>
+                <div style="display:flex;flex-direction:column;gap:1px;font-size:.42rem;font-weight:700;letter-spacing:.3px;line-height:1;">
+                  <div style="display:flex;align-items:center;gap:3px;"><div style="width:14px;height:4px;border-radius:1px;background:linear-gradient(90deg,rgba(100,120,200,.1),rgba(200,210,255,.7));"></div><span style="color:#8899dd;">H</span><span style="color:rgba(var(--ink-rgb),.35);">Cirrus</span></div>
+                  <div style="display:flex;align-items:center;gap:3px;"><div style="width:14px;height:4px;border-radius:1px;background:linear-gradient(90deg,rgba(180,140,80,.1),rgba(240,200,140,.7));"></div><span style="color:#ddb870;">M</span><span style="color:rgba(var(--ink-rgb),.35);">Alto</span></div>
+                  <div style="display:flex;align-items:center;gap:3px;"><div style="width:14px;height:4px;border-radius:1px;background:linear-gradient(90deg,rgba(60,60,80,.1),rgba(140,140,160,.7));"></div><span style="color:#99a;">L</span><span style="color:rgba(var(--ink-rgb),.35);">Stratus</span></div>
                 </div>
               </div>
             </div>
@@ -6900,6 +7035,1247 @@ function dayRangeAround(d, days){
   /* =========================================================
      TODAY TIMELINE RENDER (v4/v5 integrated widget)
      ========================================================= */
+  // Helper: mount popup on document.body as position:fixed
+  // Escapes stacking contexts (created by backdrop-filter on parent cards)
+  window.mountPopupOnBody = function(popup, bd, tlCard) {
+    try {
+      var cardRect = tlCard.getBoundingClientRect();
+      var pLeft = parseFloat(popup.style.left) || 0;
+      var pRight = popup.style.right ? parseFloat(popup.style.right) : null;
+      var pTop = parseFloat(popup.style.top) || 0;
+      var fixedTop = cardRect.top + pTop;
+      var fixedLeft = pRight !== null ? (cardRect.right - pRight - parseFloat(popup.style.width || 300)) : (cardRect.left + pLeft);
+      var popW = parseFloat(popup.style.width) || 300;
+      fixedLeft = Math.max(8, Math.min(fixedLeft, window.innerWidth - popW - 8));
+      fixedTop = Math.max(8, fixedTop);
+      var legend = document.getElementById('today-tl-legend');
+      var maxH = window.innerHeight - fixedTop - 16;
+      if (legend) {
+        var legendTop = legend.getBoundingClientRect().top;
+        var cardMax = legendTop - fixedTop - 8;
+        if (cardMax > 100) maxH = Math.min(maxH, cardMax);
+      }
+      popup.style.position = 'fixed';
+      popup.style.left = fixedLeft + 'px';
+      popup.style.right = 'auto';
+      popup.style.top = fixedTop + 'px';
+      popup.style.maxHeight = maxH + 'px';
+      popup.style.zIndex = '9999';
+      document.body.appendChild(popup);
+    } catch(e) { console.error('mountPopupOnBody error:', e); document.body.appendChild(popup); }
+  };
+
+  // Helper: add scroll-more glow to popup
+  window.addScrollFade = function(el) {
+    setTimeout(function(){
+      if (el.scrollHeight > el.clientHeight + 8) {
+        var baseShadow = el.style.boxShadow || '0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04)';
+        var glowShadow = baseShadow + ', inset 0 -30px 25px -18px rgba(100,160,255,.2)';
+        el.style.boxShadow = glowShadow;
+        el.style.transition = (el.style.transition || '') + ' box-shadow .35s ease';
+        el.addEventListener('scroll', function(){
+          var atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 12;
+          el.style.boxShadow = atBottom ? baseShadow : glowShadow;
+        });
+      }
+    }, 80);
+  };
+
+  // ── DAYLIGHT INSIGHT POPUP ──
+  // ── DAYLIGHT INSIGHT POPUP ──
+  window.showDaylightInsight = function(ev) {
+    try {
+    var old = document.getElementById('daylight-insight-popup');
+    var oldBd = document.getElementById('daylight-insight-backdrop');
+    if (old) { old.remove(); if(oldBd) oldBd.remove(); return; }
+    var tlCard = document.getElementById('today-timeline-card');
+    if (!tlCard) return;
+    var daily = window._dailyData;
+    if (!daily || !daily.sunrise || !daily.sunset) return;
+    var hourly = window._hourlyData;
+    var lat = window.LOCATION ? LOCATION.lat : 40.7;
+    var lon = window.LOCATION ? LOCATION.lon : -74.0;
+    var now = new Date();
+    var srDate = new Date(daily.sunrise[0]);
+    var ssDate = new Date(daily.sunset[0]);
+    var dayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+    var yr = now.getFullYear();
+    var msD = 86400000;
+    var doy = Math.floor((now - new Date(yr,0,1)) / msD) + 1;
+    var rad2 = Math.PI/180;
+
+    // ── HELPERS ──
+    var fmt = function(d){if(!d)return'--';var h=d.getHours(),m=d.getMinutes(),a=h>=12?'PM':'AM';h=h%12||12;return h+':'+(m<10?'0':'')+m+' '+a;};
+    var fmtS = function(d){if(!d)return'--';var h=d.getHours(),m=d.getMinutes(),a=h>=12?'p':'a';h=h%12||12;return h+':'+(m<10?'0':'')+m+a;};
+    var gL = function(l,v){return '<div class="hz-card-row"><span class="hz-label">'+l+'</span><span class="hz-val">'+v+'</span></div>';};
+    var FS = function(t,c){return '<div style="font-weight:800;font-size:9px;color:'+(c||'#4ecdc4')+';text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.08);">'+t+'</div>';};
+    var bar2 = function(pct,color,ht){return '<div style="width:100%;height:'+(ht||4)+'px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;"><div style="width:'+Math.min(100,Math.max(0,pct))+'%;height:100%;background:'+(color||'#4ecdc4')+';border-radius:2px;transition:width .3s;"></div></div>';};
+
+    // ── CORE CALCS ──
+    var dlMs = ssDate - srDate;
+    var dlH = Math.floor(dlMs/3600000), dlM = Math.round((dlMs%3600000)/60000), dlS = Math.round((dlMs%60000)/1000);
+    var dlMin = dlMs / 60000;
+    var nightMs = 86400000-dlMs;
+
+    // Yesterday/tomorrow
+    var yDay = new Date(dayLocal); yDay.setDate(yDay.getDate()-1);
+    var ySr = solarEventTimeLocal(yDay,lat,lon,-0.833,true), ySs = solarEventTimeLocal(yDay,lat,lon,-0.833,false);
+    var yDlMs = (ySr&&ySs)?(ySs-ySr):null;
+    var dChg = yDlMs ? Math.round((dlMs-yDlMs)/1000) : null;
+    var tDay = new Date(dayLocal); tDay.setDate(tDay.getDate()+1);
+    var tSr = solarEventTimeLocal(tDay,lat,lon,-0.833,true), tSs = solarEventTimeLocal(tDay,lat,lon,-0.833,false);
+    var tDlMs = (tSr&&tSs)?(tSs-tSr):null;
+    var tChg = tDlMs ? Math.round((tDlMs-dlMs)/1000) : null;
+
+    // Week-over-week
+    var w7 = new Date(dayLocal); w7.setDate(w7.getDate()-7);
+    var w7Sr = solarEventTimeLocal(w7,lat,lon,-0.833,true), w7Ss = solarEventTimeLocal(w7,lat,lon,-0.833,false);
+    var weekChg = (w7Sr&&w7Ss) ? Math.round((dlMs-(w7Ss-w7Sr))/1000) : null;
+    // Month ago
+    var m30 = new Date(dayLocal); m30.setDate(m30.getDate()-30);
+    var m30Sr = solarEventTimeLocal(m30,lat,lon,-0.833,true), m30Ss = solarEventTimeLocal(m30,lat,lon,-0.833,false);
+    var monthChg = (m30Sr&&m30Ss) ? Math.round((dlMs-(m30Ss-m30Sr))/1000) : null;
+
+    // Twilight
+    var civilDawn = solarEventTimeLocal(dayLocal,lat,lon,-6,true);
+    var civilDusk = solarEventTimeLocal(dayLocal,lat,lon,-6,false);
+    var nautDawn = solarEventTimeLocal(dayLocal,lat,lon,-12,true);
+    var nautDusk = solarEventTimeLocal(dayLocal,lat,lon,-12,false);
+    var astroDawn = solarEventTimeLocal(dayLocal,lat,lon,-18,true);
+    var astroDusk = solarEventTimeLocal(dayLocal,lat,lon,-18,false);
+    var totalLight = (astroDawn&&astroDusk) ? Math.round((astroDusk-astroDawn)/60000) : null;
+    var trueDark = totalLight ? (1440 - totalLight) : null;
+
+    // Declination, EoT, season
+    var terms = _solarTerms(dayLocal);
+    var declDeg = terms.decl * 180 / Math.PI;
+    var eqT = terms.eqtime;
+    var isN = lat >= 0;
+
+    // Sun azimuth at rise/set
+    var sunriseAz = Math.acos(Math.sin(declDeg*rad2) / Math.cos(lat*rad2)) / rad2;
+    var sunsetAz = 360 - sunriseAz;
+    // Convert to compass
+    var azToCompass = function(az) {
+      var dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round(az/22.5)%16];
+    };
+
+    // Solstice/equinox
+    var vEq = new Date(yr,2,20), sSol = new Date(yr,5,21), aEq = new Date(yr,8,22), wSol = new Date(yr,11,21);
+    var sumD = new Date(yr,5,21,12,0,0), winD = new Date(yr,11,21,12,0,0);
+    var sSr = solarEventTimeLocal(sumD,lat,lon,-0.833,true), sSs = solarEventTimeLocal(sumD,lat,lon,-0.833,false);
+    var wSr = solarEventTimeLocal(winD,lat,lon,-0.833,true), wSs = solarEventTimeLocal(winD,lat,lon,-0.833,false);
+    var maxDL = (sSr&&sSs)?(sSs-sSr)/60000:900, minDL = (wSr&&wSs)?(wSs-wSr)/60000:540;
+    var dlRange = maxDL - minDL || 1;
+    var dlPct = Math.max(0,Math.min(100,((dlMin-minDL)/dlRange)*100));
+    var diffFrom12h = Math.round(dlMin - 720);
+    var dToVE=Math.round((vEq-now)/msD), dToSS=Math.round((sSol-now)/msD), dToAE=Math.round((aEq-now)/msD), dToWS=Math.round((wSol-now)/msD);
+
+    // Cumulative gain since last solstice
+    var lastSol = dToWS < 0 ? wSol : new Date(yr-1,11,21);
+    if (dToSS < 0 && dToWS > 0) lastSol = sSol;
+    var solSr = solarEventTimeLocal(new Date(lastSol.getFullYear(),lastSol.getMonth(),lastSol.getDate(),12,0,0),lat,lon,-0.833,true);
+    var solSs = solarEventTimeLocal(new Date(lastSol.getFullYear(),lastSol.getMonth(),lastSol.getDate(),12,0,0),lat,lon,-0.833,false);
+    var solDl = (solSr&&solSs) ? (solSs-solSr)/60000 : 720;
+    var cumChg = Math.round(dlMin - solDl);
+
+    var season, sCol, sEm;
+    if(now>=vEq&&now<sSol){season='Spring';sCol='#66cc88';sEm='\ud83c\udf31';}
+    else if(now>=sSol&&now<aEq){season='Summer';sCol='#ffcc44';sEm='\u2600\ufe0f';}
+    else if(now>=aEq&&now<wSol){season='Autumn';sCol='#e8a954';sEm='\ud83c\udf42';}
+    else{season='Winter';sCol='#88bbdd';sEm='\u2744\ufe0f';}
+    if(!isN){if(season==='Spring')season='Autumn';else if(season==='Autumn')season='Spring';else if(season==='Summer')season='Winter';else season='Summer';}
+
+    var gaining = dChg!==null ? dChg>0 : (isN?(doy<172||doy>355):(doy>172&&doy<355));
+    var gC = gaining?'#4ecdc4':'#e87030';
+
+    // Max altitude + shadow
+    var maxAlt = 90 - Math.abs(lat - declDeg);
+    if(maxAlt>90)maxAlt=90;
+    var shadowLen = maxAlt > 0 ? (1 / Math.tan(maxAlt * rad2)) : null;
+
+    // Sunshine hours + UV window
+    var sunshineHrs = null, uvPeakHr = null, uvMax = 0, uvWindow = null;
+    if (hourly && hourly.time) {
+      var sunCt = 0, uvStart = -1, uvEnd = -1;
+      for (var si=0;si<hourly.time.length;si++) {
+        var sdt = new Date(hourly.time[si]);
+        if (sdt.getDate()!==now.getDate()||sdt.getMonth()!==now.getMonth()) continue;
+        if (hourly.shortwave_radiation && hourly.shortwave_radiation[si] > 120) sunCt++;
+        if (hourly.uv_index && typeof hourly.uv_index[si]==='number') {
+          if (hourly.uv_index[si] > uvMax) { uvMax = hourly.uv_index[si]; uvPeakHr = sdt.getHours(); }
+          if (hourly.uv_index[si] >= 3) { if (uvStart<0) uvStart = sdt.getHours(); uvEnd = sdt.getHours(); }
+        }
+      }
+      sunshineHrs = sunCt;
+      if (uvStart >= 0) uvWindow = { start:uvStart, end:uvEnd+1, peak:uvPeakHr, max:Math.round(uvMax) };
+    }
+
+    // Rate context
+    var absDC = Math.abs(dChg||0);
+    var rateCtx = absDC>150?'Near-equinox acceleration \u2014 fastest change of the year.':absDC>90?'Rapid change \u2014 ~'+Math.round(absDC*7/60)+' min/week.':absDC>30?'Moderate \u2014 ~'+Math.round(absDC*7/60)+' min/week.':absDC>5?'Near-solstice plateau \u2014 "sol sistere" (sun stands still).':'Solstice standstill \u2014 the turning point.';
+
+    // Photoperiod thresholds
+    var photoNotes = [];
+    if (dlMin >= 840) photoNotes.push({icon:'\ud83c\udf3b',text:'Long-day photoperiod (14h+) \u2014 triggers flowering in long-day plants, peak bird song activity, and longest outdoor activity window.'});
+    else if (dlMin >= 750) photoNotes.push({icon:'\ud83c\udf3f',text:'Moderate photoperiod (12.5h) \u2014 near-equinox balance. Most species active. Circadian rhythm naturally aligned.'});
+    else if (dlMin < 600) photoNotes.push({icon:'\ud83d\udca1',text:'Short photoperiod (<10h) \u2014 reduced UV exposure. Consider vitamin D supplementation. Light therapy beneficial for mood.'});
+    if (dlMin < 540) photoNotes.push({icon:'\u26a0\ufe0f',text:'Below 9h daylight \u2014 SAD (Seasonal Affective Disorder) risk elevated. Bright light exposure within 1h of waking recommended.'});
+
+    // ═══════════════════════════
+    //  SVG BUILDERS
+    // ═══════════════════════════
+
+    // ── SOLAR ARC ──
+    var buildSolarArc = function(){
+      var svg = '<svg width="250" height="70" viewBox="0 0 240 80" style="width:100%;height:70px;display:block;border-radius:6px;background:rgba(255,255,255,.02);">';
+      svg+='<line x1="0" y1="66" x2="240" y2="66" stroke="rgba(255,255,255,.1)" stroke-width=".5"/>';
+      svg+='<text x="3" y="64" fill="rgba(255,255,255,.12)" font-size="4.5" font-family="system-ui">0\u00b0 horizon</text>';
+      var srT=srDate.getTime(), ssT=ssDate.getTime(), pts2=[];
+      for(var t2=srT;t2<=ssT;t2+=300000){
+        var fr=(t2-srT)/(ssT-srT); var alt2=maxAlt*Math.sin(fr*Math.PI);
+        pts2.push({x:10+fr*220, y:66-(alt2/Math.max(maxAlt,1))*56, alt:alt2, t:t2});
+      }
+      // Fill below arc  
+      var arcP='';pts2.forEach(function(p,i){arcP+=(i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1);});
+      svg+='<path d="'+arcP+' L230 66 L10 66 Z" fill="rgba(255,200,50,.05)"/>';
+      // Color-coded arc stroke
+      for(var ai2=1;ai2<pts2.length;ai2++){var p1=pts2[ai2-1],p2=pts2[ai2];var c2=p2.alt<6?'#e87030':p2.alt<15?'#e8a954':'#ffcc44';svg+='<line x1="'+p1.x.toFixed(1)+'" y1="'+p1.y.toFixed(1)+'" x2="'+p2.x.toFixed(1)+'" y2="'+p2.y.toFixed(1)+'" stroke="'+c2+'" stroke-width="1.5" stroke-linecap="round"/>';}
+      // Golden hour threshold
+      var ghY2=66-(6/Math.max(maxAlt,1))*56;
+      if(ghY2>8&&ghY2<64) svg+='<line x1="0" y1="'+ghY2.toFixed(1)+'" x2="240" y2="'+ghY2.toFixed(1)+'" stroke="rgba(232,169,84,.2)" stroke-width=".3" stroke-dasharray="2,2"/><text x="237" y="'+(ghY2-2).toFixed(1)+'" text-anchor="end" fill="rgba(232,169,84,.25)" font-size="4" font-family="system-ui">6\u00b0</text>';
+      // Peak label
+      svg+='<text x="120" y="'+(66-(maxAlt/Math.max(maxAlt,1))*56-5).toFixed(1)+'" text-anchor="middle" fill="#ffcc44" font-size="6" font-weight="800" font-family="system-ui">'+maxAlt.toFixed(1)+'\u00b0</text>';
+      // NOW dot
+      if(now>=srDate&&now<=ssDate){var nf=(now-srT)/(ssT-srT);var nA=maxAlt*Math.sin(nf*Math.PI);var nx2=10+nf*220,ny2=66-(nA/Math.max(maxAlt,1))*56;svg+='<circle cx="'+nx2.toFixed(1)+'" cy="'+ny2.toFixed(1)+'" r="5" fill="#ffcc44" opacity=".2"/><circle cx="'+nx2.toFixed(1)+'" cy="'+ny2.toFixed(1)+'" r="3" fill="#fff"/>';}
+      svg+='<text x="10" y="76" text-anchor="start" fill="#e8a954" font-size="5" font-weight="700" font-family="system-ui">'+fmtS(srDate)+' \u2022 '+azToCompass(sunriseAz)+' '+Math.round(sunriseAz)+'\u00b0</text>';
+      svg+='<text x="230" y="76" text-anchor="end" fill="#e87030" font-size="5" font-weight="700" font-family="system-ui">'+fmtS(ssDate)+' \u2022 '+azToCompass(sunsetAz)+' '+Math.round(sunsetAz)+'\u00b0</text>';
+      svg+='</svg>';
+      return svg;
+    };
+
+    // ── LIGHT BUDGET DONUT ──
+    var buildDonut = function(){
+      var cAM=(civilDawn&&srDate)?Math.round((srDate-civilDawn)/60000):0;
+      var cPM=(civilDusk&&ssDate)?Math.round((civilDusk-ssDate)/60000):0;
+      var nAM=(nautDawn&&civilDawn)?Math.round((civilDawn-nautDawn)/60000):0;
+      var nPM=(nautDusk&&civilDusk)?Math.round((nautDusk-civilDusk)/60000):0;
+      var aAM=(astroDawn&&nautDawn)?Math.round((nautDawn-astroDawn)/60000):0;
+      var aPM=(astroDusk&&nautDusk)?Math.round((astroDusk-nautDusk)/60000):0;
+      var dayM=Math.round(dlMin), civM=cAM+cPM, nauM=nAM+nPM, astM=aAM+aPM, drkM=Math.max(0,1440-dayM-civM-nauM-astM);
+      var segs=[{m:dayM,c:'#ffcc44',l:'Daylight'},{m:civM,c:'#cc9944',l:'Civil'},{m:nauM,c:'#556688',l:'Nautical'},{m:astM,c:'#334455',l:'Astronomical'},{m:drkM,c:'#1a1a2a',l:'True dark'}];
+      var svg='<svg width="110" height="110" viewBox="0 0 120 120" style="display:block;margin:0 auto;">';
+      var cx=60,cy=60,r=48,r2=36,sa=-90;
+      segs.forEach(function(s){var sw=s.m/1440*360;if(sw<0.3)return;var ea=sa+sw;var s1=sa*rad2,e1=ea*rad2;var lg=sw>180?1:0;svg+='<path d="M'+(cx+r*Math.cos(s1)).toFixed(1)+' '+(cy+r*Math.sin(s1)).toFixed(1)+' A'+r+' '+r+' 0 '+lg+' 1 '+(cx+r*Math.cos(e1)).toFixed(1)+' '+(cy+r*Math.sin(e1)).toFixed(1)+' L'+(cx+r2*Math.cos(e1)).toFixed(1)+' '+(cy+r2*Math.sin(e1)).toFixed(1)+' A'+r2+' '+r2+' 0 '+lg+' 0 '+(cx+r2*Math.cos(s1)).toFixed(1)+' '+(cy+r2*Math.sin(s1)).toFixed(1)+' Z" fill="'+s.c+'" opacity=".85"/>';sa=ea;});
+      svg+='<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" fill="#fff" font-size="13" font-weight="900" font-family="system-ui">'+dayM+'</text>';
+      svg+='<text x="'+cx+'" y="'+(cy+7)+'" text-anchor="middle" fill="rgba(255,255,255,.35)" font-size="5.5" font-weight="600" font-family="system-ui">min daylight</text>';
+      svg+='</svg>';
+      svg+='<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:3px;">';
+      segs.forEach(function(s){svg+='<div style="display:flex;align-items:center;gap:2px;font-size:6.5px;color:rgba(255,255,255,.4);"><div style="width:6px;height:6px;border-radius:1px;background:'+s.c+';"></div>'+s.l+' '+s.m+'m</div>';});
+      svg+='</div>';
+      return svg;
+    };
+
+    // ── ANNUAL CURVE ──
+    var buildAnnual = function(){
+      var svg='<svg width="250" height="80" viewBox="0 0 365 100" preserveAspectRatio="none" style="width:100%;height:80px;display:block;border-radius:6px;background:rgba(255,255,255,.02);">';
+      svg+='<defs><linearGradient id="dlG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ecdc4" stop-opacity=".25"/><stop offset="100%" stop-color="#4ecdc4" stop-opacity=".02"/></linearGradient></defs>';
+      var pts=[],mx=0,mn=1440;
+      for(var d=1;d<=365;d+=2){var dd=new Date(yr,0,d,12,0,0);var s1=solarEventTimeLocal(dd,lat,lon,-0.833,true),s2=solarEventTimeLocal(dd,lat,lon,-0.833,false);var dl2=(s1&&s2)?(s2-s1)/60000:720;pts.push({d:d,v:dl2});if(dl2>mx)mx=dl2;if(dl2<mn)mn=dl2;}
+      var rg=mx-mn||1; var path='';pts.forEach(function(p,i){path+=(i===0?'M':'L')+p.d.toFixed(0)+' '+(95-((p.v-mn)/rg)*85).toFixed(1);});
+      svg+='<path d="'+path+' L'+pts[pts.length-1].d+' 100 L1 100 Z" fill="url(#dlG2)"/>';
+      svg+='<path d="'+path+'" fill="none" stroke="#4ecdc4" stroke-width="1.5"/>';
+      var eq12y=95-((720-mn)/rg)*85;
+      if(eq12y>5&&eq12y<95) svg+='<line x1="0" y1="'+eq12y.toFixed(1)+'" x2="365" y2="'+eq12y.toFixed(1)+'" stroke="rgba(255,255,255,.1)" stroke-width=".4" stroke-dasharray="2,3"/><text x="362" y="'+(eq12y-2).toFixed(1)+'" text-anchor="end" fill="rgba(255,255,255,.15)" font-size="5" font-family="system-ui">12h</text>';
+      [{d:Math.floor((vEq-new Date(yr,0,1))/msD)+1,l:'VEQ',c:'#66cc88'},{d:Math.floor((sSol-new Date(yr,0,1))/msD)+1,l:'SS',c:'#ffcc44'},{d:Math.floor((aEq-new Date(yr,0,1))/msD)+1,l:'AEQ',c:'#e8a954'},{d:Math.floor((wSol-new Date(yr,0,1))/msD)+1,l:'WS',c:'#88bbdd'}].forEach(function(m){svg+='<line x1="'+m.d+'" y1="0" x2="'+m.d+'" y2="100" stroke="'+m.c+'" stroke-width=".5" stroke-dasharray="3,2" opacity=".5"/><text x="'+m.d+'" y="8" text-anchor="middle" fill="'+m.c+'" font-size="5.5" font-weight="700" font-family="system-ui" opacity=".7">'+m.l+'</text>';});
+      var tY=95-((dlMin-mn)/rg)*85;
+      svg+='<line x1="'+doy+'" y1="0" x2="'+doy+'" y2="100" stroke="#fff" stroke-width=".8"/><circle cx="'+doy+'" cy="'+tY.toFixed(1)+'" r="3" fill="#fff" stroke="#4ecdc4" stroke-width="1"/><text x="'+doy+'" y="98" text-anchor="middle" fill="#fff" font-size="5" font-weight="800" font-family="system-ui">TODAY</text>';
+      svg+='</svg><div style="display:flex;justify-content:space-between;font-size:6.5px;color:rgba(255,255,255,.2);margin-top:1px;padding:0 2px;"><span>Jan</span><span>Apr</span><span>Jul</span><span>Oct</span><span>Dec</span></div>';
+      return svg;
+    };
+
+    // ── LATITUDE COMPARISON ──
+    var buildLatCompare = function(){
+      var lats2 = [{lat:0,name:'Equator',c:'#ffaa44'},{lat:23.4,name:'Tropics',c:'#cc8844'},{lat:Math.abs(lat),name:'You ('+Math.abs(lat).toFixed(0)+'\u00b0)',c:'#4ecdc4'},{lat:51.5,name:'London',c:'#88aacc'},{lat:64.1,name:'Reykjav\u00edk',c:'#aabbdd'}];
+      if(Math.abs(lat)>55) lats2 = [{lat:0,name:'Equator',c:'#ffaa44'},{lat:25.8,name:'Miami',c:'#cc8844'},{lat:40.7,name:'NYC',c:'#88aacc'},{lat:Math.abs(lat),name:'You ('+Math.abs(lat).toFixed(0)+'\u00b0)',c:'#4ecdc4'},{lat:64.1,name:'Reykjav\u00edk',c:'#aabbdd'}];
+      var svg='<svg width="250" height="70" viewBox="0 0 365 100" preserveAspectRatio="none" style="width:100%;height:70px;display:block;border-radius:6px;background:rgba(255,255,255,.02);">';
+      var allMn=1440,allMx=0;
+      var latData=[];
+      lats2.forEach(function(L){
+        var pts3=[];
+        for(var d3=1;d3<=365;d3+=4){var dd3=new Date(yr,0,d3,12,0,0);var s3=solarEventTimeLocal(dd3,L.lat,lon,-0.833,true),s4=solarEventTimeLocal(dd3,L.lat,lon,-0.833,false);var dl4=(s3&&s4)?Math.max(0,(s4-s3)/60000):720;pts3.push({d:d3,v:dl4});if(dl4>allMx)allMx=dl4;if(dl4<allMn)allMn=dl4;}
+        latData.push({pts:pts3,info:L});
+      });
+      var rg2=allMx-allMn||1;
+      latData.forEach(function(ld){
+        var p2='';ld.pts.forEach(function(pt,i){p2+=(i===0?'M':'L')+pt.d+' '+(95-((pt.v-allMn)/rg2)*88).toFixed(1);});
+        var sw=ld.info.name.indexOf('You')>=0?'1.8':'0.8';
+        svg+='<path d="'+p2+'" fill="none" stroke="'+ld.info.c+'" stroke-width="'+sw+'" opacity="'+(ld.info.name.indexOf('You')>=0?'1':'.5')+'"/>';
+        // Label at right edge
+        var lastY=95-((ld.pts[ld.pts.length-1].v-allMn)/rg2)*88;
+        svg+='<text x="363" y="'+lastY.toFixed(1)+'" text-anchor="end" fill="'+ld.info.c+'" font-size="4.5" font-weight="'+(ld.info.name.indexOf('You')>=0?'800':'600')+'" font-family="system-ui" opacity="'+(ld.info.name.indexOf('You')>=0?'1':'.6')+'">'+ld.info.name+'</text>';
+      });
+      // Today line
+      svg+='<line x1="'+doy+'" y1="0" x2="'+doy+'" y2="100" stroke="rgba(255,255,255,.15)" stroke-width=".5"/>';
+      svg+='</svg>';
+      return svg;
+    };
+
+    // ── EQUATION OF TIME CURVE ──
+    var buildEoT = function(){
+      var svg='<svg width="250" height="45" viewBox="0 0 365 100" preserveAspectRatio="none" style="width:100%;height:45px;display:block;border-radius:4px;background:rgba(255,255,255,.02);">';
+      svg+='<line x1="0" y1="50" x2="365" y2="50" stroke="rgba(255,255,255,.08)" stroke-width=".4"/>';
+      var path3='';
+      for(var d4=1;d4<=365;d4+=2){var dd4=new Date(yr,0,d4,12,0,0);var t4=_solarTerms(dd4);var y4=50-(t4.eqtime/17)*45;path3+=(d4===1?'M':'L')+d4+' '+y4.toFixed(1);}
+      svg+='<path d="'+path3+'" fill="none" stroke="#cc8844" stroke-width="1.2"/>';
+      var tEy=50-(eqT/17)*45;
+      svg+='<circle cx="'+doy+'" cy="'+tEy.toFixed(1)+'" r="3" fill="#fff" stroke="#cc8844" stroke-width="1"/>';
+      svg+='<text x="3" y="8" fill="rgba(255,255,255,.15)" font-size="5" font-family="system-ui">+16min (fast)</text>';
+      svg+='<text x="3" y="96" fill="rgba(255,255,255,.15)" font-size="5" font-family="system-ui">-14min (slow)</text>';
+      svg+='</svg><div style="display:flex;justify-content:space-between;font-size:6.5px;color:rgba(255,255,255,.2);margin-top:1px;padding:0 2px;"><span>Jan</span><span>Apr</span><span>Jul</span><span>Oct</span><span>Dec</span></div>';
+      return svg;
+    };
+
+    // ── RATE + DRIFT CHARTS (compact) ──
+    var buildRate = function(){
+      var svg='<svg width="250" height="35" viewBox="0 0 30 100" preserveAspectRatio="none" style="width:100%;height:35px;display:block;border-radius:4px;background:rgba(255,255,255,.02);">';
+      var chs=[],mxC=0;
+      for(var di=-15;di<=14;di++){var d1=new Date(dayLocal);d1.setDate(d1.getDate()+di);var d2=new Date(dayLocal);d2.setDate(d2.getDate()+di+1);var s1=solarEventTimeLocal(d1,lat,lon,-0.833,true),s2=solarEventTimeLocal(d1,lat,lon,-0.833,false),s3=solarEventTimeLocal(d2,lat,lon,-0.833,true),s4=solarEventTimeLocal(d2,lat,lon,-0.833,false);var c3=(s1&&s2&&s3&&s4)?((s4-s3)-(s2-s1))/1000:0;chs.push(c3);if(Math.abs(c3)>mxC)mxC=Math.abs(c3);}
+      if(mxC<1)mxC=1;
+      svg+='<line x1="0" y1="50" x2="30" y2="50" stroke="rgba(255,255,255,.08)" stroke-width=".4"/>';
+      chs.forEach(function(c,i){var h3=Math.abs(c)/mxC*45;svg+='<rect x="'+i+'" y="'+(c>=0?50-h3:50).toFixed(1)+'" width=".85" height="'+h3.toFixed(1)+'" fill="'+(c>=0?'#4ecdc4':'#e87030')+'" opacity=".7" rx=".2"/>';});
+      svg+='<line x1="15" y1="0" x2="15" y2="100" stroke="rgba(255,255,255,.2)" stroke-width=".3"/>';
+      svg+='</svg><div style="display:flex;justify-content:space-between;font-size:6px;color:rgba(255,255,255,.18);margin-top:1px;"><span>-15d</span><span>today</span><span>+15d</span></div>';
+      return svg;
+    };
+    var buildDrift = function(){
+      var svg='<svg width="250" height="45" viewBox="0 0 30 100" preserveAspectRatio="none" style="width:100%;height:45px;display:block;border-radius:4px;background:rgba(255,255,255,.02);">';
+      var srA=[],ssA=[],mn2=1440,mx2=0;
+      for(var di2=-15;di2<=14;di2++){var d3=new Date(dayLocal);d3.setDate(d3.getDate()+di2);var s5=solarEventTimeLocal(d3,lat,lon,-0.833,true),s6=solarEventTimeLocal(d3,lat,lon,-0.833,false);var sm=s5?(s5.getHours()*60+s5.getMinutes()):360,sm2=s6?(s6.getHours()*60+s6.getMinutes()):1080;srA.push(sm);ssA.push(sm2);if(sm<mn2)mn2=sm;if(sm>mx2)mx2=sm;if(sm2<mn2)mn2=sm2;if(sm2>mx2)mx2=sm2;}
+      var rg3=mx2-mn2||1;var srP='',ssP='';
+      for(var i3=0;i3<30;i3++){srP+=(i3===0?'M':'L')+i3+' '+(90-((srA[i3]-mn2)/rg3)*80).toFixed(1);ssP+=(i3===0?'M':'L')+i3+' '+(90-((ssA[i3]-mn2)/rg3)*80).toFixed(1);}
+      svg+='<path d="'+srP+'" fill="none" stroke="#e8a954" stroke-width="1.2"/><path d="'+ssP+'" fill="none" stroke="#e87030" stroke-width="1.2"/>';
+      svg+='<circle cx="15" cy="'+(90-((srA[15]-mn2)/rg3)*80).toFixed(1)+'" r="2" fill="#e8a954"/><circle cx="15" cy="'+(90-((ssA[15]-mn2)/rg3)*80).toFixed(1)+'" r="2" fill="#e87030"/>';
+      svg+='<text x="2" y="'+(90-((srA[15]-mn2)/rg3)*80-4).toFixed(1)+'" fill="#e8a954" font-size="5" font-weight="700" font-family="system-ui">Rise</text>';
+      svg+='<text x="2" y="'+(90-((ssA[15]-mn2)/rg3)*80-4).toFixed(1)+'" fill="#e87030" font-size="5" font-weight="700" font-family="system-ui">Set</text>';
+      svg+='<line x1="15" y1="0" x2="15" y2="100" stroke="rgba(255,255,255,.12)" stroke-width=".3"/>';
+      svg+='</svg><div style="display:flex;justify-content:space-between;font-size:6px;color:rgba(255,255,255,.18);margin-top:1px;"><span>-15d</span><span>today</span><span>+15d</span></div>';
+      return svg;
+    };
+
+    // ── 10-DAY TABLE ──
+    var buildFcTable = function(){
+      if(!daily.sunrise||!daily.sunset)return'';
+      var html='<div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:1px 5px;font-size:7.5px;align-items:center;">';
+      html+='<div style="color:rgba(255,255,255,.2);font-weight:700;">DAY</div><div style="color:#e8a954;font-weight:700;">RISE</div><div style="color:#e87030;font-weight:700;">SET</div><div style="color:#4ecdc4;font-weight:700;">LENGTH</div><div style="color:rgba(255,255,255,.2);font-weight:700;">\u0394</div>';
+      var prevDl=null;
+      for(var di3=0;di3<Math.min(10,daily.sunrise.length);di3++){
+        var sr3=new Date(daily.sunrise[di3]),ss3=new Date(daily.sunset[di3]),dl3=ss3-sr3;
+        var dlH3=Math.floor(dl3/3600000),dlM3=Math.round((dl3%3600000)/60000);
+        var chg3=prevDl!==null?Math.round((dl3-prevDl)/1000):null;
+        var dayLab=di3===0?'Today':di3===1?'Tmrw':['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][sr3.getDay()];
+        var chgStr=chg3!==null?((chg3>=0?'+':'')+Math.floor(Math.abs(chg3)/60)+'m'+Math.abs(chg3)%60+'s'):'--';
+        var bg=di3===0?'rgba(78,205,196,.06)':'transparent';
+        html+='<div style="color:rgba(255,255,255,.45);background:'+bg+';padding:1px 2px;border-radius:2px;">'+dayLab+'</div><div style="color:#e8a954;background:'+bg+';">'+fmtS(sr3)+'</div><div style="color:#e87030;background:'+bg+';">'+fmtS(ss3)+'</div><div style="color:#e2e8f0;font-weight:700;background:'+bg+';">'+dlH3+'h'+dlM3+'m</div><div style="color:'+(chg3!==null?(chg3>=0?'#4ecdc4':'#e87030'):'rgba(255,255,255,.2)')+';background:'+bg+';">'+chgStr+'</div>';
+        prevDl=dl3;
+      }
+      html+='</div>';return html;
+    };
+
+    // ═══════════════════════════
+    //  BUILD HTML
+    // ═══════════════════════════
+    var h = '';
+    h += '<div class="hz-card-head"><div class="hz-accent" style="background:linear-gradient(135deg,'+gC+','+sCol+');"></div><span style="color:#4ecdc4;font-size:11px;font-weight:800;">DAYLIGHT</span><span style="margin-left:auto;font-size:7px;opacity:.3;">Ephemeris \u00b7 Seasonal \u00b7 Latitude</span></div>';
+
+    // ── TODAY HERO ──
+    h += '<div style="text-align:center;margin:4px 0;">';
+    h += '<div style="font-size:30px;font-weight:900;color:#e2e8f0;line-height:1;">'+dlH+'h '+dlM+'m <span style="font-size:13px;opacity:.3;">'+dlS+'s</span></div>';
+    if(dChg!==null){var sgn=dChg>=0?'+':'';h+='<div style="font-size:10px;font-weight:800;color:'+gC+';margin-top:2px;">'+sgn+Math.floor(Math.abs(dChg)/60)+'m '+Math.abs(dChg)%60+'s vs yesterday</div>';}
+    h += '<div style="font-size:8px;font-weight:700;color:'+gC+';letter-spacing:1px;margin-top:2px;">'+(gaining?'GAINING':'LOSING')+' LIGHT</div>';
+    h += '</div>';
+
+    // Position bar
+    h += '<div style="margin:3px 0 4px;"><div style="display:flex;justify-content:space-between;font-size:6.5px;color:rgba(255,255,255,.2);margin-bottom:2px;"><span>'+Math.floor(minDL/60)+'h'+Math.round(minDL%60)+'m (Dec)</span><span>'+Math.floor(maxDL/60)+'h'+Math.round(maxDL%60)+'m (Jun)</span></div>'+bar2(dlPct,gC,6)+'</div>';
+
+    // Change context
+    h += '<div style="display:flex;gap:4px;margin:4px 0;">';
+    if(weekChg!==null){h+='<div style="flex:1;background:rgba(255,255,255,.02);border-radius:4px;padding:3px 5px;text-align:center;"><div style="font-size:6.5px;color:rgba(255,255,255,.25);">7-DAY</div><div style="font-size:10px;font-weight:800;color:'+gC+';">'+(weekChg>=0?'+':'')+Math.floor(Math.abs(weekChg)/60)+'m'+Math.abs(weekChg)%60+'s</div></div>';}
+    if(monthChg!==null){h+='<div style="flex:1;background:rgba(255,255,255,.02);border-radius:4px;padding:3px 5px;text-align:center;"><div style="font-size:6.5px;color:rgba(255,255,255,.25);">30-DAY</div><div style="font-size:10px;font-weight:800;color:'+gC+';">'+(monthChg>=0?'+':'')+Math.floor(Math.abs(monthChg)/60)+'m'+Math.abs(monthChg)%60+'s</div></div>';}
+    h+='<div style="flex:1;background:rgba(255,255,255,.02);border-radius:4px;padding:3px 5px;text-align:center;"><div style="font-size:6.5px;color:rgba(255,255,255,.25);">vs 12H</div><div style="font-size:10px;font-weight:800;color:'+(diffFrom12h>=0?'#4ecdc4':'#e87030')+';">'+(diffFrom12h>=0?'+':'')+diffFrom12h+'m</div></div>';
+    if(cumChg!==0){h+='<div style="flex:1;background:rgba(255,255,255,.02);border-radius:4px;padding:3px 5px;text-align:center;"><div style="font-size:6.5px;color:rgba(255,255,255,.25);">SOLSTICE</div><div style="font-size:10px;font-weight:800;color:'+gC+';">'+(cumChg>=0?'+':'')+cumChg+'m</div></div>';}
+    h += '</div>';
+
+    // ── SOLAR ARC ──
+    h += FS("Today\u2019s Sun Path", '#ffcc44');
+    h += buildSolarArc();
+    h += gL('Peak altitude','<span style="color:#ffcc44;">'+maxAlt.toFixed(1)+'\u00b0</span> at '+fmt(solarNoonLocal(dayLocal,lat,lon)));
+    h += gL('Rise azimuth','<span style="color:#e8a954;">'+azToCompass(sunriseAz)+' '+Math.round(sunriseAz)+'\u00b0</span>');
+    h += gL('Set azimuth','<span style="color:#e87030;">'+azToCompass(sunsetAz)+' '+Math.round(sunsetAz)+'\u00b0</span>');
+    if(shadowLen&&shadowLen<50) h+=gL('Noon shadow','<span style="opacity:.5;">'+shadowLen.toFixed(1)+'\u00d7 object height</span>');
+
+    // ── LIGHT BUDGET ──
+    h += FS('24-Hour Light Budget', '#cc9944');
+    h += buildDonut();
+    if(totalLight) h+=gL('Usable light', totalLight+'m <span style="opacity:.35;">(dawn\u2013dusk)</span>');
+    if(trueDark) h+=gL('True darkness', '<span style="color:#88bbdd;">'+trueDark+'m</span> <span style="opacity:.35;">(astro night)</span>');
+    if(sunshineHrs!==null){var pctS=Math.round(sunshineHrs/(dlMin/60)*100);h+=gL('Actual sunshine',sunshineHrs+'h of '+Math.round(dlMin/60)+'h <span style="color:'+(pctS>70?'#4ecdc4':pctS>40?'#e8a954':'#888')+';">('+pctS+'%)</span>');}
+
+    // ── UV WINDOW ──
+    if(uvWindow){
+      h += FS('UV Exposure', '#cc6644');
+      h += gL('UV Index peak', '<span style="color:'+(uvWindow.max>=8?'#cc3333':uvWindow.max>=6?'#e87030':uvWindow.max>=3?'#e8a954':'#4ecdc4')+';">'+uvWindow.max+'</span> at '+uvWindow.peak+':00');
+      h += gL('UV \u22653 window', '<span style="color:#e8a954;">'+uvWindow.start+':00 \u2013 '+uvWindow.end+':00</span> <span style="opacity:.35;">('+( uvWindow.end-uvWindow.start)+'h)</span>');
+      if(uvWindow.max>=6) h+='<div style="font-size:7.5px;color:rgba(255,255,255,.35);margin:2px 0;">\u26a0\ufe0f Sunscreen recommended. UV 6+ causes sunburn in <25 min for unprotected skin.</div>';
+    }
+
+    // ── PHOTOPERIOD ──
+    if(photoNotes.length>0){
+      h+=FS('Photoperiod Biology','#66aa88');
+      photoNotes.forEach(function(n){h+='<div style="font-size:7.5px;color:rgba(255,255,255,.4);line-height:1.4;margin:2px 0;padding:2px 5px;background:rgba(255,255,255,.02);border-radius:3px;border-left:2px solid #66aa88;">'+n.icon+' '+n.text+'</div>';});
+    }
+
+    // ── SEASON ──
+    h += FS(sEm+' '+season, sCol);
+    h += gL('Declination','<span style="color:'+sCol+';">'+declDeg.toFixed(1)+'\u00b0</span>');
+    h += gL('Eq. of time','<span style="opacity:.5;">'+eqT.toFixed(1)+' min</span> <span style="opacity:.25;">(solar noon drift)</span>');
+    if(dToVE>0&&dToVE<200) h+=gL('Vernal equinox','<span style="color:#66cc88;">'+dToVE+'d</span> <span style="opacity:.3;">Mar 20</span>');
+    if(dToSS>0&&dToSS<200) h+=gL('Summer solstice','<span style="color:#ffcc44;">'+dToSS+'d</span> <span style="opacity:.3;">Jun 21</span>');
+    if(dToAE>0&&dToAE<200) h+=gL('Autumnal equinox','<span style="color:#e8a954;">'+dToAE+'d</span> <span style="opacity:.3;">Sep 22</span>');
+    if(dToWS>0&&dToWS<200) h+=gL('Winter solstice','<span style="color:#88bbdd;">'+dToWS+'d</span> <span style="opacity:.3;">Dec 21</span>');
+
+    // ── ANNUAL CURVE ──
+    h += FS('Annual Daylight Curve', '#4ecdc4');
+    h += buildAnnual();
+
+    // ── LATITUDE COMPARISON ──
+    h += FS('Daylight by Latitude', '#88aacc');
+    h += buildLatCompare();
+    h += '<div style="font-size:7px;color:rgba(255,255,255,.2);margin-top:2px;">Your curve is highlighted. Equatorial locations stay near 12h. Higher latitudes swing more dramatically.</div>';
+
+    // ── RATE + DRIFT ──
+    h += FS('Daily Change Rate', gC);
+    h += buildRate();
+    h += '<div style="font-size:7.5px;color:rgba(255,255,255,.3);line-height:1.3;margin:2px 0;">'+rateCtx+'</div>';
+    if(tChg!==null) h+=gL('Tomorrow',''+(tChg>=0?'+':'')+Math.floor(Math.abs(tChg)/60)+'m '+Math.abs(tChg)%60+'s');
+
+    h += FS('Sunrise & Sunset Drift', '#e8a954');
+    h += buildDrift();
+    h += gL('Sunrise','<span style="color:#e8a954;">'+fmt(srDate)+'</span>');
+    h += gL('Sunset','<span style="color:#e87030;">'+fmt(ssDate)+'</span>');
+    h += gL('Solar noon','<span style="color:#ffcc44;">'+fmt(solarNoonLocal(dayLocal,lat,lon))+'</span>');
+
+    // ── EQ OF TIME ──
+    h += FS('Equation of Time', '#cc8844');
+    h += buildEoT();
+    h += '<div style="font-size:7px;color:rgba(255,255,255,.25);margin-top:2px;">Shows how solar noon deviates from clock noon through the year. Today: '+(eqT>=0?'+':'')+eqT.toFixed(1)+' min. This is why sunrise and sunset don\u2019t drift symmetrically.</div>';
+
+    // ── 10-DAY FORECAST ──
+    h += FS('10-Day Forecast', '#4ecdc4');
+    h += buildFcTable();
+
+    // ── SCIENCE ──
+    h += FS('Why Daylight Changes', '#778899');
+    h += '<div style="font-size:7.5px;color:rgba(255,255,255,.28);line-height:1.5;">';
+    h += '<b style="color:#e8a954;">Axial tilt (23.4\u00b0)</b> \u2014 Earth\u2019s axis is tilted relative to its orbit, so hemispheres alternate between leaning toward and away from the sun. This creates seasons and shifts day length.<br><br>';
+    h += '<b style="color:#4ecdc4;">Rate of change</b> \u2014 Fastest near equinoxes when the sun crosses the celestial equator. Near zero at solstices \u2014 "solstice" = Latin <i>sol sistere</i>, "sun stands still."<br><br>';
+    h += '<b style="color:#88bbdd;">Your latitude ('+Math.abs(lat).toFixed(1)+'\u00b0'+(lat>=0?'N':'S')+')</b> \u2014 Annual swing: '+Math.round(dlRange)+' min. Equatorial = ~0min swing. Arctic Circle = 24h extremes.<br><br>';
+    h += '<b style="color:#cc8844;">Equation of time</b> \u2014 Earth\u2019s elliptical orbit + axial tilt cause solar noon to drift \u00b116 min through the year. This is why sunrise shifts faster some seasons and sunset shifts faster in others.<br><br>';
+    h += '<b style="color:#e87030;">Thermal lag</b> \u2014 The longest day (~Jun 21) isn\u2019t the hottest \u2014 peak heat lags by ~4\u20136 weeks because oceans and land absorb and release heat slowly. Shortest day is similarly not the coldest.';
+    h += '</div>';
+
+    // ── POPUP ──
+    var bd = document.createElement('div');
+    bd.id = 'daylight-insight-backdrop';
+    bd.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;';
+    var pp = document.createElement('div');
+    pp.id = 'daylight-insight-popup';
+    var _legend = document.getElementById('today-tl-legend');
+    var _maxH = '70vh';
+    if (_legend && tlCard) { var _lt = _legend.getBoundingClientRect().top - tlCard.getBoundingClientRect().top; if (_lt > 100) _maxH = (_lt - 16) + 'px'; }
+    pp.style.cssText = 'position:absolute;right:8px;top:8px;width:285px;max-height:'+_maxH+';overflow-y:auto;scrollbar-width:none;background:rgba(8,8,20,.96);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);font-family:system-ui,sans-serif;color:#e2e8f0;';
+    pp.innerHTML = '<div style="padding:10px 12px;">' + h + '<div class="hz-card-footer">Ephemeris \u00b7 Solar geometry \u00b7 Lat '+lat.toFixed(2)+'\u00b0</div></div>';
+    var cb = document.createElement('div');
+    cb.style.cssText = 'position:sticky;top:0;text-align:right;';
+    cb.innerHTML = '<span style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 4px;" onclick="this.closest(\'#daylight-insight-popup\').remove();document.getElementById(\'daylight-insight-backdrop\').remove();">\u00d7</span>';
+    pp.insertBefore(cb, pp.firstChild);
+    bd.onclick = function(){ pp.remove(); bd.remove(); };
+    document.body.appendChild(bd);
+    mountPopupOnBody(pp, bd, tlCard);
+    addScrollFade(pp);
+    } catch(err) { console.error('Daylight insight error:', err); }
+  };
+
+
+  // ── GOLDEN HOUR INSIGHT POPUP ──
+  window.showGoldenInsight = function(ev) {
+    try {
+    var old = document.getElementById('golden-insight-popup');
+    var oldBd = document.getElementById('golden-insight-backdrop');
+    if (old) { old.remove(); if(oldBd) oldBd.remove(); return; }
+
+    var tlCard = document.getElementById('today-timeline-card');
+    if (!tlCard) return;
+
+    var daily = window._dailyData;
+    if (!daily || !daily.sunrise || !daily.sunset) return;
+    var hourly = window._hourlyData;
+    var srDate = new Date(daily.sunrise[0]);
+    var ssDate = new Date(daily.sunset[0]);
+    var dayLocal = new Date(srDate.getFullYear(), srDate.getMonth(), srDate.getDate(), 12, 0, 0, 0);
+    var lat = window.LOCATION ? LOCATION.lat : 40.7;
+    var lon = window.LOCATION ? LOCATION.lon : -74.0;
+    var now = new Date();
+
+    // ── SOLAR GEOMETRY ──
+    var astroDawn = solarEventTimeLocal(dayLocal, lat, lon, -18, true);
+    var astroDusk = solarEventTimeLocal(dayLocal, lat, lon, -18, false);
+    var nautDawn = solarEventTimeLocal(dayLocal, lat, lon, -12, true);
+    var nautDusk = solarEventTimeLocal(dayLocal, lat, lon, -12, false);
+    var civilDawn = solarEventTimeLocal(dayLocal, lat, lon, -6, true);
+    var civilDusk = solarEventTimeLocal(dayLocal, lat, lon, -6, false);
+    var blueAmS = solarEventTimeLocal(dayLocal, lat, lon, -6, true);
+    var blueAmE = solarEventTimeLocal(dayLocal, lat, lon, -4, true);
+    var bluePmS = solarEventTimeLocal(dayLocal, lat, lon, -4, false);
+    var bluePmE = solarEventTimeLocal(dayLocal, lat, lon, -6, false);
+    var goldAmS = solarEventTimeLocal(dayLocal, lat, lon, -4, true);
+    var goldAmE = solarEventTimeLocal(dayLocal, lat, lon, 6, true);
+    var goldPmS = solarEventTimeLocal(dayLocal, lat, lon, 6, false);
+    var goldPmE = solarEventTimeLocal(dayLocal, lat, lon, -4, false);
+    var noon = solarNoonLocal(dayLocal, lat, lon);
+
+    // ── SUN ALTITUDE ──
+    var sunAlt = (function() {
+      var dayLen = ssDate - srDate;
+      if (dayLen <= 0) return -10;
+      var frac = (now - srDate) / dayLen;
+      var maxAlt = 90 - Math.abs(lat) + 23.44 * Math.cos((dayLocal.getMonth() - 5.5) * Math.PI / 6);
+      if (maxAlt > 90) maxAlt = 90;
+      if (frac < 0 || frac > 1) return Math.max(-18, -maxAlt * 0.3 * Math.min(Math.abs(frac < 0 ? frac : frac - 1) * 4, 1));
+      return maxAlt * Math.sin(frac * Math.PI);
+    })();
+
+    // ── HELPERS ──
+    var fmt = function(d) { if (!d) return '--'; var h=d.getHours(), m=d.getMinutes(); var ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+(m<10?'0':'')+m+' '+ap; };
+    var fmtShort = function(d) { if (!d) return '--'; var h=d.getHours(), m=d.getMinutes(); var ap=h>=12?'p':'a'; h=h%12||12; return h+':'+(m<10?'0':'')+m+ap; };
+    var dur = function(a,b) { if(!a||!b) return '--'; var m=Math.round((b-a)/60000); return m+'m'; };
+    var gL = function(l,v){return '<div class="hz-card-row"><span class="hz-label">'+l+'</span><span class="hz-val">'+v+'</span></div>';};
+    var FS = function(t,c){return '<div style="font-weight:800;font-size:9px;color:'+(c||'#e8a954')+';text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.08);">'+t+'</div>';};
+    var pill = function(text,bg){return '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:7.5px;font-weight:700;background:'+(bg||'rgba(255,255,255,.08)')+';color:#fff;margin:0 1px;">'+text+'</span>';};
+    var bar = function(pct,color,ht){return '<div style="width:100%;height:'+(ht||4)+'px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;"><div style="width:'+Math.min(100,Math.max(0,pct))+'%;height:100%;background:'+(color||'#e8a954')+';border-radius:2px;"></div></div>';};
+    var note = function(icon,text,col){return '<div style="font-size:8px;color:'+(col||'rgba(255,255,255,.5)')+';line-height:1.4;margin:3px 0;padding:3px 5px;background:rgba(255,255,255,.02);border-radius:3px;border-left:2px solid '+(col||'rgba(255,255,255,.1)')+';">'+icon+' '+text+'</div>';};
+
+    // ── HOURLY INDEX FINDER ──
+    var findIdx = function(targetDate) {
+      if (!hourly || !hourly.time || !targetDate) return -1;
+      var best = -1, bestD = Infinity;
+      for (var i = 0; i < hourly.time.length; i++) {
+        var d = Math.abs(new Date(hourly.time[i]) - targetDate);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      return best;
+    };
+
+    // ── COLLECT DATA AT GOLDEN HOUR ──
+    var gh = { cL:null,cM:null,cH:null,cT:null,rh:null,dp:null,vis:null,pr:null,
+               wind:null,wdir:null,precip:null,radSW:null,radDir:null,cape:null,
+               li:null,blh:null,w300:null,w500:null,w700:null,wd300:null };
+    // Also collect data for 4 hours BEFORE golden hour (for trend analysis)
+    var ghPre = { cape:null,pr:null,cT:null,cL:null };
+    if (hourly && hourly.time && goldPmS) {
+      // Golden hour averages
+      var endT = goldPmE || ssDate;
+      var sums = {}, counts = {};
+      var fields = {cL:'cloud_cover_low',cM:'cloud_cover_mid',cH:'cloud_cover_high',cT:'cloudcover',
+                    rh:'relativehumidity_2m',dp:'dewpoint_2m',vis:'visibility',pr:'pressure_msl',
+                    wind:'windspeed_10m',wdir:'wind_direction_10m',precip:'precipitation',
+                    radSW:'shortwave_radiation',radDir:'direct_radiation',cape:'cape',
+                    li:'lifted_index',blh:'boundary_layer_height',
+                    w300:'windspeed_300hPa',w500:'windspeed_500hPa',w700:'windspeed_700hPa',wd300:'winddirection_300hPa'};
+      for (var k in fields) { sums[k]=0; counts[k]=0; }
+      for (var gi = 0; gi < hourly.time.length; gi++) {
+        var ht = new Date(hourly.time[gi]);
+        if (ht >= goldPmS && ht <= endT) {
+          for (var k2 in fields) {
+            var arr = hourly[fields[k2]];
+            if (arr && typeof arr[gi]==='number') { sums[k2]+=arr[gi]; counts[k2]++; }
+          }
+        }
+        // Pre-golden (4h before)
+        var preStart = new Date(goldPmS.getTime() - 4*3600000);
+        if (ht >= preStart && ht < goldPmS) {
+          if (hourly.cape && typeof hourly.cape[gi]==='number') { ghPre.cape = (ghPre.cape||0)+hourly.cape[gi]; ghPre._capeN = (ghPre._capeN||0)+1; }
+          if (hourly.pressure_msl && typeof hourly.pressure_msl[gi]==='number') { ghPre.pr = (ghPre.pr||0)+hourly.pressure_msl[gi]; ghPre._prN = (ghPre._prN||0)+1; }
+          if (hourly.cloudcover && typeof hourly.cloudcover[gi]==='number') { ghPre.cT = (ghPre.cT||0)+hourly.cloudcover[gi]; ghPre._cTN = (ghPre._cTN||0)+1; }
+          if (hourly.cloud_cover_low && typeof hourly.cloud_cover_low[gi]==='number') { ghPre.cL = (ghPre.cL||0)+hourly.cloud_cover_low[gi]; ghPre._cLN = (ghPre._cLN||0)+1; }
+        }
+      }
+      for (var k3 in fields) { if (counts[k3]) gh[k3] = Math.round(sums[k3]/counts[k3]*100)/100; }
+      if (gh.vis !== null) gh.vis = Math.round(gh.vis / 1000 * 0.621 * 10) / 10;
+      if (gh.cL !== null) gh.cL = Math.round(gh.cL);
+      if (gh.cM !== null) gh.cM = Math.round(gh.cM);
+      if (gh.cH !== null) gh.cH = Math.round(gh.cH);
+      if (gh.cT !== null) gh.cT = Math.round(gh.cT);
+      if (gh.rh !== null) gh.rh = Math.round(gh.rh);
+      if (gh.dp !== null) gh.dp = Math.round(gh.dp);
+      if (gh.wind !== null) gh.wind = Math.round(gh.wind);
+      if (gh.wdir !== null) gh.wdir = Math.round(gh.wdir);
+      if (gh.cape !== null) gh.cape = Math.round(gh.cape);
+      if (gh.blh !== null) gh.blh = Math.round(gh.blh);
+      if (gh.w300 !== null) gh.w300 = Math.round(gh.w300);
+      if (gh.w500 !== null) gh.w500 = Math.round(gh.w500);
+      if (gh.pr !== null) gh.pr = Math.round(gh.pr*10)/10;
+      // Pre-golden averages
+      if (ghPre._capeN) ghPre.cape = Math.round(ghPre.cape/ghPre._capeN);
+      if (ghPre._prN) ghPre.pr = Math.round(ghPre.pr/ghPre._prN*10)/10;
+      if (ghPre._cTN) ghPre.cT = Math.round(ghPre.cT/ghPre._cTN);
+      if (ghPre._cLN) ghPre.cL = Math.round(ghPre.cL/ghPre._cLN);
+    }
+
+    // ── CROSS-POLLINATED DATA ──
+    var smokeIntel = window._smokeIntel || {};
+    var pm25Now = parseFloat((document.getElementById('pm25-val') || {}).textContent) || null;
+    var aqiNow = parseFloat((document.getElementById('aqi-val') || {}).textContent) || null;
+
+    // Full AQ data — hourly PM2.5 forecast for golden hour timing
+    var aqData = window._aqData || {};
+    var pm25AtGold = null;
+    if (aqData.hourly && aqData.hourly.pm2_5 && aqData.hourly.time && goldPmS) {
+      var aqSum = 0, aqN = 0;
+      for (var aqi2 = 0; aqi2 < aqData.hourly.time.length; aqi2++) {
+        var aqt = new Date(aqData.hourly.time[aqi2]);
+        if (aqt >= goldPmS && aqt <= (goldPmE || ssDate) && typeof aqData.hourly.pm2_5[aqi2] === 'number') {
+          aqSum += aqData.hourly.pm2_5[aqi2]; aqN++;
+        }
+      }
+      if (aqN > 0) pm25AtGold = Math.round(aqSum / aqN * 10) / 10;
+    }
+
+    // Active fires — closest upwind fire distance and size
+    var nearestFire = null;
+    var activeFires = window._activeFires || [];
+    if (activeFires.length > 0 && smokeIntel.upwindFires && smokeIntel.upwindFires.length > 0) {
+      nearestFire = smokeIntel.upwindFires[0]; // already sorted by distance
+    }
+
+    // Upstream storm track — approaching weather from upwind
+    var stormTrack = window._stormTrack || {};
+    var upstreamClearing = false;
+    var upstreamStorms = false;
+    if (stormTrack.upstream && stormTrack.upstream.length > 0) {
+      var upClear = stormTrack.upstream.filter(function(u) { return u.cloud < 40 && !u.isRaining; });
+      var upStormy = stormTrack.upstream.filter(function(u) { return u.isStormy || u.isRaining; });
+      // If closest upstream is clear but we're cloudy, clearing is approaching
+      if (upClear.length > 0 && gh.cT !== null && gh.cT > 50 && upClear[0].dist < 150) upstreamClearing = true;
+      if (upStormy.length > 0 && upStormy[0].dist < 100) upstreamStorms = true;
+    }
+
+    // NWS/Hazard alerts relevant to sunset
+    var wxAlerts = window._hazardAlerts || [];
+    var relevantAlerts = [];
+    wxAlerts.forEach(function(a) {
+      var e = (a.event || '').toLowerCase();
+      if (e.indexOf('red flag') >= 0 || e.indexOf('fire weather') >= 0) relevantAlerts.push({type:'fire', event:a.event});
+      if (e.indexOf('air quality') >= 0 || e.indexOf('smoke') >= 0) relevantAlerts.push({type:'smoke', event:a.event});
+      if (e.indexOf('dense fog') >= 0) relevantAlerts.push({type:'fog', event:a.event});
+      if (e.indexOf('dust') >= 0) relevantAlerts.push({type:'dust', event:a.event});
+    });
+
+    // Moon phase — affects blue hour quality (bright moon = washed blue hour)
+    var moonPhase = window._moonPhase;
+    var moonIllum = null;
+    if (moonPhase != null) {
+      var mi3 = moonInfo(moonPhase);
+      moonIllum = mi3 ? mi3.illum : null;
+    }
+
+    // Current conditions snapshot for "right now" accuracy
+    var wxCurr = window._wxCurrent || {};
+
+    // Frontal detection: scan hourly for fronts passing 2-8h before golden hour
+    var frontalBoost = { active:false, type:null, hoursBefore:null };
+    if (hourly && hourly.time && hourly.pressure_msl && hourly.temperature_2m && hourly.wind_direction_10m) {
+      for (var fi = 3; fi < hourly.time.length; fi++) {
+        var fdt = new Date(hourly.time[fi]);
+        var hrsBeforeGold = (goldPmS.getTime() - fdt.getTime()) / 3600000;
+        if (hrsBeforeGold < 1 || hrsBeforeGold > 10) continue;
+        var t0 = hourly.temperature_2m[fi-3], t1 = hourly.temperature_2m[fi];
+        var p0 = hourly.pressure_msl[fi-3], p1 = hourly.pressure_msl[fi];
+        var wd0 = hourly.wind_direction_10m[fi-3], wd1 = hourly.wind_direction_10m[fi];
+        if (typeof t0!=='number' || typeof t1!=='number' || typeof p0!=='number' || typeof p1!=='number') continue;
+        var wdShift = wd1 - wd0; if(wdShift>180)wdShift-=360; if(wdShift<-180)wdShift+=360;
+        if (wdShift > 30 && (p1-p0) > 0.5 && (t1-t0) < -3) {
+          frontalBoost = { active:true, type:'cold', hoursBefore:Math.round(hrsBeforeGold) };
+          break;
+        }
+        // Also detect warm front: temp rising, pressure dropping, wind backing
+        if ((t1-t0) > 3 && (p1-p0) < -0.5 && wdShift < -20) {
+          frontalBoost = { active:true, type:'warm', hoursBefore:Math.round(hrsBeforeGold) };
+        }
+      }
+    }
+
+    // Post-storm clearing detection: CAPE was high earlier, dropping now
+    var postStorm = false;
+    if (ghPre.cape !== null && ghPre.cape > 500 && gh.cape !== null && gh.cape < 200) postStorm = true;
+
+    // Pressure trend: falling-then-rising (trough passage)
+    var pressTrend = 'stable';
+    if (ghPre.pr !== null && gh.pr !== null) {
+      var pdiff = gh.pr - ghPre.pr;
+      if (pdiff > 1.5) pressTrend = 'rising';
+      else if (pdiff > 0.3) pressTrend = 'slight-rise';
+      else if (pdiff < -1.5) pressTrend = 'falling';
+      else if (pdiff < -0.3) pressTrend = 'slight-fall';
+    }
+
+    // Cloud clearing detection: clouds decreasing toward golden hour
+    var cloudClearing = false;
+    if (ghPre.cT !== null && gh.cT !== null && ghPre.cT > 60 && gh.cT < ghPre.cT - 20) cloudClearing = true;
+    // Also detect clearing from upstream
+    if (upstreamClearing && !cloudClearing) cloudClearing = true;
+
+    // Radiation ratio (direct/shortwave) — lower = more scattering
+    var scatterRatio = null;
+    if (gh.radSW !== null && gh.radDir !== null && gh.radSW > 20) {
+      scatterRatio = Math.round(gh.radDir / gh.radSW * 100);
+    }
+
+    // Jet stream cirrus potential
+    var jetCirrus = false;
+    if (gh.w300 !== null && gh.w300 > 60) jetCirrus = true;
+
+    // Smoke enhancement — now using forecast PM2.5 at golden hour if available
+    var smokeBoost = { active:false, level:'none', detail:'' };
+    if (smokeIntel.transportActive || (smokeIntel.severity && smokeIntel.severity !== 'none')) {
+      smokeBoost.active = true;
+      smokeBoost.level = smokeIntel.severity || 'advisory';
+      smokeBoost.detail = smokeIntel.evidenceChain ? smokeIntel.evidenceChain.slice(0,2).join('; ') : '';
+    }
+    // Use forecast PM2.5 at golden hour (more accurate than current reading)
+    var pm25Effective = pm25AtGold || pm25Now;
+    if (pm25Effective && pm25Effective > 15 && pm25Effective < 80) {
+      if (!smokeBoost.active) smokeBoost.active = true;
+      smokeBoost.level = pm25Effective > 45 ? 'warning' : pm25Effective > 25 ? 'advisory' : 'trace';
+    }
+
+    // Boundary layer height — lower = trapped aerosols near surface
+    var blhTrap = false;
+    if (gh.blh !== null && gh.blh < 600) blhTrap = true;
+
+    // Dust/Red Flag alerts boost aerosol score
+    var dustAlert = relevantAlerts.some(function(a) { return a.type === 'dust'; });
+    var smokeAlert = relevantAlerts.some(function(a) { return a.type === 'smoke'; });
+    var fogAlert = relevantAlerts.some(function(a) { return a.type === 'fog'; });
+
+    // ════════════════════════════════════════
+    //  SUNSET QUALITY SCORE (0-100)
+    // ════════════════════════════════════════
+    var score = 0, maxS = 0;
+    var bd2 = []; // breakdown
+
+    // 1. Mid/High cloud canvas — 25pts
+    maxS += 25;
+    if (gh.cM !== null || gh.cH !== null) {
+      var mc = gh.cM||0, hc = gh.cH||0, mhAvg = (mc+hc)/2;
+      var cs = mhAvg>=30&&mhAvg<=70 ? 25 : mhAvg>=20&&mhAvg<=80 ? 19 : mhAvg>=10 ? 12 : mhAvg<10 ? 8 : 4;
+      score+=cs; bd2.push({l:'Cloud canvas (mid+high)',v:cs,m:25,n:mc+'% mid / '+hc+'% high'});
+    }
+
+    // 2. Western horizon (low cloud blocking) — 18pts
+    maxS += 18;
+    if (gh.cL !== null) {
+      var ls = gh.cL<=10?18 : gh.cL<=25?14 : gh.cL<=40?9 : gh.cL<=60?4 : 1;
+      // Bonus: clearing low clouds
+      if (cloudClearing && ghPre.cL && ghPre.cL > 40 && gh.cL < 30) ls = Math.min(18, ls + 4);
+      score+=ls; bd2.push({l:'Western horizon clear',v:ls,m:18,n:gh.cL+'% low'+(cloudClearing?' \u2193clearing':'')});
+    }
+
+    // 3. Aerosol/particle enhancement — 15pts
+    maxS += 15;
+    var aerScore = 5; // baseline
+    var aerNote = '';
+    if (gh.vis !== null) {
+      if (gh.vis >= 3 && gh.vis <= 8) { aerScore = 10; aerNote = gh.vis+'mi vis'; }
+      else if (gh.vis >= 2 && gh.vis <= 12) { aerScore = 8; aerNote = gh.vis+'mi vis'; }
+      else if (gh.vis > 12) { aerScore = 5; aerNote = gh.vis+'mi (crystal clear)'; }
+      else { aerScore = 3; aerNote = gh.vis+'mi (foggy)'; }
+    }
+    // PM2.5/smoke boost — use forecast at golden hour if available
+    var pm25Score = pm25AtGold || pm25Now;
+    if (pm25Score && pm25Score > 12 && pm25Score < 65) {
+      aerScore = Math.min(15, aerScore + Math.round((pm25Score - 12) / 8));
+      aerNote += (aerNote ? ' + ' : '') + 'PM2.5:' + Math.round(pm25Score) + (pm25AtGold ? '@GH' : '');
+    }
+    if (smokeBoost.active && smokeBoost.level !== 'trace') {
+      aerScore = Math.min(15, aerScore + 3);
+      aerNote += (aerNote ? ' + ' : '') + 'smoke';
+    }
+    if (blhTrap) { aerScore = Math.min(15, aerScore + 2); aerNote += ' + shallow BL'; }
+    if (dustAlert) { aerScore = Math.min(15, aerScore + 3); aerNote += ' + dust advisory'; }
+    score+=aerScore; bd2.push({l:'Aerosol enhancement',v:aerScore,m:15,n:aerNote||'--'});
+
+    // 4. Humidity scatter — 12pts
+    maxS += 12;
+    if (gh.rh !== null) {
+      var hs = gh.rh>=40&&gh.rh<=70 ? 12 : gh.rh>=30&&gh.rh<=80 ? 9 : gh.rh>80 ? 6 : 5;
+      score+=hs; bd2.push({l:'Humidity Rayleigh boost',v:hs,m:12,n:gh.rh+'%'+(gh.dp!==null?' (dp '+gh.dp+'\u00b0)':'')});
+    }
+
+    // 5. No precipitation — 10pts
+    maxS += 10;
+    if (gh.precip !== null) {
+      var ps = gh.precip<=0?10 : gh.precip<0.02?7 : gh.precip<0.1?3 : 0;
+      score+=ps; bd2.push({l:'Dry conditions',v:ps,m:10,n:gh.precip>0?gh.precip.toFixed(2)+'in':'dry'});
+    }
+
+    // 6. Pressure pattern — 8pts
+    maxS += 8;
+    var prS = 4;
+    var prNote = '';
+    if (gh.pr !== null) {
+      if (pressTrend === 'rising' || pressTrend === 'slight-rise') { prS = gh.pr >= 1016 ? 8 : 6; prNote = gh.pr+'mb \u2191'; }
+      else if (pressTrend === 'stable') { prS = gh.pr >= 1020 ? 7 : 5; prNote = gh.pr+'mb \u2192'; }
+      else { prS = 3; prNote = gh.pr+'mb \u2193'; }
+    }
+    score+=prS; bd2.push({l:'Pressure pattern',v:prS,m:8,n:prNote||'--'});
+
+    // 7. Post-frontal / post-storm BONUS — 8pts
+    maxS += 8;
+    var pfS = 0;
+    var pfNote = '';
+    if (frontalBoost.active) { pfS = 8; pfNote = frontalBoost.type + ' front ~' + frontalBoost.hoursBefore + 'h ago'; }
+    else if (postStorm) { pfS = 7; pfNote = 'CAPE collapsed (storms clearing)'; }
+    else if (cloudClearing && pressTrend === 'rising') { pfS = 5; pfNote = 'Clearing + rising pressure'; }
+    else { pfNote = 'No frontal passage'; }
+    score+=pfS; bd2.push({l:'Post-front/storm bonus',v:pfS,m:8,n:pfNote});
+
+    // 8. Upper-level dynamics — 4pts
+    maxS += 4;
+    var ulS = 1;
+    var ulNote = '';
+    if (jetCirrus) { ulS = 4; ulNote = 'Jet '+gh.w300+'mph \u2192 cirrus streaks'; }
+    else if (gh.w300 !== null && gh.w300 > 40) { ulS = 3; ulNote = 'Moderate jet '+gh.w300+'mph'; }
+    else if (gh.w300 !== null) { ulS = 1; ulNote = 'Light upper winds '+gh.w300+'mph'; }
+    score+=ulS; bd2.push({l:'Upper-level dynamics',v:ulS,m:4,n:ulNote||'--'});
+
+    // Normalize
+    var finalScore = maxS > 0 ? Math.round(score / maxS * 100) : 50;
+    var scoreLabel, scoreColor, scoreEmoji;
+    if (finalScore >= 85) { scoreLabel='EPIC'; scoreColor='#ff4444'; scoreEmoji='\ud83d\udd25'; }
+    else if (finalScore >= 70) { scoreLabel='EXCELLENT'; scoreColor='#ff6633'; scoreEmoji='\ud83c\udf05'; }
+    else if (finalScore >= 55) { scoreLabel='GOOD'; scoreColor='#e8a954'; scoreEmoji='\u2600\ufe0f'; }
+    else if (finalScore >= 40) { scoreLabel='FAIR'; scoreColor='#bbaa55'; scoreEmoji='\u26c5'; }
+    else if (finalScore >= 25) { scoreLabel='POOR'; scoreColor='#888'; scoreEmoji='\u2601\ufe0f'; }
+    else { scoreLabel='UNLIKELY'; scoreColor='#666'; scoreEmoji='\ud83c\udf27\ufe0f'; }
+
+    // ── PEAK ORANGE ──
+    var peakStart = ssDate ? new Date(ssDate.getTime() - 15*60000) : null;
+    var peakEnd = ssDate ? new Date(ssDate.getTime() - 4*60000) : null;
+
+    // ── SKY COLOR TIMELINE SVG ──
+    var buildSkyTimeline = function() {
+      if (!goldPmS || !bluePmE) return '';
+      var sT = goldPmS.getTime(), eT = bluePmE.getTime();
+      var totalMin = Math.round((eT - sT) / 60000);
+      if (totalMin < 10 || totalMin > 200) return '';
+      var stops = [];
+      for (var m = 0; m <= totalMin; m++) {
+        var t = sT + m * 60000;
+        var x = (m / totalMin) * 100;
+        var r, g, b;
+        var ssT = ssDate.getTime();
+        if (t < ssT - 15*60000) {
+          var f = 1 - Math.max(0, Math.min(1, (ssT - 15*60000 - t) / (ssT - 15*60000 - sT + 1)));
+          r = Math.round(255-f*30); g = Math.round(200-f*80); b = Math.round(80-f*40);
+        } else if (t < ssT - 4*60000) {
+          var f2 = (t-(ssT-15*60000))/(11*60000);
+          r=255; g=Math.round(140-f2*80); b=Math.round(40+f2*20);
+        } else if (t <= ssT) {
+          var f3 = (t-(ssT-4*60000))/(4*60000);
+          r=Math.round(255-f3*40); g=Math.round(60-f3*30); b=Math.round(60+f3*60);
+        } else if (goldPmE && t <= goldPmE.getTime()) {
+          var f4 = (t-ssT)/((goldPmE.getTime()-ssT)||1);
+          r=Math.round(215-f4*80); g=Math.round(30+f4*30); b=Math.round(120+f4*40);
+        } else if (bluePmS && t <= bluePmS.getTime()) {
+          var f5 = (t-(goldPmE?goldPmE.getTime():ssT))/((bluePmS.getTime()-(goldPmE?goldPmE.getTime():ssT))||1);
+          r=Math.round(135-f5*60); g=Math.round(60+f5*20); b=Math.round(160+f5*40);
+        } else {
+          var f6 = (t-bluePmS.getTime())/((eT-bluePmS.getTime())||1);
+          r=Math.round(75-f6*40); g=Math.round(80-f6*30); b=Math.round(200-f6*60);
+        }
+        // Smoke/aerosol warmth shift
+        if (smokeBoost.active && pm25Now && pm25Now > 20) {
+          var shift = Math.min(25, (pm25Now-20)*0.5);
+          r = Math.min(255, r + Math.round(shift));
+          g = Math.max(0, g - Math.round(shift * 0.4));
+        }
+        stops.push({x:x, r:r, g:g, b:b});
+      }
+      var svg = '<svg width="250" height="48" viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:48px;border-radius:6px;display:block;">';
+      svg += '<defs><linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="0%">';
+      var step = Math.max(1, Math.floor(stops.length / 20));
+      for (var si = 0; si < stops.length; si += step) {
+        var s = stops[si];
+        svg += '<stop offset="'+s.x.toFixed(1)+'%" stop-color="rgb('+s.r+','+s.g+','+s.b+')"/>';
+      }
+      var last = stops[stops.length-1];
+      svg += '<stop offset="100%" stop-color="rgb('+last.r+','+last.g+','+last.b+')"/>';
+      svg += '</linearGradient></defs>';
+      svg += '<rect x="0" y="0" width="100" height="100" fill="url(#skyGrad)"/>';
+      // Cloud washout overlay
+      if (gh.cT !== null && gh.cT > 55) {
+        svg += '<rect x="0" y="0" width="100" height="100" fill="rgba(120,120,130,'+Math.min(0.55,(gh.cT-55)/80).toFixed(2)+')"/>';
+      }
+      // Markers
+      var mark = function(d, label, y) {
+        if (!d) return '';
+        var mx = ((d.getTime()-sT)/(eT-sT))*100;
+        if (mx<0||mx>100) return '';
+        return '<line x1="'+mx.toFixed(1)+'" y1="0" x2="'+mx.toFixed(1)+'" y2="100" stroke="rgba(255,255,255,.5)" stroke-width=".4" stroke-dasharray="2,2"/><text x="'+mx.toFixed(1)+'" y="'+(y||14)+'" text-anchor="middle" fill="rgba(255,255,255,.85)" font-size="7" font-weight="700" font-family="system-ui">'+label+'</text>';
+      };
+      svg += mark(ssDate,'SUNSET',14);
+      if (peakStart) svg += mark(peakStart,'PEAK',92);
+      // Only show BLUE label if it's far enough from SUNSET (>15% apart)
+      if (bluePmS) {
+        var ssX2 = ((ssDate.getTime()-sT)/(eT-sT))*100;
+        var blX2 = ((bluePmS.getTime()-sT)/(eT-sT))*100;
+        if (Math.abs(blX2 - ssX2) > 15) svg += mark(bluePmS,'BLUE',14);
+        else svg += mark(bluePmS,'BLUE',28); // stagger down if too close
+      }
+      var nowX = ((now.getTime()-sT)/(eT-sT))*100;
+      if (nowX>=0&&nowX<=100) {
+        svg += '<line x1="'+nowX.toFixed(1)+'" y1="0" x2="'+nowX.toFixed(1)+'" y2="100" stroke="#fff" stroke-width=".8"/>';
+        svg += '<text x="'+nowX.toFixed(1)+'" y="55" text-anchor="middle" fill="#fff" font-size="6" font-weight="800" font-family="system-ui">NOW</text>';
+      }
+      svg += '</svg>';
+      svg += '<div style="display:flex;justify-content:space-between;font-size:7px;color:rgba(255,255,255,.35);margin-top:1px;padding:0 2px;"><span>'+fmtShort(goldPmS)+'</span><span>'+fmtShort(ssDate)+'</span><span>'+fmtShort(bluePmE)+'</span></div>';
+      return svg;
+    };
+
+    // ── CLOUD CROSS-SECTION SVG ──
+    var buildCloudSection = function() {
+      if (gh.cL===null&&gh.cM===null&&gh.cH===null) return '';
+      var cL=gh.cL||0, cM=gh.cM||0, cH=gh.cH||0;
+      var svg = '<svg width="250" height="70" viewBox="0 0 250 70" style="width:100%;height:70px;display:block;">';
+      svg += '<defs><linearGradient id="skyBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1a3a"/><stop offset="50%" stop-color="#2a2a4a"/><stop offset="100%" stop-color="#e87030"/></linearGradient></defs>';
+      svg += '<rect x="0" y="0" width="250" height="70" fill="url(#skyBg)" rx="4"/>';
+      svg += '<circle cx="210" cy="62" r="8" fill="#ff6600" opacity=".9"/><circle cx="210" cy="62" r="12" fill="#ff6600" opacity=".2"/>';
+      svg += '<rect x="0" y="62" width="250" height="8" fill="#1a1a2a"/>';
+      if (cH>0) { for(var i=0;i<Math.ceil(cH/15);i++) svg+='<ellipse cx="'+(20+i*40+(i*17%20))+'" cy="'+(10+(i*7%5))+'" rx="'+(18+(i*11%12))+'" ry="'+(3+(i*5%2))+'" fill="rgba(200,200,220,'+Math.min(.7,cH/100).toFixed(2)+')" />'; }
+      if (cM>0) { for(var j=0;j<Math.ceil(cM/18);j++) svg+='<ellipse cx="'+(15+j*35+(j*13%25))+'" cy="'+(28+(j*11%8))+'" rx="'+(20+(j*7%15))+'" ry="'+(4+(j*5%3))+'" fill="rgba(220,180,140,'+Math.min(.65,cM/100).toFixed(2)+')" />'; }
+      if (cL>0) { for(var k4=0;k4<Math.ceil(cL/20);k4++) svg+='<ellipse cx="'+(10+k4*45+(k4*17%20))+'" cy="'+(50+(k4*11%6))+'" rx="'+(25+(k4*7%15))+'" ry="'+(5+(k4*5%3))+'" fill="rgba(80,80,100,'+Math.min(.8,cL/100).toFixed(2)+')" />'; }
+      if (cL<50) { svg+='<line x1="210" y1="55" x2="160" y2="10" stroke="rgba(255,160,50,.12)" stroke-width="15"/><line x1="210" y1="55" x2="100" y2="15" stroke="rgba(255,160,50,.08)" stroke-width="10"/>'; }
+      svg += '<text x="4" y="14" fill="rgba(255,255,255,.5)" font-size="6" font-family="system-ui" font-weight="700">HIGH '+cH+'%</text>';
+      svg += '<text x="4" y="34" fill="rgba(255,255,255,.5)" font-size="6" font-family="system-ui" font-weight="700">MID '+cM+'%</text>';
+      svg += '<text x="4" y="54" fill="rgba(255,255,255,.5)" font-size="6" font-family="system-ui" font-weight="700">LOW '+cL+'%</text>';
+      svg += '</svg>';
+      return svg;
+    };
+
+    // ── SUN ALTITUDE GAUGE ──
+    var buildAltGauge = function() {
+      if (sunAlt===null) return '';
+      var a = Math.max(-18,Math.min(90,sunAlt));
+      var norm = (a+18)/108;
+      var arc = norm*180;
+      var cx=50,cy=55,r=40;
+      var endA = Math.PI - (arc*Math.PI/180);
+      var ex=cx+r*Math.cos(endA), ey=cy-r*Math.sin(endA);
+      var col = a<0?'#4466aa':a<=6?'#e87030':'#e8a954';
+      var svg = '<svg width="120" height="65" viewBox="0 0 100 65" style="display:block;margin:0 auto;">';
+      svg += '<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/>';
+      var la = arc>180?1:0;
+      svg += '<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 '+la+' 1 '+ex.toFixed(1)+' '+ey.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-linecap="round"/>';
+      svg += '<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="4" fill="'+col+'"/><circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="6" fill="'+col+'" opacity=".25"/>';
+      svg += '<line x1="'+(cx-r-5)+'" y1="'+cy+'" x2="'+(cx+r+5)+'" y2="'+cy+'" stroke="rgba(255,255,255,.15)" stroke-width=".5" stroke-dasharray="2,1"/>';
+      svg += '<text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" fill="'+col+'" font-size="14" font-weight="800" font-family="system-ui">'+Math.round(sunAlt*10)/10+'\u00b0</text>';
+      svg += '<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" fill="rgba(255,255,255,.35)" font-size="5.5" font-weight="600" font-family="system-ui">SUN ALTITUDE</text>';
+      svg += '</svg>';
+      return svg;
+    };
+
+    // ── CURRENT PHASE ──
+    var currentPhase = 'Night', currentColor = '#334';
+    if (goldAmS && goldAmE && now>=goldAmS && now<=goldAmE) { currentPhase='Morning Golden Hour'; currentColor='#e8a954'; }
+    else if (goldPmS && goldPmE && now>=goldPmS && now<=goldPmE) { currentPhase='Evening Golden Hour'; currentColor='#e87030'; }
+    else if (blueAmS && blueAmE && now>=blueAmS && now<=blueAmE) { currentPhase='Morning Blue Hour'; currentColor='#5577cc'; }
+    else if (bluePmS && bluePmE && now>=bluePmS && now<=bluePmE) { currentPhase='Evening Blue Hour'; currentColor='#4466aa'; }
+    else if (now>=srDate && now<=ssDate) { currentPhase='Daytime'; currentColor='#e8a954'; }
+    else if (civilDawn && now>=civilDawn && now<srDate) { currentPhase='Civil Dawn'; currentColor='#7788aa'; }
+    else if (civilDusk && now>ssDate && now<=civilDusk) { currentPhase='Civil Dusk'; currentColor='#7788aa'; }
+    else if (nautDawn && civilDawn && now>=nautDawn && now<civilDawn) { currentPhase='Nautical Twilight'; currentColor='#556688'; }
+    else if (nautDusk && civilDusk && now>civilDusk && now<=nautDusk) { currentPhase='Nautical Twilight'; currentColor='#556688'; }
+    else if (astroDawn && nautDawn && now>=astroDawn && now<nautDawn) { currentPhase='Astro Twilight (dawn)'; currentColor='#334455'; }
+    else if (astroDusk && nautDusk && now>nautDusk && now<=astroDusk) { currentPhase='Astro Twilight (dusk)'; currentColor='#334455'; }
+
+    var countdown = '';
+    if (goldPmS && goldPmE && now>=goldPmS && now<=goldPmE) {
+      countdown='\ud83d\udd25 Golden hour active \u2014 '+Math.round((goldPmE-now)/60000)+'m remaining';
+    } else if (peakStart && peakEnd && now>=goldPmS && now<peakStart) {
+      countdown='\ud83c\udf1f Peak orange in '+Math.round((peakStart-now)/60000)+'m';
+    } else if (bluePmS && bluePmE && now>=bluePmS && now<=bluePmE) {
+      countdown='\ud83d\udd35 Blue hour \u2014 '+Math.round((bluePmE-now)/60000)+'m remaining';
+    } else if (goldPmS && now<goldPmS) {
+      var mt=Math.round((goldPmS-now)/60000);
+      if(mt<=600) countdown='\u23f3 Golden hour in '+(mt>=60?Math.floor(mt/60)+'h '+mt%60+'m':mt+'m');
+    }
+
+    // ══════════════════════════
+    //  SUNSET PREDICTION
+    // ══════════════════════════
+    var prediction = '';
+    var signals = [];
+    if (gh.cT !== null) {
+      var cL2=gh.cL||0, cM2=gh.cM||0, cH2=gh.cH||0;
+      if (gh.precip && gh.precip > 0.05) {
+        prediction = 'Active precipitation will wash out most color.';
+        if (pressTrend==='rising'||cloudClearing) prediction += ' However, clearing conditions are developing \u2014 if skies open in the final 20 minutes, post-storm light can be spectacular.';
+      } else if (cL2>70 && !cloudClearing) {
+        prediction = 'Heavy low cloud deck will block sunlight before it reaches the horizon. Color potential is limited unless a late break opens in the west.';
+      } else if (frontalBoost.active) {
+        prediction = 'Post-cold-front clearing is THE setup for legendary sunsets. Clean, unstable air behind the front, residual mid-level clouds as canvas, rising pressure pushing gaps westward. High probability of vivid, fast-changing color.';
+        signals.push('\ud83c\udf2a\ufe0f Cold front passage '+frontalBoost.hoursBefore+'h ago');
+      } else if (postStorm) {
+        prediction = 'Storm activity is collapsing and skies are clearing. Post-convective environments produce some of the most dramatic sunsets \u2014 towering cumulus catches light from below while clear breaks allow the sun through.';
+        signals.push('\u26c8\ufe0f Post-storm clearing detected');
+      } else if (cM2>=30 && cM2<=70 && cL2<30) {
+        prediction = 'Ideal cloud geometry \u2014 mid-level altocumulus will act as a canvas, catching warm light and scattering vivid oranges across the sky. Clear western horizon ensures unobstructed illumination.';
+      } else if (cH2>=30 && cH2<=70 && cL2<30 && cM2<30) {
+        prediction = 'High cirrus will create sweeping pastel gradients. Ice crystals at altitude produce soft, wide-angle color with pinks and magentas dominating.';
+        if (jetCirrus) { prediction += ' Strong jet stream is generating fresh cirrus \u2014 expect dynamic streaked patterns.'; signals.push('\ud83d\udca8 Jet cirrus generation'); }
+      } else if (gh.cT < 15) {
+        prediction = 'Clear skies offer a clean horizon glow but limited cloud canvas. Color will concentrate in a narrow band near the horizon.';
+      } else if (cloudClearing) {
+        prediction = 'Clouds are breaking up toward sunset \u2014 the clearing edge often produces the most dramatic moments as sun finds gaps. Watch for crepuscular rays.';
+        signals.push('\ud83c\udf24\ufe0f Active clearing trend');
+      } else if (cL2>=30 && cL2<=60 && cM2<20) {
+        prediction = 'Low clouds with gaps may produce dramatic crepuscular rays \u2014 shafts of golden light piercing through breaks. Position with a clear view of the western horizon.';
+      } else {
+        prediction = 'Mixed cloud pattern. Quality depends on timing of gaps. Watch the west in the final 20 minutes.';
+      }
+      // Modifiers
+      if (smokeBoost.active && smokeBoost.level !== 'trace') {
+        prediction += ' Wildfire smoke in the atmosphere will intensify reds and oranges through enhanced Mie scattering \u2014 expect deeper, more saturated warm tones.';
+        signals.push('\ud83d\udca8 Smoke transport active');
+      }
+      if (gh.rh && gh.rh > 65 && (!gh.precip || gh.precip <= 0)) {
+        prediction += ' Elevated humidity enhances Rayleigh scattering, deepening warm tones.';
+      }
+      if (blhTrap && pm25Now && pm25Now > 15) {
+        prediction += ' Shallow boundary layer (' + gh.blh + 'm) is trapping aerosols near the surface, boosting scattering intensity.';
+        signals.push('\ud83c\udf2b\ufe0f Boundary layer trapping ('+gh.blh+'m)');
+      }
+      if (scatterRatio !== null && scatterRatio < 60 && gh.radSW !== null && gh.radSW > 20) {
+        signals.push('\ud83d\udd2c High atmospheric scatter ('+scatterRatio+'% direct ratio)');
+      }
+      if (upstreamClearing) {
+        signals.push('\ud83c\udf24\ufe0f Upstream clearing approaching \u2014 cloud break likely');
+      }
+      if (upstreamStorms && !postStorm) {
+        signals.push('\u26c8\ufe0f Storms approaching from upwind \u2014 may clear by golden hour');
+      }
+      if (nearestFire) {
+        signals.push('\ud83d\udd25 Nearest upwind fire: '+nearestFire.name+' ('+nearestFire.dist+'mi, '+nearestFire.alignment+')');
+      }
+      if (dustAlert) signals.push('\ud83c\udf2a\ufe0f Dust advisory active \u2014 enhanced Mie scattering');
+      if (smokeAlert) signals.push('\ud83d\udea8 Smoke advisory \u2014 aerosol layer boosting warm tones');
+      if (fogAlert) signals.push('\ud83c\udf2b\ufe0f Dense fog advisory \u2014 golden hour likely obscured near surface');
+      if (relevantAlerts.length > 0) {
+        relevantAlerts.forEach(function(a) {
+          if (a.type !== 'dust' && a.type !== 'smoke' && a.type !== 'fog') signals.push('\u26a0\ufe0f '+a.event);
+        });
+      }
+    }
+
+    // Daylight
+    var dlMs = ssDate - srDate;
+    var dlStr = Math.floor(dlMs/3600000)+'h '+Math.round((dlMs%3600000)/60000)+'m';
+
+    // ══════════════════════════
+    //  BUILD HTML
+    // ══════════════════════════
+    var h = '';
+    h += '<div class="hz-card-head"><div class="hz-accent" style="background:linear-gradient(135deg,#e8a954,#e87030);"></div><span style="color:#e8a954;font-size:11px;font-weight:800;letter-spacing:.5px;">GOLDEN HOUR</span><span style="margin-left:auto;font-size:7px;opacity:.3;">Solar \u00b7 Atmos \u00b7 Smoke \u00b7 Fronts</span></div>';
+
+    // ── SCORE ──
+    h += '<div style="text-align:center;margin:6px 0 2px;">';
+    h += '<div style="font-size:38px;font-weight:900;color:'+scoreColor+';line-height:1;text-shadow:0 0 20px '+scoreColor+'44;">'+finalScore+'</div>';
+    h += '<div style="font-size:9px;font-weight:800;color:'+scoreColor+';letter-spacing:1px;margin-top:1px;">'+scoreEmoji+' '+scoreLabel+' SUNSET</div>';
+    h += '<div style="margin:4px auto;width:80%;">'+bar(finalScore, scoreColor, 5)+'</div>';
+    h += '</div>';
+
+    // Phase + countdown
+    h += '<div style="text-align:center;margin:2px 0 4px;">';
+    h += '<div style="font-size:8.5px;color:'+currentColor+';font-weight:700;">'+currentPhase+'</div>';
+    if (countdown) h += '<div style="font-size:8px;color:'+currentColor+';opacity:.8;margin-top:1px;">'+countdown+'</div>';
+    h += '</div>';
+
+    // Sun altitude
+    h += buildAltGauge();
+
+    // ── ACTIVE SIGNALS ──
+    if (signals.length > 0) {
+      h += FS('Active Signals', '#ff6633');
+      for (var si2 = 0; si2 < signals.length; si2++) {
+        h += note('', signals[si2], '#e87030');
+      }
+    }
+
+    // ── SKY TIMELINE ──
+    h += FS('Predicted Sky Color', '#e87030');
+    h += '<div style="margin:2px 0 4px;">'+buildSkyTimeline()+'</div>';
+    if (peakStart && peakEnd) {
+      h += '<div style="font-size:8px;color:#ff6633;text-align:center;font-weight:700;">\ud83d\udca5 Peak Orange: '+fmtShort(peakStart)+' \u2013 '+fmtShort(peakEnd)+' ('+dur(peakStart,peakEnd)+')</div>';
+    }
+
+    // ── CLOUD CROSS-SECTION ──
+    h += FS('Cloud Cross-Section', '#8899bb');
+    h += '<div style="margin:2px 0;">'+buildCloudSection()+'</div>';
+    if (gh.cL !== null) {
+      var wn = gh.cL<=15 ? '\u2705 Clear western horizon' : gh.cL<=40 ? '\u26a0\ufe0f Partial low clouds \u2014 gaps possible' : '\u274c Low clouds blocking sun';
+      h += '<div style="font-size:7.5px;color:rgba(255,255,255,.4);margin:2px 0;">'+wn+'</div>';
+    }
+
+    // ── PREDICTION ──
+    if (prediction) {
+      h += FS('Sunset Forecast', '#e87030');
+      h += '<div style="font-size:8.5px;color:rgba(255,255,255,.6);line-height:1.5;">'+prediction+'</div>';
+    }
+
+    // ── SCORE BREAKDOWN ──
+    h += FS('Score Analysis', '#998866');
+    for (var sb = 0; sb < bd2.length; sb++) {
+      var item = bd2[sb];
+      var pct = Math.round(item.v / item.m * 100);
+      var sCol = pct>=75?'#44cc88':pct>=50?'#e8a954':pct>=25?'#cc8844':'#cc4444';
+      h += '<div style="margin:3px 0;"><div style="display:flex;justify-content:space-between;font-size:7.5px;margin-bottom:1px;"><span style="color:rgba(255,255,255,.5);">'+item.l+'</span><span style="color:'+sCol+';font-weight:700;">'+item.v+'/'+item.m+' <span style="opacity:.4;font-weight:400;">'+item.n+'</span></span></div>'+bar(pct,sCol,3)+'</div>';
+    }
+
+    // ── ATMOSPHERIC DATA ──
+    h += FS('Conditions at Golden Hour', '#e8a954');
+    if (gh.cT!==null) h+=gL('Clouds',gh.cT+'% '+pill(gh.cL+'%L','rgba(80,80,120,.35)')+pill(gh.cM+'%M','rgba(180,140,80,.25)')+pill(gh.cH+'%H','rgba(160,160,200,.25)'));
+    if (gh.rh!==null) h+=gL('Humidity',gh.rh+'%'+(gh.rh>65?' '+pill('SCATTER+','rgba(232,169,84,.2)'):''));
+    if (gh.dp!==null) h+=gL('Dewpoint',gh.dp+'\u00b0F');
+    if (gh.vis!==null) h+=gL('Visibility',gh.vis+' mi'+(gh.vis<6?' '+pill('AEROSOL+','rgba(255,100,50,.2)'):''));
+    if (gh.wind!==null) h+=gL('Wind',gh.wind+' mph');
+    if (gh.pr!==null) h+=gL('Pressure',gh.pr+' mb '+(pressTrend==='rising'?'\u2191':pressTrend==='falling'?'\u2193':'\u2192'));
+    if (gh.blh!==null) h+=gL('Boundary layer',gh.blh+' m'+(blhTrap?' '+pill('TRAPPING','rgba(200,100,50,.2)'):''));
+    if (gh.cape!==null) h+=gL('CAPE',gh.cape+' J/kg'+(postStorm?' '+pill('COLLAPSING','rgba(100,200,100,.2)'):''));
+
+    // ── SMOKE & AEROSOL INTEL ──
+    if (smokeBoost.active || (pm25Now && pm25Now > 10) || (aqiNow && aqiNow > 30)) {
+      h += FS('Smoke & Aerosol Intel', '#cc6633');
+      if (pm25Now) h += gL('PM2.5', Math.round(pm25Now)+' \u00b5g/m\u00b3'+(pm25Now>25?' '+pill('SUNSET BOOST','rgba(255,100,50,.2)'):''));
+      if (aqiNow) h += gL('AQI', Math.round(aqiNow));
+      if (smokeIntel.transportActive) h += gL('Transport', pill('ACTIVE','rgba(255,80,30,.3)')+' '+smokeIntel.upwindFires.length+' upwind fire(s)');
+      if (smokeIntel.pm25Trend) h += gL('PM2.5 trend', smokeIntel.pm25Trend);
+      if (smokeIntel.inversionsTrapping) h += note('\ud83c\udf2b\ufe0f','Inversion trapping smoke at surface \u2014 enhanced aerosol scatter','#cc6633');
+      if (smokeIntel.evidenceChain && smokeIntel.evidenceChain.length > 0) {
+        h += '<div style="font-size:7.5px;color:rgba(255,255,255,.35);margin-top:3px;line-height:1.4;">';
+        for (var ei = 0; ei < Math.min(3, smokeIntel.evidenceChain.length); ei++) {
+          h += '\u2022 ' + smokeIntel.evidenceChain[ei] + '<br>';
+        }
+        h += '</div>';
+      }
+    }
+
+    // ── UPPER-LEVEL ──
+    if (gh.w300 !== null || gh.w500 !== null || jetCirrus) {
+      h += FS('Upper Atmosphere', '#6688aa');
+      if (gh.w300!==null) h+=gL('Jet stream (300mb)',gh.w300+' mph'+(jetCirrus?' '+pill('CIRRUS GEN','rgba(100,150,220,.25)'):''));
+      if (gh.w500!==null) h+=gL('500mb wind',gh.w500+' mph');
+      if (scatterRatio!==null) h+=gL('Scatter ratio',scatterRatio+'% direct'+(scatterRatio<60?' '+pill('HIGH SCATTER','rgba(200,150,50,.2)'):''));
+    }
+
+    // ── FRONTAL ──
+    if (frontalBoost.active || postStorm || cloudClearing) {
+      h += FS('Synoptic Setup', '#44aacc');
+      if (frontalBoost.active) h += note('\ud83c\udf2a\ufe0f', 'Cold front passed ~'+frontalBoost.hoursBefore+'h before golden hour. Post-frontal clearing is the #1 setup for epic sunsets. Clean unstable air + residual cloud canvas + rising pressure = maximum drama.', '#44aacc');
+      if (postStorm) h += note('\u26c8\ufe0f', 'Convective activity collapsing. Post-storm environments produce towering cumulonimbus anvils lit from below \u2014 among the most dramatic sunset canvases possible.', '#44aacc');
+      if (cloudClearing) h += note('\ud83c\udf24\ufe0f', 'Cloud cover decreasing toward golden hour ('+(ghPre.cT||'?')+'% \u2192 '+(gh.cT||'?')+'%). The clearing edge is where the magic happens \u2014 breaks in cloud create crepuscular rays and spotlit cloud bases.', '#44aacc');
+    }
+
+    // ── SOLAR EVENTS ──
+    h += FS('Solar Events', '#e8a954');
+    h+=gL('Sunrise','<span style="color:#e8a954;">'+fmt(srDate)+'</span>');
+    h+=gL('Solar noon','<span style="color:#ffcc44;">'+fmt(noon)+'</span>');
+    h+=gL('Sunset','<span style="color:#e87030;">'+fmt(ssDate)+'</span>');
+    h+=gL('Daylight','<span style="color:#ffcc44;">'+dlStr+'</span>');
+
+    h += FS('Golden Hour', '#e8a954');
+    h+=gL('Morning','<span style="color:#e8a954;">'+fmtShort(goldAmS)+' \u2013 '+fmtShort(goldAmE)+'</span> '+pill(dur(goldAmS,goldAmE)));
+    h+=gL('Evening','<span style="color:#e87030;">'+fmtShort(goldPmS)+' \u2013 '+fmtShort(goldPmE)+'</span> '+pill(dur(goldPmS,goldPmE)));
+    h += FS('Blue Hour', '#5577cc');
+    h+=gL('Morning','<span style="color:#5577cc;">'+fmtShort(blueAmS)+' \u2013 '+fmtShort(blueAmE)+'</span> '+pill(dur(blueAmS,blueAmE)));
+    h+=gL('Evening','<span style="color:#4466aa;">'+fmtShort(bluePmS)+' \u2013 '+fmtShort(bluePmE)+'</span> '+pill(dur(bluePmS,bluePmE)));
+
+    h += FS('Twilight', '#7788aa');
+    h+=gL('Civil','<span style="color:#99aabb;">'+fmtShort(civilDawn)+' / '+fmtShort(civilDusk)+'</span>');
+    h+=gL('Nautical','<span style="color:#778899;">'+fmtShort(nautDawn)+' / '+fmtShort(nautDusk)+'</span>');
+    h+=gL('Astronomical','<span style="color:#556677;">'+fmtShort(astroDawn)+' / '+fmtShort(astroDusk)+'</span>');
+
+    // ── BLUE HOUR QUALITY ──
+    if (moonIllum !== null || fogAlert) {
+      h += FS('Blue Hour Quality', '#4466aa');
+      if (moonIllum !== null) {
+        var moonImpact = moonIllum > 80 ? 'Bright moon ('+moonIllum+'%) will wash out deep blue tones. Blue hour will be lighter and less dramatic.' :
+                         moonIllum > 40 ? 'Moderate moonlight ('+moonIllum+'%). Blue hour will have good color depth with some lunar glow.' :
+                         'Dark sky ('+moonIllum+'% moon). Ideal for deep blue hour \u2014 maximum color saturation and contrast.';
+        h += '<div style="font-size:8px;color:rgba(255,255,255,.45);line-height:1.4;">\ud83c\udf19 '+moonImpact+'</div>';
+      }
+      if (fogAlert) {
+        h += '<div style="font-size:8px;color:rgba(255,255,255,.45);line-height:1.4;margin-top:3px;">\ud83c\udf2b\ufe0f Dense fog advisory active \u2014 blue hour visibility may be severely limited. However, fog can create ethereal, diffused light effects for photography.</div>';
+      }
+    }
+
+    // ── UPSTREAM INTEL ──
+    if (stormTrack.upstream && stormTrack.upstream.length > 0) {
+      h += FS('Upstream Weather Intel', '#55aacc');
+      var upSummary = '';
+      stormTrack.upstream.forEach(function(u, idx) {
+        if (idx > 2) return;
+        var icon = u.isStormy ? '\u26c8\ufe0f' : u.isRaining ? '\ud83c\udf27\ufe0f' : u.cloud > 70 ? '\u2601\ufe0f' : u.cloud > 30 ? '\u26c5' : '\u2600\ufe0f';
+        upSummary += gL(u.label+' ('+u.dist+'mi)', icon+' '+u.cloud+'% cloud'+(u.isRaining?' \u00b7 rain':'')+(u.isStormy?' \u00b7 storms':''));
+      });
+      h += upSummary;
+      if (stormTrack.upstreamNarrative) {
+        h += '<div style="font-size:7.5px;color:rgba(255,255,255,.3);line-height:1.35;margin-top:3px;">'+stormTrack.upstreamNarrative+'</div>';
+      }
+    }
+
+    // ── SCIENCE ──
+    h += FS('Atmospheric Optics', '#887766');
+    h += '<div style="font-size:8px;color:rgba(255,255,255,.35);line-height:1.5;">';
+    h += '<b style="color:#e87030;">Rayleigh</b> \u2014 Long path at low angles scatters blue away, passing red/orange. Humidity amplifies. Explains the orange band at horizon.<br><br>';
+    h += '<b style="color:#cc8844;">Mie</b> \u2014 Larger particles (smoke, dust, aerosols) forward-scatter warm tones. Why slightly hazy or smoky evenings produce deeper colors than clear ones.<br><br>';
+    h += '<b style="color:#dd7744;">Cloud canvas</b> \u2014 Mid-altitude clouds (6,500\u201320,000ft) are ideal. High enough to catch light after sun dips below horizon. 30\u201370% is the sweet spot. Ice crystals in cirrus create pinks/magentas.<br><br>';
+    h += '<b style="color:#44aacc;">Post-frontal</b> \u2014 Cold front passage cleans low clouds, leaves mid-level debris, creates unstable air with dramatic cloud forms. The #1 synoptic pattern for epic sunsets worldwide.';
+    h += '</div>';
+
+    // ── BUILD POPUP ──
+    var bd3 = document.createElement('div');
+    bd3.id = 'golden-insight-backdrop';
+    bd3.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;';
+    var pp = document.createElement('div');
+    pp.id = 'golden-insight-popup';
+    var _legend = document.getElementById('today-tl-legend');
+    var _maxH = '70vh';
+    if (_legend && tlCard) { var _lt = _legend.getBoundingClientRect().top - tlCard.getBoundingClientRect().top; if (_lt > 100) _maxH = (_lt - 16) + 'px'; }
+    pp.style.cssText = 'position:absolute;right:8px;top:8px;width:280px;max-height:'+_maxH+';overflow-y:auto;scrollbar-width:none;background:rgba(8,8,20,.96);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);font-family:system-ui,sans-serif;color:#e2e8f0;';
+    pp.innerHTML = '<div style="padding:10px 12px;">' + h + '<div class="hz-card-footer">Solar geometry \u00b7 Cloud physics \u00b7 Smoke intel \u00b7 Frontal analysis \u00b7 Atmospheric optics</div></div>';
+    var cb = document.createElement('div');
+    cb.style.cssText = 'position:sticky;top:0;text-align:right;';
+    cb.innerHTML = '<span style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 4px;" onclick="this.closest(\'#golden-insight-popup\').remove();document.getElementById(\'golden-insight-backdrop\').remove();">\u00d7</span>';
+    pp.insertBefore(cb, pp.firstChild);
+    bd3.onclick = function(){ pp.remove(); bd3.remove(); };
+    document.body.appendChild(bd3);
+    mountPopupOnBody(pp, bd3, tlCard);
+    addScrollFade(pp);
+    } catch(err) { console.error('Golden insight error:', err); }
+  };
+
   function renderTodayTimeline(hourly, daily, nearestIndex, kpData){
     // DOM refs
     var tlSunrise = document.getElementById("today-tl-sunrise");
@@ -6960,6 +8336,295 @@ function dayRangeAround(d, days){
       }
     }
 
+    // ═══ DUAL SPLIT-VIEW GOLDEN HOUR ENGINE (24 scenarios) ═══
+    (function(){
+      try {
+        var prevEl = document.getElementById('golden-hour-score-preview');
+        // ── Gather forecast data at PM golden hour window ──
+        var fc = {cT:0,cL:0,cM:0,cH:0,rh:0,pr:0,vis:99999,temp:50,snow:0,cape:0,n:0};
+        var cn = {cT:0,cL:0,cM:0,cH:0,rh:0,pr:0,vis:99999,temp:50,snow:0,n:0};
+        if (hourly && hourly.time) {
+          for (var qi=0;qi<hourly.time.length;qi++) {
+            var qt=new Date(hourly.time[qi]);
+            if (goldenPmStart && qt>=goldenPmStart && qt<=ssDate) {
+              fc.cT+=(hourly.cloudcover?hourly.cloudcover[qi]:0)||0;
+              fc.cL+=(hourly.cloud_cover_low?hourly.cloud_cover_low[qi]:0)||0;
+              fc.cM+=(hourly.cloud_cover_mid?hourly.cloud_cover_mid[qi]:0)||0;
+              fc.cH+=(hourly.cloud_cover_high?hourly.cloud_cover_high[qi]:0)||0;
+              fc.rh+=(hourly.relativehumidity_2m?hourly.relativehumidity_2m[qi]:0)||0;
+              fc.pr+=(hourly.precipitation?hourly.precipitation[qi]:0)||0;
+              fc.vis=Math.min(fc.vis,(hourly.visibility?hourly.visibility[qi]:99999)||99999);
+              fc.temp=(hourly.temperature_2m?hourly.temperature_2m[qi]:50)||50;
+              fc.snow+=(hourly.snowfall?hourly.snowfall[qi]:0)||0;
+              fc.cape=Math.max(fc.cape,(hourly.cape?hourly.cape[qi]:0)||0);
+              fc.n++;
+            }
+            if (Math.abs(qt-now)<1800000 && cn.n===0) {
+              cn.cT=(hourly.cloudcover?hourly.cloudcover[qi]:0)||0;
+              cn.cL=(hourly.cloud_cover_low?hourly.cloud_cover_low[qi]:0)||0;
+              cn.cM=(hourly.cloud_cover_mid?hourly.cloud_cover_mid[qi]:0)||0;
+              cn.cH=(hourly.cloud_cover_high?hourly.cloud_cover_high[qi]:0)||0;
+              cn.rh=(hourly.relativehumidity_2m?hourly.relativehumidity_2m[qi]:0)||0;
+              cn.pr=(hourly.precipitation?hourly.precipitation[qi]:0)||0;
+              cn.vis=(hourly.visibility?hourly.visibility[qi]:99999)||99999;
+              cn.temp=(hourly.temperature_2m?hourly.temperature_2m[qi]:50)||50;
+              cn.snow=(hourly.snowfall?hourly.snowfall[qi]:0)||0;
+              cn.n=1;
+            }
+          }
+        }
+        if(fc.n>0){fc.cT/=fc.n;fc.cL/=fc.n;fc.cM/=fc.n;fc.cH/=fc.n;fc.rh/=fc.n;fc.pr/=fc.n;fc.snow/=fc.n;}
+        fc.visMi=Math.round(fc.vis/1000*0.621371*10)/10;
+        cn.visMi=Math.round(cn.vis/1000*0.621371*10)/10;
+
+        var smokeI = window._smokeIntel || {};
+        var pm25V = parseFloat((document.getElementById('pm25-val')||{}).textContent) || 0;
+        var hasSmoke = smokeI.transportActive || pm25V > 20;
+
+        // ── Sun altitude now ──
+        var saNow = 0;
+        try {
+          var _t = _solarTerms(now);
+          var _lr = LOCATION.lat * Math.PI/180;
+          var _nm = now.getHours()*60+now.getMinutes();
+          var _sn = solarNoonLocal(dayLocal, LOCATION.lat, LOCATION.lon);
+          var _snm = _sn.getHours()*60+_sn.getMinutes();
+          var _ha = (_nm - _snm)/4 * Math.PI/180;
+          var _si = Math.sin(_lr)*Math.sin(_t.decl)+Math.cos(_lr)*Math.cos(_t.decl)*Math.cos(_ha);
+          saNow = Math.asin(Math.max(-1,Math.min(1,_si)))*180/Math.PI;
+        } catch(e){}
+
+        // ── SCORE ──
+        var qs = 50;
+        if(fc.n>0){
+          if(fc.cM>=30&&fc.cM<=70) qs+=18; else if(fc.cM>5&&fc.cM<=85) qs+=8;
+          if(fc.cH>=20&&fc.cH<=60&&fc.cL<15) qs+=8;
+          if(fc.cH>=20&&fc.cH<=50&&fc.cM>=30&&fc.cM<=60&&fc.cL<10) qs+=12;
+          if(fc.cL>85) qs-=30; else if(fc.cL>70) qs-=22; else if(fc.cL>50) qs-=14; else if(fc.cL>30) qs-=6;
+          if(fc.pr>0.5) qs-=25; else if(fc.pr>0.1) qs-=18; else if(fc.pr>0.02) qs-=8;
+          if(fc.snow>0) qs-=20;
+          if(hasSmoke&&fc.cL<30) qs+=15;
+          if(fc.rh>=40&&fc.rh<=65) qs+=6; else if(fc.rh>80) qs-=5;
+          if(fc.visMi<1) qs-=15;
+          if(fc.cL<15&&fc.cM>20) qs+=5;
+        }
+        qs=Math.max(0,Math.min(100,Math.round(qs)));
+        var ql,qc;
+        if(qs>=80){ql='EPIC';qc='#ff4444';}else if(qs>=65){ql='EXCELLENT';qc='#ff6633';}else if(qs>=50){ql='GOOD';qc='#e8a954';}else if(qs>=35){ql='FAIR';qc='#bbaa55';}else if(qs>=20){ql='POOR';qc='#888';}else{ql='UNLIKELY';qc='#666';}
+        if(prevEl){prevEl.textContent=ql+' SUNSET';prevEl.style.color=qc;}
+
+        // ── SCENARIO ──
+        var sc=1;
+        if(saNow<-6&&now>ssDate) sc=23;
+        else if(saNow<-6) sc=24;
+        else if(saNow>=-6&&saNow<-2) sc=22;
+        else if(fc.n>0&&fc.pr>0.1&&fc.snow>0) sc=15;
+        else if(fc.n>0&&fc.pr>0.1) sc=14;
+        else if(fc.n>0&&fc.visMi<1) sc=17;
+        else if(fc.n>0&&fc.cL>85) sc=10;
+        else if(fc.n>0&&fc.cL>50&&fc.cM>30) sc=12;
+        else if(fc.n>0&&fc.cL>=40&&fc.cL<=80) sc=11;
+        else if(fc.n>0&&fc.cL>=30&&fc.cL<60) sc=13;
+        else if(fc.n>0&&fc.cM>=30&&fc.cM<=70&&fc.cL<15&&hasSmoke) sc=9;
+        else if(fc.n>0&&fc.cH>=20&&fc.cH<=50&&fc.cM>=30&&fc.cM<=60&&fc.cL<10) sc=8;
+        else if(fc.n>0&&fc.cM>=30&&fc.cM<=70&&fc.cL<15) sc=6;
+        else if(fc.n>0&&fc.cM>75&&fc.cL<15) sc=7;
+        else if(fc.n>0&&fc.cH>=30&&fc.cH<=70&&fc.cM<10&&fc.cL<10) sc=4;
+        else if(fc.n>0&&fc.cH>70&&fc.cM<10&&fc.cL<10) sc=5;
+        else if(fc.n>0&&fc.cT<10&&hasSmoke) sc=3;
+        else if(fc.n>0&&fc.cT<10&&fc.rh<40) sc=1;
+        else if(fc.n>0&&fc.cT<10&&fc.rh>=55) sc=2;
+        else if(fc.n>0&&fc.cT<10) sc=1;
+
+        // ── GRADIENT MAPS ──
+        var FG={
+          1:['#060420','#10083a','#3a1848','#b07045','#dda055'],
+          2:['#0a0825','#1a1240','#4a2845','#b07040','#b07838'],
+          3:['#0e0618','#2a0c25','#6a1828','#c03818','#c05520'],
+          4:['#0e0c28','#1a1545','#5a3060','#a06080','#c07545'],
+          5:['#121030','#1a1840','#4a3555','#906565','#806048'],
+          6:['#0c0825','#2a1540','#7a3050','#c06840','#cc7535'],
+          7:['#141230','#1e1c3a','#4a3845','#7a5a50','#604540'],
+          8:['#0c0825','#201540','#5a2850','#d07845','#c07038'],
+          9:['#0e0618','#3a0c22','#7a1825','#e04a20','#cc4818'],
+          10:['#1a1825','#2a2535','#4a4250','#5a5260','#3a3540'],
+          11:['#1a1825','#2a2535','#5a4540','#7a5a48','#4a3530'],
+          12:['#161430','#222035','#4a3a42','#6a5048','#3a3035'],
+          13:['#1a1825','#2a2535','#5a4540','#8a6050','#5a3828'],
+          14:['#1a1a22','#2a2a35','#3a3a45','#4a4a55','#252530'],
+          15:['#1a1a28','#2a2a3a','#3a3a48','#4a4a58','#28283a'],
+          17:['#1a1830','#2a2840','#4a4858','#6a6878','#555565'],
+          22:['#06041a','#0a0c30','#121845','#1a2555','#1a2040'],
+          23:['#06041a','#08061a','#0a081e','#0c0a22','#08061a'],
+          24:['#06041a','#0a0830','#101540','#1a2050','#202858']
+        };
+
+        // ── Helper ──
+        var _e=function(id,a,v){var e=document.getElementById(id);if(e)e.setAttribute(a,v);};
+        var fmt12s=function(d){if(!d)return'--';var h=d.getHours(),m=d.getMinutes();var ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+(m<10?'0':'')+m+' '+ap;};
+        var isPM=now>=srDate;
+
+        // ── NOW PANEL gradient ──
+        var ng;
+        if(saNow<-6&&now>ssDate) ng=['#06041a','#08061a','#0a081e','#08061a'];
+        else if(saNow<-6) ng=['#06041a','#0a0830','#101540','#1a2050'];
+        else if(saNow<-2) ng=['#06041a','#0a0c30','#121845','#1a2555'];
+        else if(cn.pr>0.1) ng=['#1a1a22','#2a2a35','#3a3a45','#252530'];
+        else if(cn.cL>70) ng=['#151540','#1a1848','#202050','#252558'];
+        else if(saNow<6&&saNow>0) ng=['#1a1535','#3d2040','#c06830','#d06030'];
+        else ng=['#0a0820','#15103a','#1a1848','#20204a'];
+        _e('ghNow1','stop-color',ng[0]);_e('ghNow2','stop-color',ng[1]);_e('ghNow3','stop-color',ng[2]);_e('ghNow4','stop-color',ng[3]);
+
+        // ── FORECAST PANEL gradient ──
+        var fg=FG[sc]||FG[1];
+        _e('ghFc1','stop-color',fg[0]);_e('ghFc2','stop-color',fg[1]);_e('ghFc3','stop-color',fg[2]);_e('ghFc4','stop-color',fg[3]);_e('ghFc5','stop-color',fg[4]);
+
+        // ── NOW sun position ──
+        var maxAlt=90-Math.abs(LOCATION.lat)+23.44;
+        var sunY,sunA;
+        if(saNow<-6){sunY=0;sunA=0;}
+        else if(saNow<0){sunY=98-Math.abs(saNow)*2;sunA=0.15;}
+        else{sunY=Math.max(15,95-saNow/maxAlt*80);sunA=cn.cL>80?0.25:0.7;}
+        _e('ghNowSun','cy',sunY.toFixed(0));_e('ghNowSun','fill','rgba(255,220,100,'+sunA.toFixed(2)+')');
+        _e('ghNowSunOuter','cy',sunY.toFixed(0));_e('ghNowSunOuter','fill','rgba(255,220,100,'+(sunA*0.12).toFixed(2)+')');
+        var saT=document.getElementById('ghNowSunAlt');
+        if(saT){saT.textContent=saNow>-6?(Math.round(saNow*10)/10)+'\u00b0':'';saT.setAttribute('y',(sunY-10).toFixed(0));}
+        _e('ghNowStars','opacity',saNow<-2?Math.min(1,(-saNow-2)/10).toFixed(2):'0');
+
+        // ── NOW clouds ──
+        var nHA=Math.min(.2,cn.cH/100*.2), nMA=Math.min(.3,cn.cM/100*.3), nLA=Math.min(.6,cn.cL/100*.6);
+        _e('ghNowCloudH1','fill','rgba(180,160,200,'+nHA.toFixed(2)+')');
+        _e('ghNowCloudH2','fill','rgba(180,160,200,'+(nHA*.7).toFixed(2)+')');
+        _e('ghNowCloudM1','fill','rgba(140,120,100,'+nMA.toFixed(2)+')');
+        _e('ghNowCloudM2','fill','rgba(140,120,100,'+(nMA*.7).toFixed(2)+')');
+        _e('ghNowCloudL1','fill','rgba(50,45,60,'+nLA.toFixed(2)+')');
+        _e('ghNowCloudL2','fill','rgba(50,45,60,'+(nLA*.7).toFixed(2)+')');
+        _e('ghNowRain','opacity',cn.pr>0.1&&cn.snow<=0?'1':'0');
+        _e('ghNowSnow','opacity',cn.snow>0?'1':'0');
+
+        // ── NOW text ──
+        var nSub=document.getElementById('ghNowSub');
+        if(nSub){
+          var d='';
+          if(saNow<-6&&now>ssDate)d='Night';else if(saNow<-6)d='Pre-dawn';
+          else if(saNow<-2)d='Blue hour';else if(cn.pr>0.1)d='Raining';
+          else if(cn.snow>0)d='Snowing';else if(cn.cL>85)d='Overcast';
+          else if(cn.cL>50)d='Mostly cloudy';else if(cn.cT>50)d='Partly cloudy';
+          else d='Clear';
+          nSub.textContent=fmt12s(now)+' \u00b7 '+d;
+        }
+        var nLH=document.getElementById('ghNowLayerH'),nLM=document.getElementById('ghNowLayerM'),nLL=document.getElementById('ghNowLayerL');
+        if(nLH&&cn.n>0){
+          nLH.textContent='H '+Math.round(cn.cH)+'%';nLH.setAttribute('fill','rgba(130,100,200,'+(0.08+cn.cH/100*0.3).toFixed(2)+')');
+          nLM.textContent='M '+Math.round(cn.cM)+'%';nLM.setAttribute('fill','rgba(200,170,100,'+(0.08+cn.cM/100*0.3).toFixed(2)+')');
+          nLL.textContent='L '+Math.round(cn.cL)+'%';nLL.setAttribute('fill','rgba(180,180,190,'+(0.12+cn.cL/100*0.35).toFixed(2)+')');
+          if(cn.cL>70)nLL.setAttribute('font-weight','800');
+        }
+        var nC1=document.getElementById('ghNowCond1');
+        if(nC1&&cn.n>0){
+          var tf=Math.round(cn.temp*9/5+32);
+          nC1.textContent='TEMP '+tf+'\u00b0F  RH '+Math.round(cn.rh)+'%  VIS '+Math.round(cn.visMi)+'mi';
+        }
+        // Countdown
+        var nCL=document.getElementById('ghNowCountLabel'),nCV=document.getElementById('ghNowCountVal'),nCT=document.getElementById('ghNowCountTime');
+        var bigR=document.getElementById('ghNowBigRise'),bigS=document.getElementById('ghNowBigSet'),bigP=document.getElementById('ghNowBigPipe');
+        var ghT=isPM?goldenPmStart:goldenAmStart;
+        var ghTE=isPM?ssDate:srDate;
+        var inGH=ghT&&ghTE&&now>=ghT&&now<=ghTE;
+        if(nCL){
+          if(bigR)bigR.setAttribute('opacity','0');if(bigS)bigS.setAttribute('opacity','0');if(bigP)bigP.setAttribute('opacity','0');
+          if(saNow<-6&&now>ssDate){
+            nCL.textContent='TOMORROW';nCV.textContent='';nCT.textContent='';
+            if(bigR){bigR.textContent=fmt12NoSuffixFromDate(srDate);bigR.setAttribute('opacity','1');}
+            if(bigS){bigS.textContent=fmt12NoSuffixFromDate(ssDate);bigS.setAttribute('opacity','1');}
+            if(bigP)bigP.setAttribute('opacity','1');
+          } else if(inGH){
+            var mr=Math.max(0,Math.round((ghTE-now)/60000));
+            nCL.textContent=(isPM?'GOLDEN HOUR ACTIVE':'AM GOLDEN ACTIVE');nCL.setAttribute('fill','rgba(232,169,84,.45)');
+            nCV.textContent=mr+'m';nCT.textContent='remaining';
+          } else if(ghT&&now<ghT){
+            var ms=ghT-now,hh=Math.floor(ms/3600000),mm=Math.round((ms%3600000)/60000);
+            nCL.textContent=(isPM?'PM':'AM')+' GOLDEN HOUR IN';nCL.setAttribute('fill','rgba(232,169,84,.18)');
+            nCV.textContent=(hh>0?hh+'h ':'')+mm+'m';nCT.textContent=fmt12s(ghT);
+          } else{nCL.textContent='';nCV.textContent='';nCT.textContent='';}
+        }
+
+        // ── FORECAST PANEL ──
+        if(fc.n>0){
+          _e('ghFcSmoke','fill','rgba(180,60,20,'+(hasSmoke&&fc.cL<30?.06:0).toFixed(3)+')');
+          var fSA=fc.cL>80?.2:fc.cL>50?.35:hasSmoke?.8:.85;
+          var fSC=hasSmoke?'255,180,50':'255,210,80';
+          if(sc>=22){fSA=0;}
+          _e('ghFcSun','fill','rgba('+fSC+','+fSA.toFixed(2)+')');
+          _e('ghFcSunOuter','fill','rgba('+fSC+','+(fSA*.2).toFixed(2)+')');
+          var fAT=document.getElementById('ghFcSunAlt');if(fAT)fAT.textContent=sc<22?'~4\u00b0':'';
+          // Glow
+          var glO=fc.cL>70?.03:fc.cL>40?.1:hasSmoke?.45:.35;
+          _e('ghFcGlowE','fill','rgba(255,200,80,'+glO.toFixed(2)+')');
+          // Clouds
+          var fHA=Math.min(.25,fc.cH/100*.25),fMA=Math.min(.3,fc.cM/100*.3),fLA=Math.min(.6,fc.cL/100*.6);
+          var mLit=fc.cL<30;
+          var hC=hasSmoke?'220,140,160':'200,160,200';
+          var mC=hasSmoke?(mLit?'250,110,40':'180,130,80'):(mLit?'240,140,70':'140,120,100');
+          _e('ghFcCloudH1','fill','rgba('+hC+','+fHA.toFixed(2)+')');
+          _e('ghFcCloudH2','fill','rgba('+hC+','+(fHA*.7).toFixed(2)+')');
+          _e('ghFcCloudM1','fill','rgba('+mC+','+fMA.toFixed(2)+')');
+          _e('ghFcCloudM2','fill','rgba('+mC+','+(fMA*.7).toFixed(2)+')');
+          _e('ghFcCloudM3','fill','rgba('+mC+','+(fMA*.5).toFixed(2)+')');
+          _e('ghFcCloudL1','fill','rgba(50,45,60,'+fLA.toFixed(2)+')');
+          _e('ghFcCloudL2','fill','rgba(55,50,65,'+(fLA*.7).toFixed(2)+')');
+          _e('ghFcRain','opacity',fc.pr>0.1&&fc.snow<=0?'1':'0');
+          // Labels
+          var fL=document.getElementById('ghFcLabel'),fS=document.getElementById('ghFcSub');
+          if(fL)fL.textContent=isPM?'AT GOLDEN HOUR':'AM GOLDEN HOUR';
+          if(fS&&goldenPmStart){
+            var ge=isPM?ssDate:srDate;
+            fS.textContent=fmt12s(isPM?goldenPmStart:goldenAmStart)+' - '+fmt12s(ge)+' \u00b7 '+(isPM?'Sunset ':'Sunrise ')+fmt12s(ge);
+          }
+          // Layer text
+          var fLH=document.getElementById('ghFcLayerH'),fLM=document.getElementById('ghFcLayerM'),fLL=document.getElementById('ghFcLayerL');
+          if(fLH){
+            var hD=fc.cH>40?' \u00b7 Cirrus':'';var mS=fc.cM>=30&&fc.cM<=70&&fc.cL<15?' \u2605':'';
+            fLH.textContent='H '+Math.round(fc.cH)+'%'+hD;fLH.setAttribute('fill','rgba(130,100,200,'+(0.1+fc.cH/100*.35).toFixed(2)+')');
+            fLM.textContent='M '+Math.round(fc.cM)+'%'+mS;fLM.setAttribute('fill','rgba(200,170,100,'+(0.1+fc.cM/100*.4).toFixed(2)+')');
+            if(mS)fLM.setAttribute('font-weight','800');else fLM.setAttribute('font-weight','700');
+            fLL.textContent='L '+Math.round(fc.cL)+'%'+(fc.cL<15?' \u00b7 Clear horizon':'');
+            fLL.setAttribute('fill','rgba(180,180,190,'+(0.12+fc.cL/100*.35).toFixed(2)+')');
+          }
+          // Conditions
+          var fC1=document.getElementById('ghFcCond1');
+          if(fC1){var p=[];p.push('RH '+Math.round(fc.rh)+'%');p.push('VIS '+fc.visMi+'mi');if(pm25V>5)p.push('PM2.5 '+Math.round(pm25V)+(hasSmoke?' \ud83d\udd25':''));fC1.textContent=p.join('  ');}
+          // Score badge
+          var fSBg=document.getElementById('ghFcScoreBg'),fSLb=document.getElementById('ghFcScoreLabel'),fSNm=document.getElementById('ghFcScoreNum');
+          if(fSBg){
+            if(qs>=80){fSBg.setAttribute('fill','rgba(255,50,50,.1)');fSBg.setAttribute('stroke','rgba(255,80,50,.18)');}
+            else if(qs>=65){fSBg.setAttribute('fill','rgba(255,100,50,.08)');fSBg.setAttribute('stroke','rgba(255,100,50,.12)');}
+            else{fSBg.setAttribute('fill','rgba(136,136,136,.1)');fSBg.setAttribute('stroke','rgba(136,136,136,.12)');}
+          }
+          if(fSLb){fSLb.textContent=(qs>=80?'\ud83d\udd25 ':'')+ql;fSLb.setAttribute('fill',qc);}
+          if(fSNm){fSNm.textContent=qs;fSNm.setAttribute('fill',qs>=80?'rgba(255,100,50,.4)':'rgba(255,255,255,.15)');}
+          // Reasons
+          var R=[];
+          if(fc.pr>0.1)R.push('\u2601\ufe0f Active precipitation');
+          else if(fc.cL>85)R.push('\u2601\ufe0f Dense stratus blocking horizon');
+          else if(fc.cL>50&&fc.cM>30)R.push('\u2601\ufe0f Multi-layer cloud deck');
+          else if(fc.cL>50)R.push('\u2601\ufe0f Low clouds partially blocking');
+          if(hasSmoke&&fc.cL<30)R.push('\ud83d\udd25 Smoke enhancing Mie scattering');
+          if(fc.cM>=30&&fc.cM<=70&&fc.cL<15)R.push('\u2728 Mid-cloud canvas at ideal range');
+          if(fc.cH>=20&&fc.cH<=60&&fc.cL<10)R.push('\u2728 High cirrus adding pastels');
+          if(fc.rh>80)R.push('\ud83d\udca7 High humidity muting colors');
+          if(fc.cL<15&&fc.cT>15)R.push('\u2713 Clear western horizon');
+          if(R.length===0)R.push(fc.cT<10?'\u2600\ufe0f Clear sky \u2014 narrow horizon band':'Moderate conditions');
+          var fR1=document.getElementById('ghFcReason1'),fR2=document.getElementById('ghFcReason2'),fR3=document.getElementById('ghFcReason3');
+          var rC=qs>=65?'rgba(255,160,80,.12)':'rgba(255,255,255,.08)';
+          if(fR1){fR1.textContent=R[0]||'';fR1.setAttribute('fill',rC);}
+          if(fR2){fR2.textContent=R[1]||'';fR2.setAttribute('fill',rC);}
+          if(fR3){fR3.textContent=R[2]||'';fR3.setAttribute('fill',rC);}
+        }
+      } catch(e){ console.error('GH engine error:', e); }
+    })();
+
+
     // Calculate daylight duration
     var daylightMs = ssDate.getTime() - srDate.getTime();
     var daylightHours = Math.floor(daylightMs / (1000 * 60 * 60));
@@ -7012,7 +8677,22 @@ function dayRangeAround(d, days){
         }
       }
       var avgCloud = cloudCount > 0 ? Math.round(cloudSum / cloudCount) : 0;
-      tlCloud.textContent = avgCloud + "%";
+      // Show layer breakdown if available
+      if (hourly.cloud_cover_low && hourly.cloud_cover_mid && hourly.cloud_cover_high) {
+        var lSum=0,mSum=0,hSum=0,lCnt=0;
+        for (var cli = 0; cli < hourly.time.length; cli++){
+          var dtcl = new Date(hourly.time[cli]);
+          if (dtcl >= todayStart && dtcl <= todayEnd){
+            if (typeof hourly.cloud_cover_low[cli]==='number'){lSum+=hourly.cloud_cover_low[cli];lCnt++;}
+            if (typeof hourly.cloud_cover_mid[cli]==='number') mSum+=hourly.cloud_cover_mid[cli];
+            if (typeof hourly.cloud_cover_high[cli]==='number') hSum+=hourly.cloud_cover_high[cli];
+          }
+        }
+        var aL = lCnt>0?Math.round(lSum/lCnt):0, aM = lCnt>0?Math.round(mSum/lCnt):0, aH = lCnt>0?Math.round(hSum/lCnt):0;
+        tlCloud.innerHTML = avgCloud+'% <span style="font-size:.52rem;margin-left:3px;letter-spacing:.3px;font-weight:700;"><span style="color:#8899dd;text-shadow:0 0 3px rgba(0,0,0,.8);">H</span><span style="opacity:.8;">'+aH+' </span><span style="color:#ddb870;text-shadow:0 0 3px rgba(0,0,0,.8);">M</span><span style="opacity:.8;">'+aM+' </span><span style="color:#99a;text-shadow:0 0 3px rgba(0,0,0,.8);">L</span><span style="opacity:.8;">'+aL+'</span></span>';
+      } else {
+        tlCloud.textContent = avgCloud + "%";
+      }
     }
 
     // Moon info
@@ -7076,19 +8756,10 @@ function dayRangeAround(d, days){
         }, 10);
       }
 
-
-      // Helper: add scroll-more fade glow to popup
-      function addScrollFade(el) {
-        setTimeout(function(){
-          if (el.scrollHeight > el.clientHeight + 8) {
-            el.classList.add('popup-scroll-fade');
-            el.addEventListener('scroll', function(){
-              var atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
-              el.classList.toggle('scrolled-bottom', atBottom);
-            });
-          }
-        }, 20);
-      }
+      // Helper: mount popup on document.body as position:fixed
+      // This escapes the card's stacking context (created by backdrop-filter)
+      // so the popup sits above the backdrop and receives scroll events properly.
+      // mountPopupOnBody and addScrollFade are defined at top-level scope
 
       // KP bar click handler — geomagnetic insight popup
       var kpBarRow = tlKpTrack.parentElement;
@@ -7185,8 +8856,7 @@ function dayRangeAround(d, days){
         pp.insertBefore(cb, pp.firstChild);
         bd.onclick = function(){ pp.remove(); bd.remove(); };
         document.body.appendChild(bd);
-        tlCard.appendChild(pp);
-        constrainPopupToViz(pp);
+        mountPopupOnBody(pp, bd, tlCard);
         addScrollFade(pp);
       };
       // Show current Kp value in bar label
@@ -7264,10 +8934,10 @@ function dayRangeAround(d, days){
 
     // Render cloud track — triple-layer (High / Mid / Low)
     if (tlCloudTrack && hourly && hourly.cloudcover){
-      var hoursPerSegment = 3;
-      var hasLayers = hourly.cloudcover_low && hourly.cloudcover_mid && hourly.cloudcover_high;
+      var hoursPerSegment = isMobile ? 2 : 1;
+      var hasLayers = hourly.cloud_cover_low && hourly.cloud_cover_mid && hourly.cloud_cover_high;
 
-      // Build segment data
+      // Build segment data at finer resolution
       var cloudSegments = [];
       for (var h = 0; h < 24; h += hoursPerSegment){
         var segStart = new Date(dayLocal.getFullYear(), dayLocal.getMonth(), dayLocal.getDate(), h, 0, 0, 0);
@@ -7278,9 +8948,9 @@ function dayRangeAround(d, days){
           if (dt >= segStart && dt < segEnd){
             if (typeof hourly.cloudcover[chi] === "number") { sT += hourly.cloudcover[chi]; cnt++; }
             if (hasLayers) {
-              sL += (hourly.cloudcover_low[chi]||0);
-              sM += (hourly.cloudcover_mid[chi]||0);
-              sH += (hourly.cloudcover_high[chi]||0);
+              sL += (hourly.cloud_cover_low[chi]||0);
+              sM += (hourly.cloud_cover_mid[chi]||0);
+              sH += (hourly.cloud_cover_high[chi]||0);
             }
           }
         }
@@ -7294,26 +8964,33 @@ function dayRangeAround(d, days){
       }
 
       if (hasLayers) {
-        // Three stacked sub-rows: High (top), Mid (middle), Low (bottom)
+        // Layered cloud bar: 3 sub-rows stacked vertically (high=top, mid=middle, low=bottom)
+        // Each segment's opacity scales with coverage. Colors differentiate layers:
+        //   High = cool blue/white (cirrus/ice), Mid = warm tan/amber (alto), Low = dark gray (stratus/blocking)
         var layerDefs = [
-          {key:'high', baseR:160, baseG:170, baseB:220},
-          {key:'mid',  baseR:140, baseG:155, baseB:195},
-          {key:'low',  baseR:120, baseG:135, baseB:165}
+          {key:'high', r0:100,g0:120,b0:200, r1:200,g1:210,b1:255, label:'H'},
+          {key:'mid',  r0:180,g0:140,b0:80,  r1:240,g1:200,b1:140, label:'M'},
+          {key:'low',  r0:60, g0:60, b0:80,  r1:140,g1:140,b1:160, label:'L'}
         ];
         var layerHtml = '';
         layerDefs.forEach(function(layer){
-          layerHtml += '<div style="display:flex;flex:1;overflow:hidden;">';
+          layerHtml += '<div style="display:flex;flex:1;overflow:hidden;position:relative;">';
           cloudSegments.forEach(function(seg){
             var v = seg[layer.key];
-            var alpha = v <= 5 ? 0.04 : (0.08 + (v/100) * 0.72);
-            var r = Math.round(layer.baseR + (255-layer.baseR) * (v/100) * 0.35);
-            var g = Math.round(layer.baseG + (255-layer.baseG) * (v/100) * 0.35);
-            var b = Math.round(layer.baseB + (255-layer.baseB) * (v/100) * 0.35);
+            // Alpha ramps from 0 (clear) to near-opaque
+            var alpha = v <= 3 ? 0.02 : v <= 15 ? 0.06 + v*0.01 : 0.1 + (v/100)*0.7;
+            // Color blends from darker base to brighter at high coverage
+            var frac = Math.min(1, v/100);
+            var r = Math.round(layer.r0 + (layer.r1-layer.r0)*frac);
+            var g = Math.round(layer.g0 + (layer.g1-layer.g0)*frac);
+            var b = Math.round(layer.b0 + (layer.b1-layer.b0)*frac);
             layerHtml += '<div style="width:'+seg.w+'%;height:100%;background:rgba('+r+','+g+','+b+','+alpha.toFixed(2)+');"></div>';
           });
           layerHtml += '</div>';
         });
         tlCloudTrack.innerHTML = layerHtml;
+        tlCloudTrack.style.display = 'flex';
+        tlCloudTrack.style.flexDirection = 'column';
       } else {
         // Fallback: single total bar
         var cloudHtml = "";
@@ -7339,7 +9016,11 @@ function dayRangeAround(d, days){
         if (old) { old.remove(); if(oldBd) oldBd.remove(); return; }
 
         var gL = function(l,v){return '<div class="hz-card-row"><span class="hz-label">'+l+'</span><span class="hz-val">'+v+'</span></div>';};
+        var skyColor = '#aaa';
         var FS = function(t,c){return '<div style="font-weight:800;font-size:9px;color:'+(c||skyColor)+';text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.08);">'+t+'</div>';};
+        var pill2 = function(text,bg){return '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:7.5px;font-weight:700;background:'+(bg||'rgba(255,255,255,.08)')+';color:#fff;margin:0 1px;">'+text+'</span>';};
+        var bar2 = function(pct,color,ht){return '<div style="width:100%;height:'+(ht||4)+'px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;"><div style="width:'+Math.min(100,Math.max(0,pct))+'%;height:100%;background:'+(color||'#aaa')+';border-radius:2px;"></div></div>';};
+        var note2 = function(icon,text,col){return '<div style="font-size:8px;color:'+(col||'rgba(255,255,255,.5)')+';line-height:1.4;margin:3px 0;padding:3px 5px;background:rgba(255,255,255,.02);border-radius:3px;border-left:2px solid '+(col||'rgba(255,255,255,.1)')+';">'+icon+' '+text+'</div>';};
 
         // Current cloud data
         var wx = window._wxCurrent || {};
@@ -7347,9 +9028,16 @@ function dayRangeAround(d, days){
         var lowCloud = wx.cloudLow != null ? wx.cloudLow : null;
         var midCloud = wx.cloudMid != null ? wx.cloudMid : null;
         var highCloud = wx.cloudHigh != null ? wx.cloudHigh : null;
+        var hasL = hourly && hourly.cloud_cover_low;
 
-        // Sky condition label
-        var skyLabel = 'Unknown', skyColor = '#aaa';
+        // Trends from wxCurrent
+        var lowTrend = wx.cloudLowTrend || null;
+        var midTrend = wx.cloudMidTrend || null;
+        var highTrend = wx.cloudHighTrend || null;
+        var trendArrow = function(v){ if(v==null) return ''; return v>10?'<span style="color:#cc4444;"> \u2191+'+v+'</span>':v<-10?'<span style="color:#44cc88;"> \u2193'+v+'</span>':v>3?'<span style="color:#cc8844;"> \u2197+'+v+'</span>':v<-3?'<span style="color:#88cc88;"> \u2198'+v+'</span>':'<span style="opacity:.4;"> \u2192</span>'; };
+
+        // Sky condition
+        var skyLabel = 'Unknown';
         if (typeof totalCloud === 'number') {
           if (totalCloud <= 5) { skyLabel = 'Clear'; skyColor = '#4af'; }
           else if (totalCloud <= 25) { skyLabel = 'Mostly Clear'; skyColor = '#6bf'; }
@@ -7360,84 +9048,144 @@ function dayRangeAround(d, days){
         }
 
         var h = '';
-        h += '<div class="hz-card-head"><div class="hz-accent" style="background:'+skyColor+';"></div><span style="color:'+skyColor+';font-size:11px;">\u2601 CLOUD COVERAGE</span></div>';
+        h += '<div class="hz-card-head"><div class="hz-accent" style="background:linear-gradient(135deg,'+skyColor+',#556);"></div><span style="color:'+skyColor+';font-size:11px;font-weight:800;">\u2601 CLOUD ANALYSIS</span><span style="margin-left:auto;font-size:7px;opacity:.3;">Layers \u00b7 Trends \u00b7 Sunset</span></div>';
 
-        h += FS('Current Sky');
-        h += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:22px;font-weight:900;color:'+skyColor+';">' + totalCloud + '%</span><span style="font-size:10px;font-weight:700;color:'+skyColor+';">' + skyLabel + '</span></div>';
+        // Current total
+        h += '<div style="display:flex;align-items:baseline;gap:8px;margin:4px 0 6px;"><span style="font-size:24px;font-weight:900;color:'+skyColor+';">' + totalCloud + '%</span><span style="font-size:10px;font-weight:700;color:'+skyColor+';">' + skyLabel + '</span></div>';
 
-        // Cloud layers
+        // ── LAYER BREAKDOWN with bars ──
         if (lowCloud !== null || midCloud !== null || highCloud !== null) {
-          h += FS('Cloud Layers');
+          h += FS('Cloud Layers', '#8899bb');
+
           if (highCloud !== null) {
-            var highDesc = highCloud > 50 ? 'Cirrus/cirrostratus' : highCloud > 20 ? 'Scattered cirrus' : 'Minimal';
-            var highCol = highCloud > 50 ? '#8888bb' : highCloud > 20 ? '#aaaacc' : '#66ccff';
-            h += gL('High (>20,000 ft)', '<span style="color:'+highCol+';">' + highCloud + '%</span> \u2014 <span style="color:rgba(255,255,255,.45);font-style:italic;">' + highDesc + '</span>');
+            var hcDesc = highCloud > 70 ? 'Dense cirrostratus' : highCloud > 40 ? 'Cirrus / cirrostratus' : highCloud > 15 ? 'Scattered cirrus' : highCloud > 0 ? 'Thin wisps' : 'Clear';
+            h += '<div style="margin:4px 0;"><div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;margin-bottom:2px;">';
+            h += '<span style="color:#8899dd;font-weight:700;">\u25cf HIGH <span style="opacity:.5;">>20,000ft</span></span>';
+            h += '<span style="color:#8899dd;font-weight:700;">'+highCloud+'%'+trendArrow(highTrend)+'</span></div>';
+            h += bar2(highCloud, '#8899dd', 5);
+            h += '<div style="font-size:7.5px;color:rgba(255,255,255,.35);margin-top:1px;">'+hcDesc+(highCloud>30?' \u00b7 Ice crystals scatter pastel pinks/magentas at sunset':'')+'</div></div>';
           }
+
           if (midCloud !== null) {
-            var midDesc = midCloud > 50 ? 'Altostratus/altocumulus' : midCloud > 20 ? 'Scattered altocumulus' : 'Minimal';
-            var midCol = midCloud > 50 ? '#9999aa' : midCloud > 20 ? '#aabbcc' : '#66ccff';
-            h += gL('Mid (6,500\u201320,000 ft)', '<span style="color:'+midCol+';">' + midCloud + '%</span> \u2014 <span style="color:rgba(255,255,255,.45);font-style:italic;">' + midDesc + '</span>');
+            var mcDesc = midCloud > 70 ? 'Dense altostratus' : midCloud > 40 ? 'Altocumulus / altostratus' : midCloud > 15 ? 'Scattered altocumulus' : midCloud > 0 ? 'Thin patches' : 'Clear';
+            h += '<div style="margin:4px 0;"><div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;margin-bottom:2px;">';
+            h += '<span style="color:#ddb870;font-weight:700;">\u25cf MID <span style="opacity:.5;">6,500\u201320,000ft</span></span>';
+            h += '<span style="color:#ddb870;font-weight:700;">'+midCloud+'%'+trendArrow(midTrend)+'</span></div>';
+            h += bar2(midCloud, '#ddb870', 5);
+            var midSunset = midCloud >= 30 && midCloud <= 70 ? ' \u00b7 \ud83c\udf05 IDEAL SUNSET CANVAS \u2014 catches golden light beautifully' : midCloud > 70 ? ' \u00b7 May block some light but dramatic when backlit' : '';
+            h += '<div style="font-size:7.5px;color:rgba(255,255,255,.35);margin-top:1px;">'+mcDesc+midSunset+'</div></div>';
           }
+
           if (lowCloud !== null) {
-            var lowDesc = lowCloud > 50 ? 'Stratus/stratocumulus' : lowCloud > 20 ? 'Scattered cumulus' : 'Minimal';
-            var lowCol = lowCloud > 50 ? '#888899' : lowCloud > 20 ? '#99aabb' : '#66ccff';
-            h += gL('Low (<6,500 ft)', '<span style="color:'+lowCol+';">' + lowCloud + '%</span> \u2014 <span style="color:rgba(255,255,255,.45);font-style:italic;">' + lowDesc + '</span>');
+            var lcDesc = lowCloud > 70 ? 'Dense stratus / stratocumulus' : lowCloud > 40 ? 'Broken stratocumulus' : lowCloud > 15 ? 'Scattered cumulus' : lowCloud > 0 ? 'Fair weather cumulus' : 'Clear';
+            h += '<div style="margin:4px 0;"><div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;margin-bottom:2px;">';
+            h += '<span style="color:#99a;font-weight:700;">\u25cf LOW <span style="opacity:.5;"><6,500ft</span></span>';
+            h += '<span style="color:#99a;font-weight:700;">'+lowCloud+'%'+trendArrow(lowTrend)+'</span></div>';
+            h += bar2(lowCloud, '#99a', 5);
+            var lowSunset = lowCloud > 50 ? ' \u00b7 \u274c Blocks western horizon \u2014 sun may not reach higher clouds' : lowCloud > 20 ? ' \u00b7 \u26a0\ufe0f Gaps may create crepuscular rays' : '';
+            h += '<div style="font-size:7.5px;color:rgba(255,255,255,.35);margin-top:1px;">'+lcDesc+lowSunset+'</div></div>';
           }
         }
 
-        // 24hr cloud forecast evolution
-        if (hourly && hourly.cloudcover) {
-          h += FS('24-Hour Forecast');
-          var clearWindows = [], cloudyPeriods = [];
-          var inClear = false, clearStart = 0;
-          for (var ci = 0; ci < Math.min(24, hourly.cloudcover.length); ci++) {
-            var cc = hourly.cloudcover[ci];
-            if (cc <= 25 && !inClear) { inClear = true; clearStart = ci; }
-            else if (cc > 25 && inClear) { clearWindows.push({start: clearStart, end: ci, dur: ci - clearStart}); inClear = false; }
+        // ── GOLDEN HOUR IMPACT ──
+        var ssDate2 = window._dailyData && window._dailyData.sunset ? new Date(window._dailyData.sunset[0]) : null;
+        var goldIdx2 = -1, ghLow2=null, ghMid2=null, ghHigh2=null, ghTotal2=null;
+        if (hasL && ssDate2) {
+          var goldStart2 = new Date(ssDate2.getTime() - 60*60000);
+          var goldEnd2 = new Date(ssDate2.getTime() + 30*60000);
+          var gsL=0,gsM=0,gsH=0,gsT=0,gsN=0;
+          for (var gci=0;gci<hourly.time.length;gci++) {
+            var gct = new Date(hourly.time[gci]);
+            if (gct >= goldStart2 && gct <= goldEnd2) {
+              gsL+=hourly.cloud_cover_low[gci]||0; gsM+=(hourly.cloud_cover_mid?hourly.cloud_cover_mid[gci]:0)||0;
+              gsH+=(hourly.cloud_cover_high?hourly.cloud_cover_high[gci]:0)||0; gsT+=(hourly.cloudcover?hourly.cloudcover[gci]:0)||0; gsN++;
+            }
           }
-          if (inClear) clearWindows.push({start: clearStart, end: 24, dur: 24 - clearStart});
+          if (gsN>0) { ghLow2=Math.round(gsL/gsN); ghMid2=Math.round(gsM/gsN); ghHigh2=Math.round(gsH/gsN); ghTotal2=Math.round(gsT/gsN); }
+        }
+        if (ghTotal2 !== null) {
+          h += FS('Sunset Cloud Forecast', '#e87030');
+          h += '<div style="display:flex;gap:6px;margin:3px 0;">';
+          h += '<div style="flex:1;text-align:center;padding:4px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:7px;color:#8899dd;font-weight:700;">HIGH</div><div style="font-size:14px;font-weight:900;color:#8899dd;">'+ghHigh2+'%</div></div>';
+          h += '<div style="flex:1;text-align:center;padding:4px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:7px;color:#ddb870;font-weight:700;">MID</div><div style="font-size:14px;font-weight:900;color:#ddb870;">'+ghMid2+'%</div></div>';
+          h += '<div style="flex:1;text-align:center;padding:4px;background:rgba(255,255,255,.03);border-radius:4px;"><div style="font-size:7px;color:#99a;font-weight:700;">LOW</div><div style="font-size:14px;font-weight:900;color:#99a;">'+ghLow2+'%</div></div>';
+          h += '</div>';
+
+          // Sunset assessment
+          var sunsetAssess = '';
+          if (ghLow2 > 60) sunsetAssess = '\u274c Low clouds will block the sun before reaching the horizon. Limited color unless late clearing occurs.';
+          else if (ghMid2 >= 30 && ghMid2 <= 70 && ghLow2 < 30) sunsetAssess = '\ud83d\udd25 Ideal setup! Mid-level clouds at 30\u201370% with a clear western horizon. Expect vivid oranges and potential pink/magenta highlights.';
+          else if (ghHigh2 >= 30 && ghHigh2 <= 70 && ghLow2 < 30 && ghMid2 < 30) sunsetAssess = '\u2728 High cirrus will create sweeping pastel gradients \u2014 soft pinks and magentas from ice crystal scattering.';
+          else if (ghTotal2 < 15) sunsetAssess = '\u2600\ufe0f Clean horizon glow but no cloud canvas for drama. Colors concentrated in a narrow band.';
+          else if (ghLow2 >= 30 && ghLow2 <= 60) sunsetAssess = '\u26c5 Low clouds with gaps \u2014 potential for dramatic crepuscular rays if breaks align with sunset.';
+          else sunsetAssess = '\u2601\ufe0f Mixed conditions. Watch for clearing in the west during the final 20 minutes.';
+          h += note2('', sunsetAssess, '#e87030');
+        }
+
+        // ── 24HR FORECAST ──
+        if (hourly && hourly.cloudcover) {
+          h += FS('24-Hour Cloud Evolution');
+
+          // Layer evolution mini chart
+          if (hasL) {
+            h += '<div style="display:flex;gap:1px;margin:3px 0 6px;height:36px;">';
+            for (var ei = 0; ei < Math.min(24, hourly.time.length); ei++) {
+              var eL = hourly.cloud_cover_low[ei]||0, eM = (hourly.cloud_cover_mid?hourly.cloud_cover_mid[ei]:0)||0, eH = (hourly.cloud_cover_high?hourly.cloud_cover_high[ei]:0)||0;
+              var aH2 = Math.min(0.85, eH/100*0.85+0.02), aM2 = Math.min(0.85, eM/100*0.85+0.02), aL2 = Math.min(0.85, eL/100*0.85+0.02);
+              h += '<div style="flex:1;display:flex;flex-direction:column;gap:0;">';
+              h += '<div style="flex:1;background:rgba(100,120,200,'+aH2.toFixed(2)+');border-radius:1px 1px 0 0;"></div>';
+              h += '<div style="flex:1;background:rgba(200,170,100,'+aM2.toFixed(2)+');"></div>';
+              h += '<div style="flex:1;background:rgba(100,100,120,'+aL2.toFixed(2)+');border-radius:0 0 1px 1px;"></div>';
+              h += '</div>';
+            }
+            h += '</div>';
+            h += '<div style="display:flex;justify-content:space-between;font-size:6.5px;color:rgba(255,255,255,.25);margin-bottom:4px;"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>12AM</span></div>';
+          }
+
+          // Clear windows
+          var clearWindows = [], inClear = false, clearStart2 = 0;
+          for (var ci2 = 0; ci2 < Math.min(24, hourly.cloudcover.length); ci2++) {
+            var cc = hourly.cloudcover[ci2];
+            if (cc <= 25 && !inClear) { inClear = true; clearStart2 = ci2; }
+            else if (cc > 25 && inClear) { clearWindows.push({start:clearStart2, end:ci2, dur:ci2-clearStart2}); inClear = false; }
+          }
+          if (inClear) clearWindows.push({start:clearStart2, end:24, dur:24-clearStart2});
 
           if (clearWindows.length > 0) {
-            var bestWindow = clearWindows.sort(function(a,b){ return b.dur - a.dur; })[0];
-            h += '<div style="font-size:9px;color:#4af;line-height:1.4;margin-bottom:4px;">\u2600\ufe0f Best clear window: ' + bestWindow.start + ':00\u2013' + bestWindow.end + ':00 (' + bestWindow.dur + ' hours)</div>';
+            var best = clearWindows.sort(function(a,b){return b.dur-a.dur;})[0];
+            h += '<div style="font-size:8.5px;color:#4af;margin-bottom:3px;">\u2600\ufe0f Best clear window: '+best.start+':00\u2013'+best.end+':00 ('+best.dur+'h)</div>';
           } else {
-            h += '<div style="font-size:9px;color:#888;line-height:1.4;margin-bottom:4px;">\u2601\ufe0f No sustained clear periods expected today</div>';
+            h += '<div style="font-size:8.5px;color:#888;margin-bottom:3px;">\u2601\ufe0f No sustained clear periods today</div>';
           }
 
-          // Avg & min cloud cover
-          var avgCloud = 0, minCloud = 100;
-          for (var ai = 0; ai < Math.min(24, hourly.cloudcover.length); ai++) {
-            avgCloud += hourly.cloudcover[ai];
-            if (hourly.cloudcover[ai] < minCloud) minCloud = hourly.cloudcover[ai];
+          var avgCl = 0, minCl = 100;
+          for (var ai2 = 0; ai2 < Math.min(24, hourly.cloudcover.length); ai2++) {
+            avgCl += hourly.cloudcover[ai2]; if (hourly.cloudcover[ai2] < minCl) minCl = hourly.cloudcover[ai2];
           }
-          avgCloud = Math.round(avgCloud / Math.min(24, hourly.cloudcover.length));
-          h += gL('Average today', '<span style="color:'+skyColor+';">' + avgCloud + '%</span>');
-          var minCloudColor = minCloud < 20 ? '#44ccff' : minCloud < 50 ? '#88bbcc' : '#999'; h += gL('Minimum', '<span style="color:'+minCloudColor+';">' + minCloud + '%</span>');
+          avgCl = Math.round(avgCl / Math.min(24, hourly.cloudcover.length));
+          h += gL('Avg today', avgCl+'%');
+          h += gL('Minimum', '<span style="color:'+(minCl<20?'#4af':minCl<50?'#8bc':'#999')+';">'+minCl+'%</span>');
         }
 
-        // Impact on astronomy
-        h += FS('Impact on Observing');
+        // ── ASTRONOMY IMPACT ──
+        h += FS('Observing Conditions', '#6688aa');
         var obsImpact = '';
         if (typeof totalCloud === 'number') {
-          if (totalCloud <= 10) obsImpact = '\u2705 Excellent \u2014 clear skies ideal for all targets including faint deep-sky objects and astrophotography.';
-          else if (totalCloud <= 30) obsImpact = '\u2705 Good \u2014 mostly clear with occasional passing clouds. Bright targets unaffected. Brief interruptions to long exposures.';
-          else if (totalCloud <= 50) obsImpact = '\u26a0\ufe0f Fair \u2014 gaps between clouds usable for bright targets (Moon, planets, doubles). Challenging for photography.';
-          else if (totalCloud <= 75) obsImpact = '\u26a0\ufe0f Poor \u2014 limited visibility through cloud gaps. Focus on Moon and bright planets when breaks occur.';
-          else obsImpact = '\u274c Overcast \u2014 visual astronomy not possible. Consider indoor activities: process old images, plan future sessions, study charts.';
+          if (totalCloud <= 10) obsImpact = '\u2705 Excellent \u2014 clear skies ideal for all targets including faint deep-sky objects.';
+          else if (totalCloud <= 30) obsImpact = '\u2705 Good \u2014 mostly clear. Bright targets unaffected. Brief interruptions to exposures.';
+          else if (totalCloud <= 50) obsImpact = '\u26a0\ufe0f Fair \u2014 gaps between clouds usable for bright targets.';
+          else if (totalCloud <= 75) obsImpact = '\u26a0\ufe0f Poor \u2014 limited visibility. Focus on Moon and bright planets during breaks.';
+          else obsImpact = '\u274c Overcast \u2014 visual astronomy not possible.';
         }
-        h += '<div style="font-size:9px;color:rgba(255,255,255,.55);line-height:1.5;">' + obsImpact + '</div>';
+        h += '<div style="font-size:8.5px;color:rgba(255,255,255,.5);line-height:1.45;">'+obsImpact+'</div>';
 
-        // Cloud type guide
-        if (highCloud !== null && highCloud > 30 && (lowCloud === null || lowCloud < 20)) {
-          h += '<div style="font-size:8.5px;color:rgba(255,255,255,.4);margin-top:6px;line-height:1.4;padding:4px 6px;background:rgba(255,255,255,.03);border-radius:4px;">\ud83d\udd2d <b>Tip:</b> High thin clouds (cirrus) may allow planetary observing but degrade deep-sky contrast. They often precede a warm front \u2014 conditions may worsen in 12-24 hours.</div>';
-        }
-        if (lowCloud !== null && lowCloud > 60) {
-          h += '<div style="font-size:8.5px;color:rgba(255,255,255,.4);margin-top:4px;line-height:1.4;padding:4px 6px;background:rgba(255,255,255,.03);border-radius:4px;">\ud83d\udd2d <b>Tip:</b> Low clouds often clear after midnight as radiative cooling stabilizes the boundary layer. Check satellite imagery for breaks.</div>';
-        }
-
-        // Understanding clouds
-        h += FS('Understanding Cloud Cover');
-        h += '<div style="font-size:9px;color:rgba(255,255,255,.4);line-height:1.5;"><b>Clear</b> (0\u201310%): Full sky access. <b>Few</b> (10\u201325%): Minimal impact. <b>Scattered</b> (25\u201350%): Usable gaps. <b>Broken</b> (50\u201390%): Challenging. <b>Overcast</b> (90\u2013100%): No observing.<br><br>Cloud layers matter: high thin cirrus reduces contrast but allows observing. Low thick stratus blocks everything. Mid-level altocumulus creates intermittent breaks.</div>';
+        // ── LAYER GUIDE ──
+        h += FS('Cloud Layer Guide', '#778899');
+        h += '<div style="font-size:8px;color:rgba(255,255,255,.3);line-height:1.5;">';
+        h += '<b style="color:#8899dd;">High (cirrus/cirrostratus)</b> \u2014 Ice crystals above 20,000ft. Thin, wispy. Allow observing but reduce contrast. Scatter pinks/magentas at sunset. Often signal approaching warm front.<br><br>';
+        h += '<b style="color:#ddb870;">Mid (altocumulus/altostratus)</b> \u2014 Water droplets at 6,500\u201320,000ft. The ideal golden hour canvas \u2014 30\u201370% creates vivid sunsets. Puffy alto patches catch warm light from below.<br><br>';
+        h += '<b style="color:#99a;">Low (stratus/stratocumulus/cumulus)</b> \u2014 Below 6,500ft. Block the sun and horizon. Dense stratus = no sunset. But gaps create crepuscular rays. Often clear after midnight.';
+        h += '</div>';
 
         // Create popup
         var bd = document.createElement('div');
@@ -7447,22 +9195,18 @@ function dayRangeAround(d, days){
         pp.id = 'cloud-insight-popup';
         var tlCard = document.getElementById('today-timeline-card');
         tlCard.style.position = 'relative';
-        var cardRect = tlCard.getBoundingClientRect();
-        var cPopW = Math.min(340, cardRect.width - 16);
-        var cLeft = Math.max(8, (cardRect.width - cPopW) / 2);
         var _legend = document.getElementById('today-tl-legend');
         var _maxH = '70vh';
         if (_legend && tlCard) { var _lt = _legend.getBoundingClientRect().top - tlCard.getBoundingClientRect().top; if (_lt > 100) _maxH = (_lt - 16) + 'px'; }
         pp.style.cssText = 'position:absolute;right:8px;top:8px;width:280px;max-height:'+_maxH+';overflow-y:auto;scrollbar-width:none;background:rgba(8,8,20,.96);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);font-family:system-ui,sans-serif;color:#e2e8f0;';
-        pp.innerHTML = '<div style="padding:10px 12px;">' + h + '<div class="hz-card-footer">Open-Meteo \u00b7 ECMWF cloud layers</div></div>';
+        pp.innerHTML = '<div style="padding:10px 12px;">' + h + '<div class="hz-card-footer">Open-Meteo \u00b7 ECMWF cloud layers \u00b7 Atmospheric optics</div></div>';
         var cb = document.createElement('div');
         cb.style.cssText = 'position:sticky;top:0;text-align:right;';
         cb.innerHTML = '<span style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:2px 4px;" onclick="this.closest(\'#cloud-insight-popup\').remove();document.getElementById(\'cloud-insight-backdrop\').remove();">\u00d7</span>';
         pp.insertBefore(cb, pp.firstChild);
         bd.onclick = function(){ pp.remove(); bd.remove(); };
         document.body.appendChild(bd);
-        tlCard.appendChild(pp);
-        constrainPopupToViz(pp);
+        mountPopupOnBody(pp, bd, tlCard);
         addScrollFade(pp);
       };
     }
@@ -7905,8 +9649,7 @@ function dayRangeAround(d, days){
           pp.insertBefore(cb, pp.firstChild);
           bd.onclick = function(){ pp.remove(); bd.remove(); };
           document.body.appendChild(bd);
-          tlCard.appendChild(pp);
-          constrainPopupToViz(pp);
+          mountPopupOnBody(pp, bd, tlCard);
         addScrollFade(pp);
         };
       }
@@ -8105,9 +9848,9 @@ function dayRangeAround(d, days){
             var snow = hourly.snowfall ? hourly.snowfall[mi] : 0;
             var cape = hourly.cape ? hourly.cape[mi] : null;
             var wCode = hourly.weathercode ? hourly.weathercode[mi] : 0;
-            var cLow = hourly.cloudcover_low ? hourly.cloudcover_low[mi] : null;
-            var cMid = hourly.cloudcover_mid ? hourly.cloudcover_mid[mi] : null;
-            var cHigh = hourly.cloudcover_high ? hourly.cloudcover_high[mi] : null;
+            var cLow = hourly.cloud_cover_low ? hourly.cloud_cover_low[mi] : null;
+            var cMid = hourly.cloud_cover_mid ? hourly.cloud_cover_mid[mi] : null;
+            var cHigh = hourly.cloud_cover_high ? hourly.cloud_cover_high[mi] : null;
 
             var wDirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
             var dirStr = wdir != null ? wDirs[Math.round(wdir / 22.5) % 16] : '--';
@@ -8385,91 +10128,53 @@ function dayRangeAround(d, days){
               situations.forEach(function(s){ h += insight(s.t, s.c); });
             }
 
-            // ── TEMPERATURE ──
-            h += FS('Temperature', '#ff8844');
+            // ── CONDENSED DETAILS (single block, no duplicate of visual data) ──
+            h += FS('Details', '#88aacc');
+            // Temperature row
             var tempTrend = '';
             if (prevTemp !== null && nextTemp !== null) {
               var tDir = nextTemp > temp ? 'warming' : nextTemp < temp ? 'cooling' : 'steady';
-              var tRate = Math.abs(nextTemp - prevTemp);
-              if (tRate >= 5) tempTrend = ' <span style="font-size:7.5px;color:rgba(255,255,255,.35);">('+tDir+' '+tRate+'\u00b0/2hr)</span>';
-              else if (tRate >= 2) tempTrend = ' <span style="font-size:7.5px;color:rgba(255,255,255,.25);">('+tDir+')</span>';
+              tempTrend = ' <span style="font-size:7.5px;color:rgba(255,255,255,.25);">('+tDir+')</span>';
             }
             h += gL('Feels like', '<span style="color:' + feelsColor + ';">' + feels + '\u00b0</span>' + trendArrow(prevTemp, temp, nextTemp) + tempTrend);
-            if (dp !== null) h += gL('Dewpoint', '<span style="color:#4ab;">' + dp + '\u00b0</span>');
-            if (dpSpread !== null) {
-              var spreadColor = dpSpread <= 3 ? '#4af' : dpSpread <= 5 ? '#4ab' : dpSpread <= 10 ? '#88aa88' : '#aaa';
-              h += gL('T\u2013Td spread', '<span style="color:' + spreadColor + ';">' + dpSpread + '\u00b0</span>');
+            if (dp !== null) {
+              var spreadInfo = dpSpread !== null ? ' <span style="font-size:7px;color:rgba(255,255,255,.2);">\u0394'+dpSpread+'\u00b0</span>' : '';
+              h += gL('Dewpoint', '<span style="color:#4ab;">' + dp + '\u00b0</span>' + spreadInfo);
             }
             if (rh !== null) {
               var rhColor = rh >= 90 ? '#4488ff' : rh >= 70 ? '#55aacc' : rh >= 40 ? '#88aa88' : '#cc8844';
               h += gL('Humidity', '<span style="color:' + rhColor + ';">' + rh + '%</span>');
             }
-
-            // ── WIND ──
-            h += FS('Wind', '#44ccaa');
-            h += gL('Sustained', '<span style="color:' + windColor + ';">' + wind + ' mph ' + dirStr + '</span>' + trendArrow(prevWind, wind, null));
-            if (gust && gust > wind) {
-              var gustRatio = (gust / Math.max(wind, 1)).toFixed(1);
-              h += gL('Gusts', '<span style="color:' + gustColor + ';">' + gust + ' mph</span> <span style="font-size:7.5px;color:rgba(255,255,255,.3);">(' + gustRatio + 'x sustained)</span>');
-            }
-
-            // ── SKY ──
-            h += FS('Sky', '#6688ff');
+            // Wind row
+            var windStr = '<span style="color:' + windColor + ';">' + wind + ' mph ' + dirStr + '</span>';
+            if (gust && gust > wind) windStr += ' <span style="font-size:7.5px;color:' + gustColor + ';">G' + gust + '</span>';
+            h += gL('Wind', windStr + trendArrow(prevWind, wind, null));
+            // Sky + vis on one line
             if (cloud !== null) {
-              var skyDesc = cloud <= 5 ? 'Clear' : cloud <= 25 ? 'Mostly clear' : cloud <= 50 ? 'Partly cloudy' : cloud <= 75 ? 'Mostly cloudy' : cloud <= 90 ? 'Cloudy' : 'Overcast';
-              h += gL(skyDesc, '<span style="color:' + cloudColor + ';">' + cloud + '%</span>' + trendArrow(prevCloud, cloud, nextCloud));
-            }
-            if (cLow !== null && cLow > 0) h += gL('Low', '<span style="color:rgba(255,255,255,.5);">' + cLow + '%</span>');
-            if (cMid !== null && cMid > 0) h += gL('Mid', '<span style="color:rgba(255,255,255,.5);">' + cMid + '%</span>');
-            if (cHigh !== null && cHigh > 0) h += gL('High', '<span style="color:rgba(255,255,255,.5);">' + cHigh + '%</span>');
-            if (vis !== null) {
-              var visColor = vis < 1 ? '#ff4444' : vis < 3 ? '#ff8844' : vis < 6 ? '#ffcc44' : '#44cc44';
-              h += gL('Visibility', '<span style="color:' + visColor + ';">' + vis + ' mi</span>');
+              var skyDesc = cloud <= 5 ? 'Clear' : cloud <= 25 ? 'Mostly clr' : cloud <= 50 ? 'Partly cld' : cloud <= 75 ? 'Mostly cld' : 'Overcast';
+              var skyStr = '<span style="color:' + cloudColor + ';">' + skyDesc + ' ' + cloud + '%</span>';
+              if (vis !== null) {
+                var visColor = vis < 1 ? '#ff4444' : vis < 3 ? '#ff8844' : vis < 6 ? '#ffcc44' : '#44cc44';
+                skyStr += ' <span style="font-size:7.5px;color:'+visColor+';">'+vis+'mi</span>';
+              }
+              h += gL('Sky', skyStr);
             }
             if (uv !== null && uv > 0) {
               var uvColor = uv >= 11 ? '#cc44ff' : uv >= 8 ? '#ff3333' : uv >= 6 ? '#ff8833' : uv >= 3 ? '#ffcc33' : '#44cc44';
               var uvLabel = uv >= 11 ? 'Extreme' : uv >= 8 ? 'Very High' : uv >= 6 ? 'High' : uv >= 3 ? 'Moderate' : 'Low';
               h += gL('UV', '<span style="color:' + uvColor + ';">' + uv.toFixed(1) + ' ' + uvLabel + '</span>');
             }
-
-            // ── PRECIPITATION ──
-            if (pp !== null || precip > 0 || snow > 0) {
-              h += FS('Precipitation', '#4488ff');
-              if (pp !== null) {
-                var ppTrend = '';
-                if (prevPP !== null && nextPP !== null) {
-                  if (nextPP > pp + 10) ppTrend = ' <span style="font-size:7.5px;color:#4488ff;">increasing</span>';
-                  else if (nextPP < pp - 10) ppTrend = ' <span style="font-size:7.5px;color:#44cc88;">decreasing</span>';
-                }
-                h += gL('Chance', '<span style="color:' + ppColor + ';">' + pp + '%</span>' + ppTrend);
-              }
-              if (precip > 0) {
-                var precipColor = precip >= 0.3 ? '#ff4444' : precip >= 0.15 ? '#ff8844' : precip >= 0.08 ? '#ffcc44' : '#44cc88';
-                var precipLabel = precip >= 0.5 ? 'intense' : precip >= 0.3 ? 'heavy' : precip >= 0.15 ? 'moderate' : precip >= 0.08 ? 'light' : 'trace';
-                h += gL('Rain', '<span style="color:' + precipColor + ';">' + precip.toFixed(2) + ' in</span> <span style="font-size:7.5px;color:rgba(255,255,255,.3);">'+precipLabel+'</span>');
-              }
-              if (snow > 0) {
-                var snowColor = snow >= 1 ? '#ff4444' : snow >= 0.5 ? '#ff8844' : '#aaccff';
-                h += gL('Snow', '<span style="color:' + snowColor + ';">' + snow.toFixed(1) + ' in</span>');
-              }
+            // Precip (only if active)
+            if (pp !== null && pp > 0) {
+              var ppStr = '<span style="color:' + ppColor + ';">' + pp + '%</span>';
+              if (precip > 0) { var precipColor = precip >= 0.3 ? '#ff4444' : precip >= 0.15 ? '#ff8844' : '#44cc88'; ppStr += ' <span style="font-size:7.5px;color:'+precipColor+';">'+precip.toFixed(2)+' in</span>'; }
+              if (snow > 0) { var snowColor = snow >= 1 ? '#ff4444' : '#aaccff'; ppStr += ' <span style="font-size:7.5px;color:'+snowColor+';">\u2744'+snow.toFixed(1)+'"</span>'; }
+              h += gL('Precip', ppStr);
             }
-
-            // ── ATMOSPHERE ──
-            if (press !== null || (cape !== null && cape > 0)) {
-              h += FS('Atmosphere', '#aa88cc');
-              if (press !== null) {
-                var pressStr = '<span style="color:#88aaff;">' + press.toFixed(1) + ' mb</span>';
-                if (pRate !== null) {
-                  var prColor = Math.abs(pRate) >= 3 ? '#ff6644' : Math.abs(pRate) >= 1.5 ? '#ffaa44' : '#88cc88';
-                  var prLabel = pRate > 0 ? '+' + pRate.toFixed(1) : pRate.toFixed(1);
-                  pressStr += ' <span style="font-size:7.5px;color:'+prColor+';">'+prLabel+'/3hr</span>';
-                }
-                h += gL('Pressure', pressStr);
-              }
-              if (cape !== null && cape > 0) {
-                var capeColor = cape >= 2500 ? '#ff3333' : cape >= 1000 ? '#ff8833' : cape >= 500 ? '#ffcc33' : '#88cc88';
-                h += gL('CAPE', '<span style="color:' + capeColor + ';">' + Math.round(cape) + ' J/kg</span>');
-              }
+            // Atmosphere (only if noteworthy)
+            if (cape !== null && cape >= 500) {
+              var capeColor = cape >= 2500 ? '#ff3333' : cape >= 1000 ? '#ff8833' : '#ffcc33';
+              h += gL('CAPE', '<span style="color:' + capeColor + ';">' + Math.round(cape) + ' J/kg</span>');
             }
 
             // Build popup inside the timeline card, centered over the clicked hour
@@ -8487,11 +10192,16 @@ function dayRangeAround(d, days){
             // Center popup horizontally over the clicked column
             var colCenterInCard = (colRect.left + colRect.width/2) - cardRect.left;
             var leftPos = Math.max(8, Math.min(colCenterInCard - popW/2, cardRect.width - popW - 8));
-            // Place vertically aligned with the top bars area
+            // Place vertically: try below the header, clamp to card bounds
             var colTopInCard = colRect.top - cardRect.top;
-            var topPos = Math.max(8, colTopInCard - 20);
+            var topPos = Math.max(8, Math.min(colTopInCard - 20, 8));
 
-            popup.style.cssText = 'position:absolute;left:'+leftPos+'px;top:'+topPos+'px;width:'+popW+'px;max-height:calc(100% - '+topPos+'px - 8px);overflow-y:auto;scrollbar-width:none;background:rgba(8,8,20,.96);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);font-family:system-ui,sans-serif;color:#e2e8f0;';
+            // Calculate available height within the card
+            var cardH = cardRect.height;
+            var maxPopH = cardH - topPos - 8;
+            if (maxPopH < 180) { topPos = 8; maxPopH = cardH - 16; }
+
+            popup.style.cssText = 'position:absolute;left:'+leftPos+'px;top:'+topPos+'px;width:'+popW+'px;max-height:'+maxPopH+'px;overflow-y:auto;scrollbar-width:none;background:rgba(8,8,20,.96);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);font-family:system-ui,sans-serif;color:#e2e8f0;';
             popup.innerHTML = '<div style="padding:10px 12px;">' + h + '<div class="hz-card-footer">Open-Meteo \u00b7 Hourly forecast data</div></div>';
             var cb = document.createElement('div');
             cb.style.cssText = 'position:sticky;top:0;text-align:right;';
@@ -8501,8 +10211,7 @@ function dayRangeAround(d, days){
             // Make card relative for absolute positioning
             tlCard.style.position = 'relative';
             document.body.appendChild(bd);
-            tlCard.appendChild(popup);
-            constrainPopupToViz(popup);
+            mountPopupOnBody(popup, bd, tlCard);
             addScrollFade(popup);
           });
         });
@@ -8701,8 +10410,7 @@ function dayRangeAround(d, days){
               pp.innerHTML = '<div style="padding:10px 12px;">' + html + '<div class="hz-card-footer">Frontal analysis \u00b7 Open-Meteo hourly data</div></div>';
               bd.onclick = function(){ pp.remove(); bd.remove(); };
               document.body.appendChild(bd);
-              document.getElementById('today-timeline-card').appendChild(pp);
-              constrainPopupToViz(pp);
+              mountPopupOnBody(pp, bd, document.getElementById('today-timeline-card'));
         addScrollFade(pp);
             };
           })(ih, frontColor));
@@ -8741,8 +10449,7 @@ function dayRangeAround(d, days){
               pp.innerHTML = '<div style="padding:10px 12px;">'+html+'<div class="hz-card-footer">Frontal analysis \u00b7 Open-Meteo hourly data</div></div>';
               bd.onclick = function(){ pp.remove(); bd.remove(); };
               document.body.appendChild(bd);
-              tlCard2.appendChild(pp);
-              constrainPopupToViz(pp);
+              mountPopupOnBody(pp, bd, tlCard2);
         addScrollFade(pp);
             };
           })(ih, frontColor));
@@ -10960,6 +12667,8 @@ function dayRangeAround(d, days){
           // Render TODAY Timeline widget (v4/v5)
           // Fetch Kp data then render
           fetchKpDataForToday(function(kpData){
+            window._dailyData = daily;
+            window._hourlyData = hourly;
             renderTodayTimeline(hourly, daily, nearestIndex, kpData);
           });
 
@@ -12354,9 +14063,9 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       window.astroOppositions.forEach(function(o) {
         if (o.planet === pd.name) {
           var dd = Math.round((o.d - now)/(86400000));
-          if (dd >= 0 && dd < 180) oppInfo = pd.symbol + ' Opposition in ' + dd + ' days (mag ' + o.magnitude + ' in ' + o.constellation + ')';
-          else if (dd >= -30 && dd < 0) oppInfo = pd.symbol + ' Recently at opposition! Still near peak brightness.';
-          else if (dd === 0) oppInfo = pd.symbol + ' AT OPPOSITION TODAY! Brightest and closest.';
+          if (dd >= 0 && dd < 180) oppInfo = 'Opposition in ' + dd + ' days (mag ' + o.magnitude + ' in ' + o.constellation + ')';
+          else if (dd >= -30 && dd < 0) oppInfo = 'Recently at opposition! Still near peak brightness.';
+          else if (dd === 0) oppInfo = 'AT OPPOSITION TODAY! Brightest and closest.';
         }
       });
     }
@@ -12364,8 +14073,23 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
     var gL = function(l,v){return '<div class="hz-card-row"><span class="hz-label">'+l+'</span><span class="hz-val">'+v+'</span></div>';};
     var FS = function(t){return '<div style="font-weight:800;font-size:9px;color:'+color+';text-transform:uppercase;letter-spacing:.04em;margin-top:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid rgba(255,255,255,.08);">'+t+'</div>';};
 
+    // NASA/JPL planet images (public domain)
+    var planetImgs = {
+      mercury:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Mercury_in_true_color.jpg/600px-Mercury_in_true_color.jpg',
+      venus:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Venus_from_Mariner_10.jpg/600px-Venus_from_Mariner_10.jpg',
+      moon:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/600px-FullMoon2010.jpg',
+      mars:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png/600px-Mars_-_August_30_2021_-_Flickr_-_Kevin_M._Gill.png',
+      jupiter:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Jupiter_New_Horizons.jpg/600px-Jupiter_New_Horizons.jpg',
+      saturn:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/600px-Saturn_during_Equinox.jpg',
+      uranus:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Uranus_as_seen_by_NASA%27s_Voyager_2_%28remastered%29.png/600px-Uranus_as_seen_by_NASA%27s_Voyager_2_%28remastered%29.png',
+      neptune:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Neptune_-_Voyager_2_%2829347980845%29_flatten_crop.jpg/600px-Neptune_-_Voyager_2_%2829347980845%29_flatten_crop.jpg'
+    };
+    var pImg = planetImgs[planetKey] || '';
+
     var h = '';
-    h += '<div class="hz-card-head"><div class="hz-accent" style="background:'+color+';"></div><span style="color:'+color+';font-size:12px;">'+pd.symbol+' '+pd.name.toUpperCase()+'</span><span style="margin-left:auto;font-size:8px;opacity:.4;">'+pd.type+'</span></div>';
+    h += '<div class="hz-card-head" style="position:relative;min-height:48px;"><div class="hz-accent" style="background:'+color+';"></div><span style="color:'+color+';font-size:12px;">'+pd.name.toUpperCase()+'</span><span style="margin-left:auto;font-size:8px;opacity:.4;'+(pImg?'margin-right:52px;':'')+'">'+pd.type+'</span>';
+    if (pImg) h += '<img src="'+pImg+'" alt="'+pd.name+'" style="position:absolute;top:-2px;right:0;width:46px;height:46px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.1);box-shadow:0 0 12px rgba('+( planetKey==='mars'?'220,80,50' : planetKey==='jupiter'?'212,160,106' : planetKey==='saturn'?'232,208,152' : planetKey==='venus'?'255,224,160' : planetKey==='neptune'?'68,136,204' : planetKey==='uranus'?'160,216,216' : planetKey==='mercury'?'176,160,144' : '200,200,220' )+',.3);opacity:.85;">';
+    h += '</div>';
 
     if (oppInfo) h += '<div style="background:rgba(255,180,0,.12);border:1px solid rgba(255,180,0,.25);border-radius:6px;padding:4px 8px;font-size:8.5px;color:#ffa;font-weight:600;margin-bottom:6px;">'+oppInfo+'</div>';
 
@@ -12499,8 +14223,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
 
     bd.onclick = function(){ pp.remove(); bd.remove(); };
     document.body.appendChild(bd);
-    tlCard.appendChild(pp);
-    constrainPopupToViz(pp);
+    mountPopupOnBody(pp, bd, tlCard);
         addScrollFade(pp);
     } catch(err) { console.error('Planet insight error:', err); }
   }
@@ -12789,7 +14512,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
 
       // SCENARIO 2: Twilight — transition period
       else if (isTwilight || isCivil) {
-        advise.push({ pri:'go', icon:'🌆', text:'Twilight — bright planets and the Moon are visible now. ' + (planetsVisible.length > 0 ? planetsVisible.map(function(p) { return p.symbol + ' ' + p.name + ' (' + p.alt + '°)'; }).join(', ') + ' above horizon.' : 'Planets may emerge as sky darkens.') });
+        advise.push({ pri:'go', icon:'🌆', text:'Twilight — bright planets and the Moon are visible now. ' + (planetsVisible.length > 0 ? planetsVisible.map(function(p) { return p.name + ' (' + p.alt + '°)'; }).join(', ') + ' above horizon.' : 'Planets may emerge as sky darkens.') });
         if (minsToDark != null && minsToDark > 0) {
           advise.push({ pri:'tip', icon:'⏱️', text:'Full darkness in ~' + minsToDark + ' min. Use this time to set up equipment, let optics cool, and align your finder scope.' });
         }
@@ -12874,7 +14597,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
           if (score.total >= 60) {
             if (planetsVisible.length > 0) {
               var bestPlanet = planetsVisible.sort(function(a,b) { return b.alt - a.alt; })[0];
-              recs.push('🔭 Telescope priority: ' + bestPlanet.symbol + ' ' + bestPlanet.name + ' at ' + bestPlanet.alt + '° — ' + PLANET_DATA[bestPlanet.name.toLowerCase()].telescope.split('.')[0] + '.');
+              recs.push('🔭 Telescope priority: ' + bestPlanet.name + ' at ' + bestPlanet.alt + '° — ' + PLANET_DATA[bestPlanet.name.toLowerCase()].telescope.split('.')[0] + '.');
             }
             var scopeTargets = DSO_CATALOG.filter(function(d) {
               return d.bestMonths.indexOf(month) >= 0 && d.minAperture.indexOf('telescope') >= 0 && d.difficulty !== 'hard';
@@ -13012,7 +14735,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
         var stripCol = isVis ? p.color : 'rgba(255,255,255,.12)';
         var txtCol = isVis ? '#fff' : 'rgba(255,255,255,.25)';
         out += '<div style="flex:1;text-align:center;padding:3px 1px;background:' + (isVis ? 'rgba(255,255,255,.04)' : 'transparent') + ';border-radius:4px;border-bottom:2px solid ' + stripCol + ';">';
-        out += '<div style="font-size:.38rem;color:' + stripCol + ';">' + p.symbol + '</div>';
+        out += '<div style="font-size:.38rem;color:' + stripCol + ';">' + '●' + '</div>';
         out += '<div style="font-size:.28rem;color:' + txtCol + ';">' + p.name.substring(0, 3) + '</div>';
         out += '<div style="font-size:.26rem;color:' + (p.isUp ? (p.alt > 20 ? '#4f8' : '#f90') : '#f44') + ';">' + (p.isUp ? p.alt.toFixed(0) + '°' : 'set') + '</div>';
         out += '</div>';
@@ -13032,7 +14755,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
         // Header row: name, position, quality
         out += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
         out += '<div style="display:flex;align-items:center;gap:5px;">';
-        out += '<span style="font-size:.54rem;color:' + p.color + ';">' + p.symbol + '</span>';
+        out += '<span style="font-size:.54rem;color:' + p.color + ';">' + '●' + '</span>';
         out += '<span style="font-size:.48rem;font-weight:800;color:#ddd;">' + p.name + '</span>';
         out += '<span style="font-size:.34rem;color:#666;font-style:italic;">' + p.data.type + '</span>';
         out += '</div>';
@@ -13128,7 +14851,7 @@ var moonUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/730x
       var belowPlanets = planetPositions.filter(function(p) { return !p.isUp; });
       if (belowPlanets.length > 0 && isDark) {
         out += '<div style="font-size:.32rem;color:#555;margin-top:2px;">Below horizon: ';
-        out += belowPlanets.map(function(p) { return p.symbol + ' ' + p.name + ' (' + p.alt.toFixed(0) + '°)'; }).join(' · ');
+        out += belowPlanets.map(function(p) { return p.name + ' (' + p.alt.toFixed(0) + '°)'; }).join(' · ');
         out += '</div>';
       }
 
