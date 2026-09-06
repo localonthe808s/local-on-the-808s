@@ -54255,7 +54255,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + 'PROFIT '
         + (mn.n
             ? '<b>' + (mn.pl > 0 ? '+' : '\u2212') + '$' + Math.abs(mn.pl).toFixed(2)
-              + '</b> at quarter Kelly \u00B7 '
+              + '</b> at the printed size \u00B7 '
               + mn.wins + '/' + mn.n + ' bets won'
               + (mn.roi == null ? '' : ' \u00B7 ' + (mn.roi > 0 ? '+' : '') + mn.roi + '% on money risked')
             : '<span style="font-weight:600;">not started \u2014 a hit rate is not a return, and no '
@@ -54550,33 +54550,35 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var capped = (have != null && have > 0 && n > have);
         if (capped) n = Math.floor(have);
         if (n < 1){
-          return kvLine('STAKE', '<span style="color:#f2833f;">Quarter Kelly wants '
-            + want.toFixed(1) + ' contracts here \u2014 under one.</span> '
+          /* PLAIN WORDS. "Quarter Kelly wants 0.8 contracts" was arithmetic at
+             the reader. Say what to do and why in one breath. */
+          return kvLine('STAKE', '<b style="color:#f2833f;">Skip this one, or buy exactly one contract.</b> '
             + (potKnown
-                ? 'A single contract at ' + cents(price) + ' is '
-                  + (100 * k.cost / pot).toFixed(0) + '% of the pot, well over what the edge '
-                  + 'justifies. '
-                : 'One contract is more than the edge justifies at this size. ')
-            + 'Skip it, or take one and know it is oversized.');
+                ? 'Your pot is $' + pot.toFixed(2) + '. The right amount to risk on a ' + pct(q)
+                  + ' bet like this is about $' + (pot * k.quarter).toFixed(2)
+                  + ', and one contract costs ' + cents(k.cost) + ' \u2014 more than that. '
+                : 'The right amount to risk on a ' + pct(q) + ' bet is less than one contract costs. ')
+            + 'One is the most you should hold. Not two.');
         }
         /* THE SIZE IS THE FIRST THING IN THE PLAN, and the loss at that size
            sits beside it. On 2026-09-05 the plan said one contract and the
            fill was thirty-three, the whole account, on a 52% bet. The edge
            does not scale with the size; the loss does. */
-        return kvLine('STAKE', '<b style="font-size:13px;color:#fff;">' + n + ' contract'
-          + (n === 1 ? '' : 's') + ' at ' + cents(price) + '</b>'
-          + (potKnown ? ' \u2014 $' + (n * k.cost).toFixed(2) + ' of your $' + pot.toFixed(2) + ' pot' : '')
-          + ' \u00B7 <b style="color:' + NOC + ';">loses $' + (k.cost * n).toFixed(2)
-          + ' if wrong</b>, wins $' + ((1 - k.cost) * n).toFixed(2) + '. '
-          + '<span style="color:#9fd9c4;">' + (100 * k.quarter).toFixed(1) + '% of the pot at quarter Kelly'
-          + (capped ? ' \u2014 <span style="color:#f2833f;">only ' + Math.floor(have)
-                      + ' on offer, so that is the whole book</span>'
-             : have != null ? ' \u2014 ' + Math.floor(have) + ' available' : '') + '.</span> '
-          + '<span style="color:#f2833f;">Ten times this size is the same '
-          + pct(q) + ' bet losing $' + (10 * k.cost * n).toFixed(2) + '.</span>'
+        return kvLine('STAKE', '<b style="font-size:13px;color:#fff;">Buy ' + n + ' contract'
+          + (n === 1 ? '' : 's') + ' at ' + cents(price) + '.</b>'
+          + (potKnown ? ' That is $' + (n * k.cost).toFixed(2) + ' of your $' + pot.toFixed(2) + '.' : '')
+          + ' <b style="color:' + NOC + ';">If it loses you lose $' + (k.cost * n).toFixed(2)
+          + '</b>; if it wins you make $' + ((1 - k.cost) * n).toFixed(2) + '. '
+          + '<span style="color:#9fd9c4;">That is the right size for a ' + pct(q) + ' bet: about '
+          + (100 * k.quarter).toFixed(0) + '% of your money, so a losing streak cannot take you out'
+          + (capped ? ' \u2014 <span style="color:#f2833f;">and only ' + Math.floor(have)
+                      + ' are for sale anyway</span>'
+             : have != null ? ' (' + Math.floor(have) + ' are for sale)' : '') + '.</span> '
+          + '<span style="color:#f2833f;">Buying ' + (10 * n) + ' instead does not make it a better bet; '
+          + 'it makes the same loss $' + (10 * k.cost * n).toFixed(2) + '.</span>'
           + (k.haircut > 0.005
-              ? ' <span style="color:#9fd9c4;">Sized as if ' + pct(q - k.haircut)
-                + ': this band has said more than happened over the record.</span>' : ''))
+              ? ' <span style="color:#9fd9c4;">Sized as if it were ' + pct(q - k.haircut)
+                + ', because bets we have called ' + pct(q) + ' have won a little less often than that.</span>' : ''))
           /* THE ORDER, AS ONE STRING TO COPY. What the plan says and what gets
              typed into Kalshi were different things on 2026-09-05. This is the
              order in the exchange's own words, one tap to the clipboard. */
@@ -55178,11 +55180,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + TK.stake.toFixed(0) + '</b>. Every position is capped by what is '
                     + 'actually on offer.')
                 + (TK.scale != null && TK.scale < 1
-                    ? kvLine('CAPPED', 'Quarter Kelly on each of ' + TK.n + ' positions wants $'
-                        + TK.raw_stake.toFixed(0) + ', more than the whole pot. The day is held to '
-                        + (100 * TK.cap).toFixed(0) + '% of bankroll and every position scaled to '
-                        + (100 * TK.scale).toFixed(0) + '% \u2014 Kelly sizes one bet at a '
-                        + 'time and these arrive ' + TK.n + ' at once.')
+                    ? kvLine('CAPPED', 'Sized one at a time these ' + TK.n + ' bets would want $'
+                        + TK.raw_stake.toFixed(0) + ', more than the whole pot. No more than '
+                        + (100 * TK.cap).toFixed(0) + '% of your money goes out on any one day, so each is cut to '
+                        + (100 * TK.scale).toFixed(0) + '% of its full size.')
                     : '')
                 + '</div>'
               : '')
