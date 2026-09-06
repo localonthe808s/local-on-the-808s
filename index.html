@@ -54426,7 +54426,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + S.n + ' SETTLED DAY' + (S.n === 1 ? '' : 'S') + ' REPLAYED'
               + (S.archive_off_by ? ' · THE ARCHIVE DISAGREED WITH THE CLIMATE REPORT BY A DEGREE ON ' + S.archive_off_by : '')
               + (S.n < 10 ? ' · THIN, READ AS A SKETCH' : '') + '</div>';
-            el.innerHTML = '<div style="margin-top:9px;">' + hdr('MINUTE REPLAY') + html + '</div>';
+            el.innerHTML = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,210,152,.12);">'
+              + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
+              + 'MINUTE REPLAY \u00B7 HOW THE LAST SETTLED DAY ACTUALLY UNFOLDED</div>' + html + '</div>';
           })
           .catch(function(){});
       };
@@ -56319,7 +56321,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* WHEN TO ACT folded in here. Both sections answer "where are we in this
            day" -- one on the temperature axis, one on the clock -- and they
            were a screen apart with the ladders between them. */
-        + (dayDone ? '' : hdr('WHERE THE DAY STANDS') + scale + verdict + timing)
+        /* THE MINUTE REPLAY LIVES HERE TOO (user, 2026-09-06: "merge minute
+           replay with where the day stands, move it up"): today's axis, then
+           how the last settled day actually unfolded minute by minute, then
+           the clock. The replay fills in asynchronously from kalshi_minutes.json. */
+        + hdr('WHERE THE DAY STANDS')
+        + (dayDone ? '' : scale + verdict)
+        + '<div id="bv-minute-replay"></div>'
+        + (dayDone ? '' : timing)
 
         /* TODAY LEFT, TOMORROW RIGHT.  The two boards answer one question
            together -- is the market drifting toward us or away from us
@@ -56374,8 +56383,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + (strip || '') + '</div>'
         + betStrip
         + tallyLines
-        /* filled in asynchronously from kalshi_minutes.json; see bvMinuteReplay */
-        + '<div id="bv-minute-replay"></div>'
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
         + '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.05em;margin-top:8px;">'
