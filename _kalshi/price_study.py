@@ -318,6 +318,29 @@ def exit_policy(rows, entries=(8, 9, 10, 11), exits=(12, 13, 14, 15, 16, 17)):
     return out
 
 
+def calibration_bands(rows, hours=(7, 13), min_n=150):
+    """Said-versus-happened by probability band, betting hours only.
+
+    Feeds a sizing haircut: where a band has enough rows and says more than
+    happens, Kelly is computed from what happens. New York's morning bands on
+    2026-09-06: 0.6 and 0.7 UNDER-confident, 0.8 over by 17 points on 38 rows,
+    nothing with 150 rows -- so the haircut is inert until the data exists.
+    The all-hours "6-7 points overconfident at 70-90%" was the evening talking."""
+    bands = collections.defaultdict(lambda: [0.0, 0.0, 0])
+    for r in rows:
+        if not (hours[0] <= r['hour'] <= hours[1]):
+            continue
+        for p, t in zip(r['ours'], r['truth']):
+            lo = min(int(p * 10) / 10.0, 0.9)
+            b = bands[lo]
+            b[0] += p; b[1] += (1.0 if t else 0.0); b[2] += 1
+    out = {}
+    for lo, (sp, hp, n) in bands.items():
+        out['%.1f' % lo] = {'said': round(sp / n, 3), 'happened': round(hp / n, 3), 'n': n,
+                            'haircut': round(max(0.0, sp / n - hp / n), 3) if n >= min_n else 0.0}
+    return out
+
+
 def main():
     only = None
     if '--city' in sys.argv:
@@ -340,7 +363,10 @@ def main():
            'pooled': summarise(all_rows),
            'exit': exit_policy(all_rows),
            'exit_by_market': {k: exit_policy([r for r in all_rows if r.get('city') == k])
-                              for k in per}}
+                              for k in per},
+           'calib': calibration_bands(all_rows),
+           'calib_by_market': {k: calibration_bands([r for r in all_rows if r.get('city') == k])
+                               for k in per}}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
     print('kept %d raw rows for later analysis' % len(all_rows))
@@ -373,6 +399,8 @@ def refit_from_rows():
     doc['exit'] = exit_policy(rows)
     keys = sorted(set(r.get('city') for r in rows if r.get('city')))
     doc['exit_by_market'] = {k: exit_policy([r for r in rows if r.get('city') == k]) for k in keys}
+    doc['calib'] = calibration_bands(rows)
+    doc['calib_by_market'] = {k: calibration_bands([r for r in rows if r.get('city') == k]) for k in keys}
     with open(OUT, 'w') as f:
         json.dump(doc, f, indent=1)
     print('exit block rebuilt from %d rows: %s' % (len(rows), json.dumps(doc['exit'])))

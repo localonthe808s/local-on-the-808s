@@ -1732,6 +1732,8 @@ def _wild(q, market_p):
     return market_p is not None and abs(q - market_p) > MAX_DISAGREE
 
 
+
+
 def best_bet(rows, ps):
     """The largest gap between our probability and what a side actually costs,
     after the fee.  Both directions: on a six-way ladder buying NO is usually
@@ -1754,7 +1756,8 @@ def best_bet(rows, ps):
                 best = {'dir': side, 'label': r['label'], 'price': round(price, 4),
                         'q': round(q, 4), 'ev': round(ev, 4),
                         'fee': round(fee_of(price), 4),
-                        'kelly': round(max(0.0, (q - cost) / (1 - cost)) / KELLY_DIV, 4)
+                        'kelly': round(max(0.0, (q_sized(q, getattr(_TL, 'cfg', None)) - cost)
+                                           / (1 - cost)) / KELLY_DIV, 4)
                                  if cost < 1 else 0.0,
                         'size': r.get('nsize') if side == 'against' else r.get('ysize')}
     return best
@@ -1790,7 +1793,7 @@ def book_value(rows, ps, bankroll=None):
             cost = price + fee_of(price)
             if cost >= 1:
                 continue
-            f = max(0.0, (q - cost) / (1 - cost)) / KELLY_DIV
+            f = max(0.0, (q_sized(q, getattr(_TL, 'cfg', None)) - cost) / (1 - cost)) / KELLY_DIV
             want = (bankroll * f) / cost
             fill = want if size is None else min(want, float(size))
             if fill <= 0:
@@ -2147,6 +2150,29 @@ TICKER_CACHE = {}
 _STUDY = []
 
 
+def measured_calib(cfg):
+    """price_study.py's said-vs-happened bands for this market (or the pool)."""
+    measured_hours(cfg)
+    d = _STUDY[0] if _STUDY else None
+    if not d:
+        return None
+    return (d.get('calib_by_market') or {}).get(cfg['key']) or d.get('calib')
+
+
+_CALIB = {}
+
+
+def q_sized(q, cfg=None):
+    """The probability Kelly is sized from: q, less the measured haircut of its
+    band when that band has enough rows and says more than happens. Inert
+    until the data exists (see price_study.calibration_bands)."""
+    cal = _CALIB.get((cfg or {}).get('key')) if cfg else None
+    if not cal:
+        return q
+    b = cal.get('%.1f' % min(int(q * 10) / 10.0, 0.9)) or {}
+    return max(0.0, q - (b.get('haircut') or 0.0))
+
+
 def measured_exit(cfg):
     """price_study.py's hold-versus-close measurement, this market's own if it
     has one, else the pool. The panel quotes it beside an open position."""
@@ -2193,6 +2219,8 @@ def measured_hours(cfg):
 
 def run_market(cfg, ticker_cache=TICKER_CACHE):
     dry = '--dry' in sys.argv
+    _TL.cfg = cfg
+    _CALIB[cfg['key']] = measured_calib(cfg) or {}
     now = local_now(cfg)
     print('--- %s (%s) ---' % (cfg['key'], cfg.get('city', '')))
     today = now.date()
@@ -2952,6 +2980,15 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             n += 1
             w += 1 if (i is not None and lad[i]['label'] == h.get('actual_bracket')) else 0
         return (w, n)
+    lh = {}
+    for h in scored:
+        if h.get('backtest') or not h.get('live_picks') or not h.get('actual_bracket'):
+            continue
+        for hh, pick in h['live_picks'].items():
+            e = lh.setdefault(hh, [0, 0])
+            e[1] += 1
+            e[0] += 1 if pick == h['actual_bracket'] else 0
+    record['live_hours'] = lh
     record['published'] = {
         'n': len(pub),
         'ours': {'mae': _mae('ours')[0], 'hit': _hit('ours')},
@@ -3058,6 +3095,23 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # settlement" needs months. So the first morning reading with a published
     # forecast (7-9 AM local) is stamped on the day's row permanently, three
     # numbers, and the record scores it below. Nothing here feeds the pick.
+    # THE LIVE MORNING CURVE. The archive replay says accuracy is flat from
+    # 7 to 11 AM, but the archive holds each day's best run; live, 8 AM sees
+    # the overnight runs and 11 AM the morning ones. Each hour's top pick is
+    # stamped from the trail before the trail is trimmed, and scored below.
+    for k, h in hist.items():
+        tr = h.get('trail') or []
+        if not tr:
+            continue
+        lp = h.setdefault('live_picks', {})
+        lad = (h.get('lock') or {}).get('ladder') or []
+        for t in tr:
+            hh = t.get('h')
+            if hh is None or not (7 <= hh <= 13) or str(hh) in lp:
+                continue
+            ours = t.get('ours') or []
+            if ours and lad and len(lad) == len(ours):
+                lp[str(hh)] = lad[max(range(len(ours)), key=lambda i: ours[i])]['label']
     for k, h in hist.items():
         if 'published' in h or not h.get('trail'):
             continue
@@ -3146,6 +3200,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # each hour actually returned, against the market's own quotes on
             # settled days. Falls back to the assumed accuracy curve otherwise.
             'exit': measured_exit(cfg),
+            'calib': _CALIB.get(cfg['key']) or None,
             'by_hour': measured_hours(cfg) or [
                 {'h': h, 'acc': HOUR_ACC[h], 'sd': SD_FALLBACK.get(h)}
                 for h in sorted(HOUR_ACC)],

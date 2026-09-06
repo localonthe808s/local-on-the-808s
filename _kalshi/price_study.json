@@ -446,5 +446,131 @@
     26
    ]
   }
+ },
+ "calib": {
+  "0.0": {
+   "said": 0.009,
+   "happened": 0.01,
+   "n": 1812,
+   "haircut": 0.0
+  },
+  "0.3": {
+   "said": 0.348,
+   "happened": 0.385,
+   "n": 174,
+   "haircut": 0.0
+  },
+  "0.5": {
+   "said": 0.545,
+   "happened": 0.533,
+   "n": 169,
+   "haircut": 0.012
+  },
+  "0.1": {
+   "said": 0.14,
+   "happened": 0.158,
+   "n": 183,
+   "haircut": 0.0
+  },
+  "0.2": {
+   "said": 0.248,
+   "happened": 0.16,
+   "n": 119,
+   "haircut": 0.0
+  },
+  "0.6": {
+   "said": 0.646,
+   "happened": 0.806,
+   "n": 62,
+   "haircut": 0.0
+  },
+  "0.7": {
+   "said": 0.765,
+   "happened": 0.821,
+   "n": 39,
+   "haircut": 0.0
+  },
+  "0.4": {
+   "said": 0.454,
+   "happened": 0.409,
+   "n": 137,
+   "haircut": 0.0
+  },
+  "0.9": {
+   "said": 0.981,
+   "happened": 1.0,
+   "n": 81,
+   "haircut": 0.0
+  },
+  "0.8": {
+   "said": 0.858,
+   "happened": 0.684,
+   "n": 38,
+   "haircut": 0.0
+  }
+ },
+ "calib_by_market": {
+  "ny_high": {
+   "0.0": {
+    "said": 0.009,
+    "happened": 0.01,
+    "n": 1812,
+    "haircut": 0.0
+   },
+   "0.3": {
+    "said": 0.348,
+    "happened": 0.385,
+    "n": 174,
+    "haircut": 0.0
+   },
+   "0.5": {
+    "said": 0.545,
+    "happened": 0.533,
+    "n": 169,
+    "haircut": 0.012
+   },
+   "0.1": {
+    "said": 0.14,
+    "happened": 0.158,
+    "n": 183,
+    "haircut": 0.0
+   },
+   "0.2": {
+    "said": 0.248,
+    "happened": 0.16,
+    "n": 119,
+    "haircut": 0.0
+   },
+   "0.6": {
+    "said": 0.646,
+    "happened": 0.806,
+    "n": 62,
+    "haircut": 0.0
+   },
+   "0.7": {
+    "said": 0.765,
+    "happened": 0.821,
+    "n": 39,
+    "haircut": 0.0
+   },
+   "0.4": {
+    "said": 0.454,
+    "happened": 0.409,
+    "n": 137,
+    "haircut": 0.0
+   },
+   "0.9": {
+    "said": 0.981,
+    "happened": 1.0,
+    "n": 81,
+    "haircut": 0.0
+   },
+   "0.8": {
+    "said": 0.858,
+    "happened": 0.684,
+    "n": 38,
+    "haircut": 0.0
+   }
+  }
  }
 }

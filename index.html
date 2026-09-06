@@ -53272,15 +53272,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       };
       /* copy the ticker, and say so -- a copy that gives no feedback reads as a
          dead button, which is the mistake the open link already made once */
-      var cp = p.querySelector('.cwk-btn2');
-      if (cp) cp.onclick = function(e){
+      Array.prototype.forEach.call(p.querySelectorAll('.cwk-btn2'), function(cp){
+      cp.onclick = function(e){
         e.stopPropagation(); e.preventDefault();
         var t = cp.getAttribute('data-copy') || '';
         var done = function(){
-          var was = cp.textContent;
-          cp.textContent = 'COPIED \u2014 PASTE IT INTO KALSHI\u2019S SEARCH';
+          var was = cp.textContent, wasColor = cp.style.color;
+          cp.textContent = cp.getAttribute('data-done') || 'COPIED \u2014 PASTE IT INTO KALSHI\u2019S SEARCH';
           cp.style.color = '#2ecc71';
-          setTimeout(function(){ cp.textContent = was; cp.style.color = '#359478'; }, 2200);
+          setTimeout(function(){ cp.textContent = was; cp.style.color = wasColor; }, 2200);
         };
         try {
           if (navigator.clipboard && navigator.clipboard.writeText)
@@ -53293,6 +53293,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           }
         } catch (err) { done(); }
       };
+      });
     }
     function cwKalshiClose(){
       var p = document.getElementById('cw-kalshi-panel');
@@ -54265,6 +54266,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          bake itself. This line is how the answer arrives without anyone
          re-running a study: once it shows TWC beating ours over enough days,
          TWC's number earns a place in the roster. */
+      /* THE LIVE MORNING CURVE, beside the replayed one. The replay's "flat
+         from 7 to 11" used the archive's best run for each day; this is what
+         the bake actually said at each hour, scored against the settlement. */
+      var LH = R.live_hours || {};
+      var liveHoursLine = '';
+      (function(){
+        var hs = Object.keys(LH).map(Number).sort(function(a, b){ return a - b; });
+        if (!hs.length) return;
+        var nmax = Math.max.apply(null, hs.map(function(h){ return LH[String(h)][1]; }));
+        liveHoursLine = '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
+          + 'margin-top:5px;line-height:1.6;"><b style="color:#45b491;">LIVE, HOUR BY HOUR</b> \u00B7 '
+          + hs.map(function(h){
+              var e = LH[String(h)];
+              return t12(h + ':00') + ' <b style="color:' + (e[1] && e[0] / e[1] >= 0.6 ? YESC : '#63dbb6') + ';">'
+                + e[0] + '/' + e[1] + '</b>';
+            }).join(SEP)
+          + (nmax < 20 ? ' \u00B7 <span style="opacity:.7;">what the bake said at each hour, scored; too few days to judge yet</span>' : '')
+          + '</div>';
+      })();
       var PB = R.published || {};
       var pubLine = '';
       if (PB.n){
@@ -54348,7 +54368,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             ? '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.03em;'
               + 'margin-top:9px;">' + notes.join(SEP) + '</div>'
             : '')
-        + realLine + moneyLine + pubLine
+        + realLine + moneyLine + pubLine + liveHoursLine
         + '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
         + 'margin-top:5px;line-height:1.6;">'
         + '<b style="color:#45b491;">' + (dayName(T.date) || 'TODAY') + '</b> '
@@ -54488,10 +54508,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          growth for a lot of survivability.
          Then reality: this book is thin, often under a hundred contracts at
          the touch, so the suggestion is capped by what is actually on offer. */
+      /* SIZED FROM WHAT HAPPENS, NOT WHAT IS SAID. today.calib carries the
+         measured said-vs-happened by probability band in the betting hours;
+         a band with enough rows that says more than happens shaves the q
+         Kelly is computed from. Inert until a band has 150 rows. */
+      var qSized = function(q){
+        var cal = T.calib || {};
+        var b = cal[(Math.min(Math.floor(q * 10) / 10, 0.9)).toFixed(1)] || {};
+        return Math.max(0, q - (b.haircut || 0));
+      };
       var stakeOf = function(q, price){
         var c = price + feeOf(price);
-        if (!(c > 0 && c < 1) || q <= c) return null;
-        return { quarter: (q - c) / (1 - c) / 4, cost: c };
+        var qs = qSized(q);
+        if (!(c > 0 && c < 1) || qs <= c) return null;
+        return { quarter: (qs - c) / (1 - c) / 4, cost: c, haircut: q - qs };
       };
       /* AT THIS SIZE THE UNIT IS CONTRACTS, NOT PERCENT.  "5.9% of bankroll"
          is a useless instruction on a $10 pot -- it is 59 cents, which buys two
@@ -54543,7 +54573,22 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       + ' on offer, so that is the whole book</span>'
              : have != null ? ' \u2014 ' + Math.floor(have) + ' available' : '') + '.</span> '
           + '<span style="color:#f2833f;">Ten times this size is the same '
-          + pct(q) + ' bet losing $' + (10 * k.cost * n).toFixed(2) + '.</span>');
+          + pct(q) + ' bet losing $' + (10 * k.cost * n).toFixed(2) + '.</span>'
+          + (k.haircut > 0.005
+              ? ' <span style="color:#9fd9c4;">Sized as if ' + pct(q - k.haircut)
+                + ': this band has said more than happened over the record.</span>' : ''))
+          /* THE ORDER, AS ONE STRING TO COPY. What the plan says and what gets
+             typed into Kalshi were different things on 2026-09-05. This is the
+             order in the exchange's own words, one tap to the clipboard. */
+          + '<button type="button" class="cwk-btn2" data-copy="'
+          + mtaEsc((dir === 'against' ? 'NO' : 'YES') + ' on ' + String(r.label).replace(/°/g, '')
+              + ' - ' + n + ' contract' + (n === 1 ? '' : 's') + ' - limit ' + Math.round(100 * price) + 'c')
+          + '" data-done="COPIED \u2014 THE ORDER, IN KALSHI\u2019S WORDS" style="display:inline-flex;'
+          + 'align-items:center;margin:4px 0 2px 69px;padding:5px 10px;border-radius:7px;background:transparent;'
+          + 'border:1px dashed rgba(74,163,224,.45);color:#4aa3e0;font:800 9px system-ui,sans-serif;'
+          + 'letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;">COPY ORDER \u00B7 '
+          + (dir === 'against' ? 'NO' : 'YES') + ' ' + deg(r.label) + ' \u00B7 ' + n + ' \u00D7 ' + cents(price)
+          + '</button>';
       };
 
       var vbest = null;
