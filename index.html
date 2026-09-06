@@ -55009,6 +55009,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          forecast and inherits its warm bias, which is where a disagreement
          worth acting on tends to sit. */
       var tomorrow = '';
+      var tmParts = null;          /* [header, forecast line, chart, plan] -- the four rows the two columns share */
       var TM = T.tomorrow;
       if (TM && TM.state && TM.state.status === 'not_open' && !(TM.ladder || []).length){
         /* compute the weekday locally: dayName() belongs to the briefing, which
@@ -55078,12 +55079,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (ph != null ? kvLine('PEAK', 'Near ' + (ph % 12 || 12) + (ph < 12 ? ' AM' : ' PM') + (ph >= 16 ? ' \u2014 late enough to miss the 4 PM report; the afternoon readings will run under the final.' : '.')) : '')
             + kvLine('THE CLOCK', 'Ranges list around ' + mtaEsc(TM.state.opens || '10 AM') + ' today. First bake with the morning runs 8:05 AM ' + dn0 + '. Window 8 AM\u20131 PM. Hold to settlement.')
             + '</div>';
-          prep = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;min-height:2.8em;">'
-            + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>'
-            + cols + tplan;
+          var prepFc = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;min-height:2.8em;">'
+            + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>';
+          prep = prepFc + cols + tplan;
+          tmParts = [null, prepFc, cols, tplan];
         }
-        tomorrow = hdr('TOMORROW · ' + dn0.slice(0,3).toUpperCase() + ' '
-                       + TM.date.slice(5).replace('-', '/')).replace('</div>', chip(TM.state) + '</div>')
+        var tmHdr0 = hdr('TOMORROW · ' + dn0.slice(0,3).toUpperCase() + ' '
+                       + TM.date.slice(5).replace('-', '/')).replace('</div>', chip(TM.state) + '</div>');
+        if (tmParts) tmParts[0] = tmHdr0;
+        else tmParts = [tmHdr0, '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:6px;line-height:1.5;">'
+                + 'Kalshi has not listed ' + dn0 + '&rsquo;s ranges yet \u2014 they go up around '
+                + (TM.state.opens || '10 AM') + '. Nothing to plan against until then.</div>', '', ''];
+        tomorrow = tmHdr0
           + (prep
               ? prep
               : '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:6px;line-height:1.5;">'
@@ -55162,9 +55169,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + line('WHEN', 'Worth another look after <b>8 AM</b> \u2014 the morning runs are much '
                 + 'sharper than tonight&rsquo;s and often open a gap. The window runs to 1 PM.');
         }
-        tomorrow = hdr('TOMORROW \u00B7 ' + dayname + ' ' + TM.date.slice(5).replace('-', '/'))
-              .replace('</div>', chip(TM.state) + '</div>')
-          + '<div style="font:700 10px system-ui,sans-serif;margin-top:6px;min-height:2.8em;">'
+        var tmHdr1 = hdr('TOMORROW \u00B7 ' + dayname + ' ' + TM.date.slice(5).replace('-', '/'))
+              .replace('</div>', chip(TM.state) + '</div>');
+        var tmFc1 = '<div style="font:700 10px system-ui,sans-serif;margin-top:6px;min-height:2.8em;">'
           + 'FORECAST ' + predRange(TM.pred, TM.sd) + ' \u00B7 '
           + '<span style="color:' + FCC + ';font-weight:800;">' + deg(TM.pick) + ' at '
           + pct(TM.p) + '</span>'
@@ -55172,9 +55179,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               ? '<span style="color:#359478;font-weight:600;"> \u00B7 the market agrees</span>'
               : '<span style="color:' + MKC + ';font-weight:800;"> \u00B7 but the market expects '
                 + deg(TM.market_pick) + '</span>')
-          + '</div>'
-          + trows
-          + '<div style="margin-top:8px;padding:9px 11px;border-radius:9px;background:'
+          + '</div>';
+        var tmPlan1 = '<div style="margin-top:8px;padding:9px 11px;border-radius:9px;background:'
           + ((tv && tv.ev > 0) ? 'rgba(46,204,113,.11)' : 'rgba(255,255,255,.055)') + ';">'
           + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
           + '<div style="font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:#359478;">'
@@ -55185,6 +55191,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'letter-spacing:.06em;">OPEN &rarr;</a>'
               : '')
           + '</div>' + steps + '</div>';
+        tomorrow = tmHdr1 + tmFc1 + trows + tmPlan1;
+        tmParts = [tmHdr1, tmFc1, trows, tmPlan1];
       }
 
       /* ---- THE PLAY: what to do, and when, above everything else ---------- */
@@ -55246,64 +55254,58 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* WRAPS. Seven columns fitted one row; twenty at 1fr each would be
            55px wide on a laptop and unreadable on a phone. Columns keep a
            floor width and the grid takes as many rows as that needs. */
+        /* ONE COLUMN SHAPE FOR EVERY BOARD. The name sits on top and the edge
+           is printed inside its own bar, so the space under the line carries
+           only the facts that change a decision: the forecast, the bet and its
+           range, what is for sale and what is riding on it. The rain board
+           below uses the same card, so the two read alike. */
+        var colCard = function(o){
+          var h = (o.ev != null && o.ev > 0 && o.evMax > 0) ? Math.max(14, Math.round(62 * o.ev / o.evMax)) : 0;
+          var inBar = h >= 18;
+          var sideC = o.bet ? (o.bet.side === 'NO' ? NOC : YESC) : null;
+          return '<div style="min-width:0;text-align:center;padding:4px 1px 5px;border-radius:6px;'
+            + (o.hi ? 'background:rgba(245,165,36,.09);' : '') + (h ? '' : 'opacity:.5;') + '">'
+            + '<div style="font:800 8.5px system-ui,sans-serif;color:' + (o.hi ? FCC : '#63dbb6')
+            + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + mtaEsc(o.name) + '</div>'
+            + '<div style="height:62px;display:flex;align-items:flex-end;justify-content:center;margin-top:3px;">'
+            + (h
+                ? '<div style="width:64%;max-width:84px;height:' + h + 'px;background:' + YESC
+                  + ';border-radius:3px 3px 0 0;display:flex;align-items:flex-start;justify-content:center;">'
+                  + (inBar ? '<span style="font:800 9px system-ui,sans-serif;color:#08170f;margin-top:3px;">+' + cents(o.ev) + '</span>' : '')
+                  + '</div>'
+                : '')
+            + '</div>'
+            + '<div style="height:1px;background:rgba(0,210,152,.18);margin:0 1px;"></div>'
+            + (h && !inBar ? '<div style="font:800 8px system-ui,sans-serif;color:' + YESC + ';margin-top:2px;">+' + cents(o.ev) + '</div>' : '')
+            + (o.sub ? '<div style="font:700 8px system-ui,sans-serif;margin-top:3px;color:#9fd9c4;">' + o.sub + '</div>' : '')
+            + (o.bet
+                ? '<div style="font:800 8.5px system-ui,sans-serif;margin-top:2px;color:' + sideC + ';">'
+                  + o.bet.side + ' ' + cents(o.bet.price) + '</div>'
+                  + (o.bet.label ? '<div style="font:600 7.5px system-ui,sans-serif;color:#45b491;">' + o.bet.label + '</div>' : '')
+                : '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;margin-top:3px;">' + (o.why || '') + '</div>')
+            + (function(){
+                var bits = [];
+                if (o.offer != null && o.offer < 25) bits.push('<span style="color:#f2833f;">' + Math.floor(o.offer) + ' FOR SALE</span>');
+                if (o.pool) bits.push((o.pool >= 1000 ? '$' + (o.pool / 1000).toFixed(1) + 'K' : '$' + Math.round(o.pool)) + ' RIDING');
+                return bits.length ? '<div style="font:600 7px system-ui,sans-serif;color:#2c7f66;letter-spacing:.04em;margin-top:3px;">' + bits.join(' \u00B7 ') + '</div>' : '';
+              })()
+            + (o.hi ? '<div style="font:600 6.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.05em;margin-top:3px;">THIS PANEL</div>' : '')
+            + '</div>';
+        };
+        window._cwColCard = colCard;
         var rows2 = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax('
           + (PHONE ? 78 : 96) + 'px,1fr));gap:4px;margin-top:8px;">'
           + MK.map(function(m){
               var b = m.bet, ok = b && b.ev > 0;
               var st = (m.state || {}).status;
-              var isNY = (m.key === 'ny_high');
-              var h = (ok && maxEv > 0) ? Math.max(3, Math.round(60 * b.ev / maxEv)) : 0;
               var why = st === 'not_open' ? 'not listed'
                       : st === 'closed' ? 'closed'
                       : m.day_over ? 'day done'
                       : 'nothing mispriced';
-              return '<div style="min-width:0;text-align:center;padding:4px 1px 5px;'
-                + 'border-radius:6px;' + (isNY ? 'background:rgba(245,165,36,.09);' : '')
-                + (ok ? '' : 'opacity:.5;') + '">'
-                /* WIDTH IN PERCENT, NOT PIXELS. A 9px bar in a 250px column reads
-                   as a stray tick rather than a quantity. One bar per column
-                   here, so it can be broad -- capped so it does not turn into a
-                   slab on a wide screen. */
-                + '<div style="height:62px;display:flex;align-items:flex-end;justify-content:center;">'
-                + (ok ? '<div style="width:56%;max-width:70px;height:' + h + 'px;background:' + YESC
-                        + ';border-radius:3px 3px 0 0;"></div>' : '')
-                + '</div>'
-                + '<div style="height:1px;background:rgba(0,210,152,.18);margin:0 1px;"></div>'
-                + '<div style="font:800 8.5px system-ui,sans-serif;margin-top:4px;color:'
-                + (isNY ? FCC : '#63dbb6') + ';white-space:nowrap;overflow:hidden;'
-                + 'text-overflow:ellipsis;">' + mtaEsc(m.city) + '</div>'
-                + '<div style="font:800 9px system-ui,sans-serif;color:' + YESC + ';margin-top:3px;">'
-                + (ok ? '+' + cents(b.ev) : '\u2014') + '</div>'
-                + '<div style="font:600 8px system-ui,sans-serif;color:' + FCC + ';">'
-                + (m.pred == null ? '\u2014' : T1(m.pred) + '\u00B0') + '</div>'
-                + (ok
-                    ? '<div style="font:800 8px system-ui,sans-serif;margin-top:3px;color:'
-                      + (b.dir === 'against' ? NOC : YESC) + ';">'
-                      + (b.dir === 'against' ? 'NO' : 'YES') + ' ' + cents(b.price) + '</div>'
-                      + '<div style="font:600 7.5px system-ui,sans-serif;color:#45b491;">'
-                      + deg(b.label) + '</div>'
-                      + (b.size != null && b.size < 25
-                          ? '<div style="font:800 7px system-ui,sans-serif;color:#f2833f;'
-                            + 'margin-top:2px;">' + Math.floor(b.size) + ' ON OFFER</div>' : '')
-                    : '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;'
-                      + 'margin-top:3px;">' + why + '</div>')
-                /* WHAT IS RIDING ON IT. Open interest, not volume: every open
-                   contract settles at a dollar, so the count is the money on
-                   the market right now. Volume counts trades already closed out
-                   and says how busy it has been instead.
-
-                   It belongs beside an edge because a large edge on a thin
-                   market is not an opportunity -- the panel already learned
-                   that lesson once, quoting a 41c edge with $2 behind it. */
-                + (m.pool
-                    ? '<div style="font:600 7px system-ui,sans-serif;color:#2c7f66;'
-                      + 'letter-spacing:.04em;margin-top:3px;">'
-                      + (m.pool >= 1000 ? '$' + (m.pool / 1000).toFixed(1) + 'K'
-                                        : '$' + Math.round(m.pool)) + ' ON IT</div>'
-                    : '')
-                + (isNY ? '<div style="font:600 6.5px system-ui,sans-serif;color:#2c7f66;'
-                    + 'letter-spacing:.05em;margin-top:3px;">THIS PANEL</div>' : '')
-                + '</div>';
+              return colCard({ name: m.city, hi: m.key === 'ny_high', ev: ok ? b.ev : null, evMax: maxEv,
+                               sub: (m.pred == null ? '\u2014' : T1(m.pred) + '\u00B0'),
+                               bet: ok ? { side: (b.dir === 'against' ? 'NO' : 'YES'), price: b.price, label: deg(b.label) } : null,
+                               why: why, offer: ok ? b.size : null, pool: m.pool });
             }).join('')
           + '</div>';
         var TK = K.take || {}, CR = K.correlation || {};
@@ -55353,50 +55355,33 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           return '<div style="text-align:right;font-variant-numeric:tabular-nums;'
             + 'color:' + col + ';' + (w ? 'font-weight:800;' : '') + '">' + v + '</div>';
         };
-        var rows3 = !fillable.length ? '' :
-          '<div style="display:grid;grid-template-columns:1fr 38px 44px 62px 38px;'
-          + 'gap:3px 9px;margin-top:8px;font:600 9px system-ui,sans-serif;'
-          + 'align-items:baseline;">'
-          + ['CITY', 'OURS', 'MARKET', 'BET', 'EDGE'].map(function(h, i){
-              return '<div style="font:800 7px system-ui,sans-serif;color:#5b8f7d;'
-                + 'letter-spacing:.08em;' + (i ? 'text-align:right;' : '') + '">' + h + '</div>';
+        /* THE SAME COLUMNS AS THE CITIES. The rain board was a table under a
+           tinted box; now each fillable city is a card on the shared shape:
+           name on top, the edge in its bar, then our odds against the
+           market's, the side and its price, and what is for sale. */
+        var rMax = 0;
+        fillable.forEach(function(c){ rMax = Math.max(rMax, c.bet.ev || 0); });
+        var cardFn = window._cwColCard;
+        var rows3 = !(fillable.length && cardFn) ? '' :
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax('
+          + (PHONE ? 78 : 96) + 'px,1fr));gap:4px;margin-top:8px;">'
+          + fillable.map(function(c){
+              var b = c.bet, yes = (b.side === 'yes');
+              return cardFn({ name: c.city, ev: b.ev, evMax: rMax,
+                              sub: '<span style="color:' + FCC + ';">' + Math.round(100 * c.p) + '%</span> vs <span style="color:' + MKC + ';">' + Math.round(100 * (c.market_p || 0)) + '%</span>',
+                              bet: { side: yes ? 'YES' : 'NO', price: b.price, label: yes ? 'rain' : 'no rain' },
+                              offer: b.size });
             }).join('')
-          + fillable.slice(0, 8).map(function(c){
-              var b = c.bet, side = (b.side === 'yes');
-              return '<div style="color:#63dbb6;font-weight:800;overflow:hidden;'
-                + 'text-overflow:ellipsis;white-space:nowrap;">' + mtaEsc(c.city) + '</div>'
-                + rcell(Math.round(100 * c.p) + '%', FCC)
-                + rcell(Math.round(100 * (c.market_p || 0)) + '%', MKC)
-                + rcell('<b style="color:' + (side ? YESC : NOC) + ';">' + b.side.toUpperCase()
-                        + '</b> ' + cents(b.price), '#98a3b4')
-                + rcell('+' + cents(b.ev), YESC, 1);
-            }).join('')
-          + '</div>'
-          + (fillable.slice(0, 8).some(function(c){ return c.bet.size != null && c.bet.size < 25; })
-              ? '<div style="font:600 7.5px system-ui,sans-serif;color:#f2833f;margin-top:5px;'
-                + 'letter-spacing:.04em;">THIN BOOK: '
-                + fillable.slice(0, 8).filter(function(c){ return c.bet.size != null && c.bet.size < 25; })
-                    .map(function(c){ return mtaEsc(c.city).toUpperCase() + ' ' + Math.floor(c.bet.size); })
-                    .join(' \u00B7 ') + ' ON OFFER</div>'
-              : '');
-        /* the box opens only when there is something to put in it, so it must
-           CLOSE only then too -- a stray </div> here closed the panel's own
-           container and threw RECORD and WHEN TO ACT outside it */
+          + '</div>';
         var box = '';
-        if (TK.n && fillable.length){
-          box = '<div style="margin-top:7px;padding:8px 10px;border-radius:8px;'
-            + 'background:rgba(74,163,224,.10);border:1px solid #4aa3e055;">'
-            + '<div style="font:800 13px system-ui,sans-serif;color:#4aa3e0;">'
-            + 'RAIN BOARD \u00B7 $' + (TK.ev || 0).toFixed(2) + ' EXPECTED</div>'
-            + kvLine('FROM', '<b>' + fillable.length + ' of ' + bets.length
-                + ' mispriced cities</b> with real size behind them, staking <b>$'
-                + (TK.stake || 0).toFixed(0) + '</b>. A whole separate board: 22 binaries '
-                + 'a day against seven temperature ladders.')
-            + rows3
-            + '</div>';
+        if (fillable.length){
+          box = rows3
+            + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.04em;margin-top:6px;">'
+            + fillable.length + ' OF ' + bets.length + ' MISPRICED CITIES WITH SIZE BEHIND THEM \u00B7 OURS VS THE MARKET, THEN THE SIDE TO BUY'
+            + (bets.length > fillable.length ? ' \u00B7 ' + (bets.length - fillable.length) + ' TOO THIN TO TAKE' : '') + '</div>';
         } else {
           box = '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:7px;'
-            + 'line-height:1.45;">Nothing on the rain board is both mispriced and fillable '
+            + 'line-height:1.45;">Nothing on the rain board is both mispriced by ' + cents(KMIN_EDGE) + ' and fillable '
             + 'right now. ' + (bets.length ? bets.length + ' cities look mispriced but the '
             + 'book behind them is too thin to take.' : '') + '</div>';
         }
@@ -55860,8 +55845,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
            One column on a phone, where two would give each range about 25px
            and the labels would collide. */
-        + '<div style="display:grid;gap:14px 18px;margin-top:2px;'
-        + 'grid-template-columns:' + (NARROW ? '1fr' : '1fr 1fr') + ';">'
+        + '<div style="display:grid;gap:0 18px;margin-top:2px;'
+        + 'grid-template-columns:' + (NARROW ? '1fr' : '1fr 1fr') + ';'
+        + (NARROW ? '' : 'grid-auto-flow:column;grid-template-rows:auto auto auto auto;') + '">'
         /* Each day's bet sits UNDER ITS OWN CHART. Today's box used to live
            above the whole layout while tomorrow's plan sat beneath tomorrow's
            columns, so the two recommendations were a screen apart and the left
@@ -55876,19 +55862,24 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            Same four rows now, in the same order, on both sides: the day and
            its market state, the forecast with its likely range, the columns,
            the bet. */
-        + '<div style="min-width:0;">'
-        + hdr((dayName(T.date) || 'TODAY').toUpperCase() + ' \u00B7 '
-              + T.date.slice(5).replace('-', '/')).replace('</div>', chip(T.state) + '</div>')
-        /* BOTH FORECAST LINES RESERVE THE SAME HEIGHT. They are different
-           lengths and wrap at different points in a half-width column, so one
-           column's chart started a line lower than the other's and nothing
-           below them could line up either. Two lines, always, on both sides. */
-        + '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;'
-        + 'letter-spacing:.02em;min-height:2.8em;">FORECAST ' + predRange(T.pred, T.sd)
-        + obs + '</div>'
-        + rows + play + '</div>'
-        + '<div style="min-width:0;">' + tomorrow + '</div>'
-        + '</div>'
+        /* EIGHT ITEMS, FOUR SHARED ROWS. Each column used to be its own div,
+           so the plan boxes started wherever each column's chart happened to
+           end. With the eight blocks as direct grid children in column flow,
+           every row is as tall as the taller of its two cells and the boxes
+           line up by construction. On a phone the flow is by row: the eight
+           blocks simply stack in reading order. */
+        + (function(){
+            var L4 = [
+              hdr((dayName(T.date) || 'TODAY').toUpperCase() + ' \u00B7 '
+                + T.date.slice(5).replace('-', '/')).replace('</div>', chip(T.state) + '</div>'),
+              '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;'
+                + 'letter-spacing:.02em;min-height:2.8em;">FORECAST ' + predRange(T.pred, T.sd) + obs + '</div>',
+              rows, play];
+            var R4 = tmParts || [tomorrow, '', '', ''];
+            var cell = function(x){ return '<div style="min-width:0;">' + (x || '') + '</div>'; };
+            if (NARROW) return L4.concat(R4).map(cell).join('') + '</div>';
+            return '<div style="display:contents;">' + L4.concat(R4).map(cell).join('') + '</div></div>';
+          })()
         + cities
         + rain
 
