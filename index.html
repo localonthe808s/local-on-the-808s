@@ -53222,6 +53222,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       p.innerHTML = '<div style="position:sticky;top:' + (narrow ? '-8px' : '-10px')
         + ';background:#0d1117;padding:' + (narrow ? '6px 0 8px' : '2px 0 8px')
         + ';margin:-2px 0 0;z-index:2;">'
+        /* THE CITY TABS, at the very top: the same sheet for each market, like
+           the view tabs on the other widgets (user, 2026-09-06). */
+        + '<div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 7px;">'
+        + CWK_CITIES.map(function(c){
+            var on = (c.key === cwkCity());
+            return '<button type="button" class="cwk-city" data-city="' + c.key + '" style="flex:0 0 auto;'
+              + 'padding:4px 11px;border-radius:999px;border:1px solid ' + (on ? '#2fbfa8' : 'rgba(0,210,152,.28)')
+              + ';background:' + (on ? 'rgba(47,191,168,.20)' : 'transparent') + ';color:' + (on ? '#dffcf1' : '#63dbb6')
+              + ';font:800 8px system-ui,sans-serif;letter-spacing:.09em;cursor:pointer;'
+              + '-webkit-tap-highlight-color:transparent;">' + c.tab + '</button>';
+          }).join('')
+        + '</div>'
         + '<div style="display:flex;align-items:center;gap:8px;">'
         + '<span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
         + mtaEsc(title).toUpperCase() + '</span>'
@@ -53252,6 +53264,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta + '</div>' : '')
         + '</div>'
         + html;
+      [].slice.call(p.querySelectorAll('.cwk-city')).forEach(function(b){
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          var k = b.getAttribute('data-city');
+          if (k === cwkCity()) return;
+          b.textContent = b.textContent + ' \u2026';
+          cwKalshiSwitch(k, function(){ var q = document.getElementById('cw-kalshi-panel'); if (q) q.scrollTop = 0; });
+        });
+      });
       var x = document.getElementById('cw-kalshi-x');
       if (x) x.onclick = function(e){ e.stopPropagation(); p.style.display = 'none'; };
       /* A refresh that silently does nothing when the bake has not moved reads
@@ -53370,6 +53391,54 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        link does not carry it. Without a token this whole path is skipped and
        the panel behaves exactly as it did before. */
     var CWK_POS_URL = 'https://bluish-void-kalshi-cron.junkyjunkjunkjunkjunk.workers.dev/positions';
+    /* THE CITIES ON THE TABS. New York is the head file (it also carries every
+       city's digest for the board); the others are their own bakes. Picked by
+       the measured record on 2026-09-06: Las Vegas and Austin forecast tighter
+       than New York on the same days. `ev` is the event prefix the file must
+       carry before the sheet trusts it as that city; `station` names the
+       settlement sensor in the early-readings card. */
+    var CWK_CITIES = [
+      { key: 'ny',  file: 'kalshi_ny.json',  tab: 'NEW YORK',  title: 'BELVEDERE CASTLE',
+        tz: 'America/New_York',    ev: 'KXHIGHNY-',  station: 'Central Park' },
+      { key: 'las', file: 'kalshi_las.json', tab: 'LAS VEGAS', title: 'LAS VEGAS',
+        tz: 'America/Los_Angeles', ev: 'KXHIGHTLV-', station: 'Harry Reid Intl' },
+      { key: 'aus', file: 'kalshi_aus.json', tab: 'AUSTIN',    title: 'AUSTIN',
+        tz: 'America/Chicago',     ev: 'KXHIGHAUS-', station: 'Camp Mabry' }
+    ];
+    function cwkCity(){
+      try {
+        var c = localStorage.getItem('bv_kalshi_city');
+        return CWK_CITIES.some(function(x){ return x.key === c; }) ? c : 'ny';
+      } catch (e){ return 'ny'; }
+    }
+    function cwkCityDef(){
+      var k = cwkCity();
+      return CWK_CITIES.filter(function(x){ return x.key === k; })[0] || CWK_CITIES[0];
+    }
+    /* switch the sheet to a city: remember it, fetch its file, redraw. The head
+       file stays in _cwKalshiHead for the all-cities board. A failed fetch
+       falls back to New York rather than leaving a blank sheet. */
+    function cwKalshiSwitch(key, after){
+      try { localStorage.setItem('bv_kalshi_city', key); } catch (e){}
+      var def = cwkCityDef();
+      var done = function(){ cwKalshiTap(); if (after) try { after(); } catch (e){} };
+      if (def.key === 'ny'){
+        if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead;
+        done(); return;
+      }
+      fetch(def.file + '?v=' + Math.floor(Date.now() / 6e4), { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (j && j.today && String(j.today.event || '').indexOf(def.ev) === 0) window._cwKalshi = j;
+          else { try { localStorage.setItem('bv_kalshi_city', 'ny'); } catch (e){} if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead; }
+          done();
+        })
+        .catch(function(){
+          try { localStorage.setItem('bv_kalshi_city', 'ny'); } catch (e){}
+          if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead;
+          done();
+        });
+    }
     function cwkToken(){
       try {
         var m = location.search.match(/[?&]kt=([^&]+)/);
@@ -53463,9 +53532,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var p = document.getElementById('cw-kalshi-panel');
         if (p && p.style.display !== 'none'){
           var sc = p.scrollTop;
-          cwKalshiTap();
-          var p2 = document.getElementById('cw-kalshi-panel');
-          if (p2) p2.scrollTop = sc;
+          var keep = function(){ var p2 = document.getElementById('cw-kalshi-panel'); if (p2) p2.scrollTop = sc; };
+          if (cwkCity() === 'ny'){ cwKalshiTap(); keep(); }
+          else cwKalshiSwitch(cwkCity(), keep);
         }
         fin(changed);
       };
@@ -53475,8 +53544,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         fetch('kalshi_ny.json' + cb).then(function(r){ return r.json(); })
           .then(function(j){
             if (!j || !j.today) return fin(false);
-            var stale = window._cwKalshi && window._cwKalshi.updated;
-            window._cwKalshi = j;
+            var stale = window._cwKalshiHead && window._cwKalshiHead.updated;
+            window._cwKalshiHead = j;
+            if (cwkCity() === 'ny') window._cwKalshi = j;
             var changed = (stale !== j.updated);
             if (changed) try { cwDrawSensors(); } catch (e){}
             if (changed && stale){
@@ -53508,6 +53578,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        says so rather than hiding behind the average. */
     function cwKalshiTap(){
       var K = window._cwKalshi; if (!K || !K.today) return;
+      var CITY = cwkCityDef(), isNY = (CITY.key === 'ny');
+      if (String(K.today.event || '').indexOf(CITY.ev) !== 0){
+        /* the file in hand is another city's: fetch the right one, then draw */
+        if (!cwKalshiTap._sw){
+          cwKalshiTap._sw = true;
+          cwKalshiSwitch(CITY.key, function(){ cwKalshiTap._sw = false; });
+          setTimeout(function(){ cwKalshiTap._sw = false; }, 6000);
+        }
+        return;
+      }
       cwKalshiFresh();
       var T = K.today, R = K.record || {}, H = K.history || [];
       var pct = function(x){ return (100 * (x || 0)).toFixed(0) + '%'; };
@@ -53646,7 +53726,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         return function(v){ return (v == null || t <= 0) ? null : v / t; };
       };
       /* the day is over once the distribution has collapsed onto one range */
-      var dayDone = (T.p != null && T.p >= 0.95) || (T.sd != null && T.sd <= 0.4);
+      /* A DAY IS DONE WHEN THE HIGH IS ALREADY IN THE RANGE, not when the odds
+         are merely lopsided: Las Vegas read "Sunday is done" at 11 AM with the
+         high at 84.8 and a 96% lean on 88-or-above, because a wide-open top
+         range collects the whole warm tail early (2026-09-06). */
+      var _pickRow = (T.ladder || []).filter(function(r){ return r.label === T.pick; })[0];
+      var _highIn = (_pickRow && T.obs_so_far != null)
+        ? ((_pickRow.lo == null || T.obs_so_far >= _pickRow.lo - 0.5) && (_pickRow.hi == null || T.obs_so_far <= _pickRow.hi + 0.5))
+        : false;
+      var dayDone = !!T.day_over || (T.sd != null && T.sd <= 0.4) || (T.p != null && T.p >= 0.95 && _highIn);
       var cents = function(x){ return (x == null) ? '\u2014' : (100 * x).toFixed(0) + '\u00A2'; };
       /* ladderHead and ladderRow were the horizontal ladder -- one row per
          range, a label, two bars and four numbers reading left to right. The
@@ -53850,7 +53938,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var etWall = function(d){
         try {
           var o = {};
-          new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+          new Intl.DateTimeFormat('en-CA', { timeZone: CITY.tz,
             hour12: false, year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(d)
             .forEach(function(x){ o[x.type] = x.value; });
@@ -53925,8 +54013,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         for (var add = 0; add < 36; add++){
           var hh = (hNow + add) % 24;
           if (!cwkHours[hh]) continue;                    /* the overnight hole */
-          for (var i = 0; i < CWK_SLOTS.length; i++){
-            var t = hourTop + add * 3600000 + CWK_SLOTS[i] * 60000 + cwkLatency;
+          var SL = isNY ? CWK_SLOTS : [5, 20, 35, 50];   /* only New York has the fast lane */
+          for (var i = 0; i < SL.length; i++){
+            var t = hourTop + add * 3600000 + SL[i] * 60000 + cwkLatency;
             if (t > nowET) return t - nowET;
           }
         }
@@ -54177,7 +54266,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          worst honest case is a :35 bake read at :55, about 64 minutes, so past
          80 now means something is genuinely behind rather than merely unlucky. */
       qcL.push(T.now_temp == null
-        ? qcRow(QCA, 'STATION', 'NO CURRENT READING', 'Central Park has not reported')
+        ? qcRow(QCA, 'STATION', 'NO CURRENT READING', mtaEsc(CITY.station) + ' has not reported')
         : qcRow((oAge != null && oAge < 80) ? QCG : QCA, 'STATION',
             T1(T.now_temp) + '° AT ' + t12(T.now_at) + ' · ' + ageTxt(oAge),
             (oAge != null && oAge >= 80) ? 'it reports hourly at :51' : ''));
@@ -55243,8 +55332,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            2026-09-06: "just add the line graph to the WINDOW"). The overlay is
            filled by bvMinuteReplay; data-h0/data-n tell it the column geometry. */
         var hourChart = '<div style="position:relative;margin-top:6px;">'
-          + '<div id="bv-replay-overlay" data-h0="' + bh[0].h + '" data-n="' + bh.length
-          + '" style="position:absolute;left:0;right:0;top:2px;height:46px;pointer-events:none;z-index:1;"></div>'
+          + (isNY ? '<div id="bv-replay-overlay" data-h0="' + bh[0].h + '" data-n="' + bh.length
+              + '" style="position:absolute;left:0;right:0;top:2px;height:46px;pointer-events:none;z-index:1;"></div>' : '')
           + '<div style="display:grid;grid-template-columns:repeat('
           + bh.length + ',1fr);gap:2px;">'
           + bh.map(function(x){
@@ -55279,7 +55368,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + '<div style="position:relative;">'
                 /* a clear strip for the replay curve: nothing else is drawn here,
                    so the line never crosses a bar or a number */
-                + '<div style="height:46px;"></div>'
+                + (isNY ? '<div style="height:46px;"></div>' : '')
                 /* the money, diverging from a zero line */
                 + '<div style="height:56px;display:flex;flex-direction:column;">'
                 + '<div style="flex:1;display:flex;align-items:flex-end;justify-content:center;">'
@@ -55342,11 +55431,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            shuts (measured: after 1 PM a disagreement is our error), when the
            first hard number lands, when the preliminary report prints, and
            when trading closes. */
+        var tzOffH = Math.round((nowET - Date.now()) / 36e5);   /* the city's UTC offset, hours */
         var miles = [
           { h: 8, t: 'MODELS IN' },
           { h: (W1 != null ? W1 : 13), t: 'WINDOW SHUTS' },
-          { h: 14, t: 'SIX-HOUR MAX', lbl: '1:51 PM' },
-          { h: 17, t: 'PRELIM REPORT', lbl: '4:43 PM' },
+          /* the six-hourly group is the 17:51Z observation everywhere; its local
+             hour follows the zone (1:51 PM ET, 11:51 AM MT, 10:51 AM PT) */
+          { h: 18 + tzOffH, t: 'SIX-HOUR MAX', lbl: t12((17 + tzOffH) + ':51') },
+          isNY ? { h: 17, t: 'PRELIM REPORT', lbl: '4:43 PM' }
+               : { h: 17, t: 'PRELIM REPORT', lbl: 'LATE AFTERNOON' },
           { h: 99, t: 'MARKET CLOSES', lbl: closesAt }
         ];
         var nextI = -1;
@@ -55615,7 +55708,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            but the table's job is comparison, and a row of six cities with the
            seventh missing is the one comparison it cannot make. Its own row is
            marked so it does not read as a seventh opportunity. */
-        var MK = (K.markets || []).slice();
+        var MK = ((window._cwKalshiHead || K).markets || []).slice();
         if (!MK.length) return;
         /* TWENTY CITIES NOW, not seven. In listing order the eye had to scan
            the whole row to find the tallest bar; sorted, the board reads
@@ -55623,7 +55716,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            the rest of this sheet is about it, then live bets by edge, then
            the finished and unlisted days at the end where they belong. */
         var mkRank = function(m){
-          if (m.key === 'ny_high') return 0;
+          if (m.key === CITY.key + '_high') return 0;
           if (m.bet && m.bet.ev > 0) return 1;
           var st = (m.state || {}).status;
           return (st === 'open' && !m.day_over) ? 2 : 3;
@@ -55697,7 +55790,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       : st === 'closed' ? 'closed'
                       : m.day_over ? 'day done'
                       : 'nothing mispriced';
-              return colCard({ name: m.city, hi: m.key === 'ny_high', ev: ok ? b.ev : null, evMax: maxEv,
+              return colCard({ name: m.city, hi: m.key === CITY.key + '_high', ev: ok ? b.ev : null, evMax: maxEv,
                                sub: (m.pred == null ? '\u2014' : T1(m.pred) + '\u00B0'),
                                bet: ok ? { side: (b.dir === 'against' ? 'NO' : 'YES'), price: b.price, label: deg(b.label) } : null,
                                why: why, offer: ok ? b.size : null, pool: m.pool });
@@ -56005,7 +56098,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          stale panel is obvious at a glance. */
       var partOfDay = (clockH == null) ? '' : (clockH < 5 ? 'overnight' : clockH < 12 ? 'morning'
         : clockH < 17 ? 'afternoon' : clockH < 21 ? 'evening' : 'night');
-      var settledNow = (T.p != null && T.p >= 0.95) || (T.sd != null && T.sd <= 0.4);
+      var settledNow = dayDone;
       var brief = '';
       (function(){
         var top = (T.ladder || []).filter(function(r){ return r.label === T.pick; })[0];
@@ -56082,8 +56175,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              afternoon market prices the readings. Say so before it happens. */
           if (T.peak_hour != null && T.peak_hour >= 16){
             var ph = T.peak_hour % 12 || 12;
+            /* the six-hourly group is the 17:51Z observation in every zone; the
+               preliminary report's hour is only known for New York */
+            var _off = Math.round((nowET - Date.now()) / 36e5);
             out.push('<b>Late peak</b> \u2014 the runs put the high near ' + ph + ' PM, after the '
-              + '1:51 PM six-hour group and the 4 PM preliminary report. Every reading through the '
+              + t12((17 + _off) + ':51') + ' six-hour group' + (isNY ? ' and the 4 PM preliminary report' : ' and the afternoon preliminary report')
+              + '. Every reading through the '
               + 'afternoon will run under the final, and the market will price the readings.');
           }
         }
@@ -56209,7 +56306,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            the sheet's own clock, not the weather's. */
         + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
         + 'text-align:right;line-height:1.5;margin-top:2px;">'
-        + 'NEW YORK BAKES EVERY 5 MIN \u00B7 ALL CITIES EVERY 15<br>'
+        + (isNY ? 'NEW YORK BAKES EVERY 5 MIN \u00B7 ALL CITIES EVERY 15<br>'
+                : CITY.tab + ' BAKES EVERY 15 MIN \u00B7 NEW YORK EVERY 5<br>')
         + '8 AM \u2013 1 AM \u00B7 LANDS ~' + Math.round(cwkLatency / 60000) + ' MIN AFTER ITS SLOT</div>';
 
       /* IN THE INTRO, because it changes how everything below it should be
@@ -56367,18 +56465,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            not the sensor: a warning, never a floor. */
         + ((T.twc_now != null || T.twc_max != null)
             ? '<div style="margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
-              + '<b style="color:#63dbb6;">TWC, Central Park</b> '
+              + '<b style="color:#63dbb6;">TWC, ' + mtaEsc(CITY.station) + '</b> '
               + (T.twc_now != null ? D1(T.twc_now) + '\u00B0 now' : '')
               + (T.twc_max != null ? (T.twc_now != null ? ' \u00B7 ' : '') + 'high since 7 AM <b>' + D1(T.twc_max) + '\u00B0</b>' : '')
               + (T.twc_gap != null ? ' <span style="color:#9fd9c4;">\u00B7 station ' + (T.twc_gap > 0 ? '\u2212' : '+') + D1(Math.abs(T.twc_gap)) + '\u00B0</span>' : '')
               + ' <span style="color:#45b491;">as of ' + mtaEsc(stamp12(K.updated).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')) + '</span>'
               + '</div>'
               + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
-              + 'The field that showed Saturday\u2019s 79 twenty minutes before the market did. A blended product, not the sensor itself: '
+              + (isNY ? 'The field that showed Saturday\u2019s 79 twenty minutes before the market did. ' : 'TWC\u2019s running maximum at the settlement station. ')
+              + 'A blended product, not the sensor itself: '
               + 'it has read 3\u00B0 high before, so it is a warning, never a floor. Refreshed every bake.</div>'
-            : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, Central Park \u2014 no reading yet'
+            : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, ' + mtaEsc(CITY.station) + ' \u2014 no reading yet'
               + (etH < 7 ? ' (its since-7 AM field holds yesterday until 7 AM)' : '') + '</div>')
-        + '<div id="bv-apt5-top"></div>'
+        + (isNY ? '<div id="bv-apt5-top"></div>' : '')
         + '</div>'
         + yourBook
 
@@ -56460,7 +56559,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ' \u00B7 UPDATED '
         + mtaEsc(stamp12(K.updated)) + ' \u00B7 ' + ageTxt(fAge) + '</div>';
 
-      cwKalshiPanel('BELVEDERE CASTLE', headSub, body, freshTop, posTop);
+      cwKalshiPanel(CITY.title, headSub, body, freshTop, posTop);
       if (!window._cwkTickId) window._cwkTickId = setInterval(cwkTick, 1000);
     }
     function cwGhostTap(ft){
@@ -57680,7 +57779,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           .then(function(r){ return r.json(); })
           .then(function(j){ if (j && j.cities) window._cwRain = j; }).catch(function(){});
         fetch('kalshi_ny.json?v=' + Math.floor(Date.now() / 6e5)).then(function(r){ return r.json(); })
-          .then(function(j){ if (j && j.today){ window._cwKalshi = j; cwDrawSensors(); } }).catch(function(){});
+          .then(function(j){ if (j && j.today){ window._cwKalshiHead = j; if (cwkCity() === 'ny' || !window._cwKalshi) window._cwKalshi = j; cwDrawSensors(); } }).catch(function(){});
       }
       cwAirportsLoad(); cwBeachesLoad(); cwStadiumsLoad(); cwAirDetailLoad();
       /* the compose masks outside-NYC land with the borough outlines, and they
