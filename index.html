@@ -53635,8 +53635,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + ' <span style="color:#2c7f66;">\u00B7</span> ' + cents(ev) + ' edge'
           + (onLine
               ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + NOC
-                + ';">cut 40%, ' + near.d.toFixed(1) + '\u00B0 off the ' + near.at.toFixed(1)
-                + '\u00B0 line</span>'
+                + ';">cut 40%, ' + (near.d < 0.05 ? 'sitting on the ' : near.d.toFixed(1) + '\u00B0 off the ')
+                + near.at.toFixed(1) + '\u00B0 line \u2014 a coin flip between two ranges</span>'
               : (near ? ' <span style="color:#2c7f66;">\u00B7</span> ' + near.d.toFixed(1)
                         + '\u00B0 clear of the nearest line' : ''))
           + (stale ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + FCC
