@@ -53609,6 +53609,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         return;
       }
       cwKalshiFresh();
+      /* THE POSITIONS ARE FETCHED ON EVERY OPEN, outside the data throttle.
+         cwKalshiFresh skips everything for five minutes after the boot fetch,
+         and the positions call lived inside it -- so the castle opened with
+         NOT FETCHED YET and stayed that way until refresh was pressed (found
+         2026-09-06, with the token verified present). The call has its own
+         60 s throttle; a fresh answer redraws once, keeping the scroll. */
+      (function(){
+        var before = JSON.stringify(window._cwPotStatus || null);
+        cwkPositions(false, function(){
+          var after = JSON.stringify(window._cwPotStatus || null);
+          if (after === before) return;
+          var p = document.getElementById('cw-kalshi-panel');
+          if (!p || p.style.display === 'none') return;
+          var sc = p.scrollTop;
+          cwKalshiTap();
+          var p2 = document.getElementById('cw-kalshi-panel');
+          if (p2) p2.scrollTop = sc;
+        });
+      })();
       var T = K.today, R = K.record || {}, H = K.history || [];
       var pct = function(x){ return (100 * (x || 0)).toFixed(0) + '%'; };
       var deg = function(x){ return mtaEsc(String(x == null ? '—' : x).replace(/°/g, '')); };
