@@ -54351,8 +54351,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }
       if (fr.n) tiles.push(tile('THE 6 PM CALL', fr.hits + '/' + fr.n));
       if (ms.brier != null) tiles.push(tile('BRIER', ms.brier.toFixed(3), 'lower is better'));
-      if (cal.gap != null) tiles.push(tile('ODDS RUN', (100 * cal.gap).toFixed(1) + ' pts',
-                                           'off what happens'));
+      if (cal.gap != null) tiles.push(tile('CALIBRATION', (100 * cal.gap).toFixed(1) + ' pts',
+                                           'said vs happened, lower is better'));
 
       /* the two qualifiers the tiles cannot carry: how far back this reaches,
          and which of it is not final. Amber is the whole point of the second. */
@@ -54459,10 +54459,26 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (xn != null) nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '\u00B0 NOW');
           if (xo != null) omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '\u00B0 PEAK');
         }
-        scale = '<div style="position:relative;height:40px;margin:14px 6px 0;">'
+        /* THE TWO OFFICIAL FORECASTS, ON THE SAME AXIS. The band is ours; a
+           reader deciding whether to trust a two-degree gap against the market
+           should see where TWC's own number and the NWS's sit on the ranges,
+           not just read them in a bullet. Marks go BELOW the axis, so the NOW
+           and PEAK labels above it keep their room. */
+        var fmark = '';
+        [['TWC', T.twc_fc, MKC], ['NWS', T.nws_fc, '#8fb3d9']].forEach(function(f, fi){
+          if (f[1] == null) return;
+          var xf = xp(f[1]);
+          if (xf == null || xf < 0 || xf > 100) return;
+          fmark += '<div style="position:absolute;left:' + xf.toFixed(1) + '%;top:14px;height:9px;width:2px;'
+            + 'background:' + f[2] + ';transform:translateX(-1px);"></div>'
+            + '<div style="position:absolute;left:' + xf.toFixed(1) + '%;top:' + (24 + 9 * fi) + 'px;'
+            + 'transform:translateX(' + anchor(xf) + ');font:800 7px system-ui,sans-serif;'
+            + 'letter-spacing:.04em;color:' + f[2] + ';white-space:nowrap;">' + f[0] + ' ' + T1(f[1]) + '\u00B0</div>';
+        });
+        scale = '<div style="position:relative;height:' + (fmark ? 52 : 40) + 'px;margin:14px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
-          + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + '</div>'
+          + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>'
           /* the caption is gone: the marks are labelled on the axis itself
              (75 NOW, 76.7 PEAK sit against their own marks) and the shaded band
              is named by the forecast line above. */
@@ -54854,19 +54870,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;'
             + 'color:' + FCC + ';text-align:center;margin-top:3px;white-space:nowrap;">'
             + 'BEST WINDOW \u00B7 ' + hr12(W0) + '\u2013' + hr12(W1) + '</div></div>'
-            + (bi >= 0
-                ? '<div style="grid-column:' + (bi + 1) + '/' + (bi + 2)
-                  + ';text-align:center;font:800 6.5px system-ui,sans-serif;color:#63dbb6;'
-                  + 'margin-top:6px;white-space:nowrap;">+' + bestH.ret.toFixed(2) + '</div>'
-                : '')
+            /* the best hour's return used to float here a second time; it is
+               already the number on that hour's own tile */
             + '</div>';
         }
 
         var closesAt = (T.state && T.state.closes) || '1 AM';
+        /* DECISIONS, NOT BOOKKEEPING. The noon lock and the 6 PM call are how
+           the record grades itself; nobody acts on them. What a bettor needs
+           on the clock: when the morning runs are in, when the paying window
+           shuts (measured: after 1 PM a disagreement is our error), when the
+           first hard number lands, when the preliminary report prints, and
+           when trading closes. */
         var miles = [
           { h: 8, t: 'MODELS IN' },
-          { h: (T.lock_hour || 12), t: 'PICK LOCKED' },
-          { h: (T.final_hour || 18), t: 'FINAL CALL' },
+          { h: (W1 != null ? W1 : 13), t: 'WINDOW SHUTS' },
+          { h: 14, t: 'SIX-HOUR MAX', lbl: '1:51 PM' },
+          { h: 17, t: 'PRELIM REPORT', lbl: '4:43 PM' },
           { h: 99, t: 'MARKET CLOSES', lbl: closesAt }
         ];
         var nextI = -1;
