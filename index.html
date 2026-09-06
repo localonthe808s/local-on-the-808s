@@ -54678,6 +54678,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var n = Math.floor(want);
         var capped = (have != null && have > 0 && n > have);
         if (capped) n = Math.floor(have);
+        /* NOTHING FOR SALE IS NOT A SIZE. The ask can stand with no contracts
+           behind it; "buy 7" beside "0 are for sale" was a contradiction on
+           the one line that tells someone what to type. */
+        if (have != null && have <= 0){
+          return kvLine('STAKE', '<b style="color:#f2833f;">Nothing for sale at ' + cents(price)
+            + ' right now.</b> The right size would be ' + Math.max(1, n) + ' contract' + (n === 1 ? '' : 's')
+            + '. Place a limit at ' + cents(price) + ' for that many and let it wait for a seller, or skip.');
+        }
         if (n < 1){
           /* PLAIN WORDS. "Quarter Kelly wants 0.8 contracts" was arithmetic at
              the reader. Say what to do and why in one breath. */
@@ -55204,7 +55212,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
                     + '<b style="color:' + NOC + ';">never above ' + cents(tmax) + '</b>')
                 : '')
-            + line('WHEN', 'Between <b>8 AM and noon</b>, once the morning runs land. Tonight&rsquo;s '
+            + line('WHEN', 'Between <b>8 AM and 1 PM</b>, once the morning runs land. Tonight&rsquo;s '
                 + 'numbers come off an older run and the price is thin overnight.')
             + line('KILLS IT', 'A morning run that moves ' + deg(tv.r.label) + ' '
                 + (tv.dir === 'against'
