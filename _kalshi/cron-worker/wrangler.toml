@@ -74,8 +74,8 @@ preview_urls = false
 # and 50, the same four it always used. A full kalshi_daily run takes about five
 # minutes and overlapping runs would trip over each other.
 crons = [
-  "*/5 12-23 * * *",
-  "*/5 0-4 * * *"
+  "* 12-23 * * *",
+  "* 0-4 * * *"
 ]
 
 # WHERE THE TRAIL LIVES.  One key per tick, ~192 a day against the free plan's

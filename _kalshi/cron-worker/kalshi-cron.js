@@ -491,6 +491,7 @@ function localDate(offsetDays) {
 async function alertTick(env) {
   if (!env.NTFY_TOPIC || !env.OBS) return 'alerts off';
   const state = (await env.OBS.get(ALERT_KEY, { type: 'json' })) || {};
+  const before = JSON.stringify(state);
   const out = [];
   // 1. the portal, yesterday and today
   state.portal = state.portal || {};
@@ -525,7 +526,7 @@ async function alertTick(env) {
   } catch (e) { out.push('positions err'); }
   if (!held.length) {
     state.mkt = {}; state.max7 = null;
-    await env.OBS.put(ALERT_KEY, JSON.stringify(state));
+    if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));
     return out.concat(['no NY position']).join(', ');
   }
   // TWC's running max at Central Park (v3 current with the ICAO is the park)
@@ -585,7 +586,9 @@ async function alertTick(env) {
     }
   }
   if (max7 != null) state.max7 = max7;
-  await env.OBS.put(ALERT_KEY, JSON.stringify(state));
+  // KV allows 1,000 writes a day on this plan; a minute cadence is 1,020 ticks.
+  // The state only changes when something happened, so only then is it written.
+  if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));
   return out.length ? out.join(', ') : `quiet (${held.length} NY position${held.length === 1 ? '' : 's'})`;
 }
 
@@ -601,14 +604,21 @@ export default {
     // EVERY tick logs; only the original four minutes dispatch. The cron went to
     // */5 for the observation trail, and the daily job must not suddenly run
     // twelve times an hour -- it takes ~5 minutes and the runs would overlap.
-    ctx.waitUntil((async () => {
-      try {
-        console.log(`[obs-log] ${new Date().toISOString()} ${await logObs(env)}`);
-      } catch (e) {
-        console.log(`[obs-log] FAILED ${e}`);
-      }
-    })());
+    // THE CRON IS EVERY MINUTE NOW, for the alerts: on 2026-09-05 the market
+    // repriced New York in the minute ending 4:17 PM, and a five-minute tick
+    // would have said so at 4:20. The observation log keeps its five-minute
+    // cadence (one KV write per tick against a 1,000/day budget) and the
+    // daily job its four minutes an hour.
     const minute = new Date().getUTCMinutes();
+    if (minute % 5 === 0) {
+      ctx.waitUntil((async () => {
+        try {
+          console.log(`[obs-log] ${new Date().toISOString()} ${await logObs(env)}`);
+        } catch (e) {
+          console.log(`[obs-log] FAILED ${e}`);
+        }
+      })());
+    }
     if (![5, 20, 35, 50].includes(minute)) return;
     ctx.waitUntil((async () => {
       let r;
@@ -678,7 +688,7 @@ export default {
       // page confidently reported a cadence the worker was not running.
       // Cloudflare does not expose a worker's own triggers to its code, so
       // this has to be kept in step with [triggers] in wrangler.toml by hand.
-      schedule_utc: ['*/5 12-23 * * *', '*/5 0-4 * * *'],
+      schedule_utc: ['* 12-23 * * *', '* 0-4 * * *'],
       dispatch_minutes: [5, 20, 35, 50],
       obs_log: env.OBS ? 'KV bound' : 'NO KV BINDING - not logging',
       alerts: env.NTFY_TOPIC ? 'ntfy topic set; New York positions watched every 5 min' : 'off (no NTFY_TOPIC)',
