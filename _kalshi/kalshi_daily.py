@@ -145,7 +145,7 @@ MARKETS = [
 ]
 
 WORKERS = 4                               # markets in flight at once (see main)
-BIAS_K  = 21                              # days in the rolling bias window
+BIAS_K  = 30                              # days in the rolling bias window (21 -> 30 on 2026-09-06: Brier .499 -> .491 with the skill weights, 20 cities)
 BIAS_MIN = 7                              # need this many before trusting it
 LOCK_HOUR = 12                            # noon ET: morning obs in hand, peak ahead
 FINAL_HOUR = 18                           # the actionable call, still 6 h before close
@@ -1094,14 +1094,42 @@ def fresh_runs(cfg, hour):
     return out
 
 
+# SKILL WEIGHTS, MEASURED 2026-09-06 ON 1,330 SETTLED CITY-DAYS (20 cities).
+# The equal-weight consensus was kept after a 68-day NYC test called
+# inverse-MAE weighting a wash. Twenty cities say otherwise, and at every hour:
+#
+#     local hour            6h     9h    12h    14h    16h    18h
+#     equal weights, hit%  59.5   59.6   63.8   69.3   72.8   79.2
+#     1/MAE^2 weights      61.8   61.9   66.1   72.0   74.5   79.4
+#     MAE  equal / skill   0.99/0.90     0.91/0.84   0.65/0.61
+#     Brier equal / skill  .529/.491     .493/.458   .395/.382
+#
+# Walk-forward by construction (the window is the same trailing one the bias
+# uses), and the same gain shows with power 1, 2 or 4 and windows of 21-45
+# days, so it is not a knife-edge. Why it works: in the Open-Meteo archive
+# NBM and ECMWF are poor at station level (alone: 40% and 44% at 9h, against
+# GFS's 62%), and an equal mean lets them pull. The weights find that per
+# city, per month, without naming a model. Also found on the way: the
+# archive's ncep_hrrr_conus column is GFS (identical on 2,240/2,240
+# city-days), so "six models" was five with GFS counted twice -- which is why
+# dropping HRRR *loses* 2 points. Left in; the weights make it harmless.
+SKILL_POWER = 2
+SKILL_MAE_FLOOR = 0.3         # degF; below this a model's weight stops growing
+
+
 def biases_factory(fcm, daily):
-    """-> f(prior_days) giving each model's mean (peak - actual) over them."""
+    """-> f(prior_days) giving each model's mean (peak - actual) over them,
+    plus its skill weight under '__w__' (see SKILL_POWER above)."""
     def f(prior):
-        out = {}
+        out, w = {}, {}
         for m, fc in fcm.items():
             e = [max(fc[p].values()) - daily[p]
                  for p in prior if p in fc and p in daily and len(fc[p]) >= 20]
             out[m] = statistics.mean(e) if len(e) >= BIAS_MIN else None
+            if out[m] is not None:
+                mae = statistics.mean(abs(x) for x in e)
+                w[m] = 1.0 / max(mae, SKILL_MAE_FLOOR) ** SKILL_POWER
+        out['__w__'] = w
         return out
     return f
 
@@ -1134,7 +1162,8 @@ def point_forecast(fcm, biases, key, hour, yday):
     knife-edge: at 0.25, MAE 1.83 -> 1.66, bias +0.78 -> +0.20, brackets
     37/68 -> 39/68, Brier 0.591 -> 0.559.
     """
-    vals = []
+    vals, ws = [], []
+    wt = biases.get('__w__') or {}
     for m, fc in fcm.items():
         day = fc.get(key)
         if not day or biases.get(m) is None:
@@ -1142,9 +1171,11 @@ def point_forecast(fcm, biases, key, hour, yday):
         rest = [v for h, v in day.items() if h >= hour]
         if rest:
             vals.append(max(rest) - biases[m])
+            ws.append(wt.get(m, 1.0))
     if not vals:
         return None
-    p = statistics.mean(vals)
+    # skill-weighted, not equal: see biases_factory
+    p = sum(v * w for v, w in zip(vals, ws)) / sum(ws)
     if yday is not None:
         p -= SWING_DAMP * max(0.0, p - yday)
     return p
