@@ -2910,6 +2910,36 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     st = record['money']['staked']
     record['money']['roi'] = round(100.0 * record['money']['pl'] / st, 1) if st else None
 
+    # THE PUBLISHED FORECASTS, SCORED. Same days, same truth, same hour: our
+    # morning number against TWC's own forecast and the NWS point forecast.
+    # This is the forward study that no archive could run -- it measures
+    # itself every run, and the panel prints it, so nobody has to remember.
+    pub = [h for h in scored if h.get('published') and h.get('actual') is not None
+           and h['published'].get('ours') is not None]
+    def _mae(key):
+        v = [abs(h['published'][key] - h['actual']) for h in pub if h['published'].get(key) is not None]
+        return (round(statistics.mean(v), 2), len(v)) if v else (None, 0)
+    def _hit(key):
+        n = w = 0
+        for h in pub:
+            v = h['published'].get(key)
+            if v is None:
+                continue
+            lad = (h.get('lock') or {}).get('ladder') or []
+            if not lad or lad[0].get('lo', 'x') == 'x':
+                continue
+            i = which(lad, v)
+            n += 1
+            w += 1 if (i is not None and lad[i]['label'] == h.get('actual_bracket')) else 0
+        return (w, n)
+    record['published'] = {
+        'n': len(pub),
+        'ours': {'mae': _mae('ours')[0], 'hit': _hit('ours')},
+        'twc': {'mae': _mae('twc')[0], 'n': _mae('twc')[1], 'hit': _hit('twc')},
+        'nws': {'mae': _mae('nws')[0], 'n': _mae('nws')[1], 'hit': _hit('nws')},
+        'since': min((h['date'] for h in pub), default=None),
+    }
+
     # CALIBRATION.  The hit rate says how often the top pick lands. It does not
     # say whether the PROBABILITIES can be trusted -- and every bet on this panel
     # is sized off those probabilities, so calibration, not accuracy, is what has
@@ -3003,6 +3033,19 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
 
     # trails are per-hour rows and only useful while recent; drop the old ones
     # so the file the page downloads does not grow without bound
+    # THE PUBLISHED FORECASTS, KEPT PAST THE TRAIL. The trail lives 14 days;
+    # the question "does TWC's own 8 AM forecast beat ours against TWC's own
+    # settlement" needs months. So the first morning reading with a published
+    # forecast (7-9 AM local) is stamped on the day's row permanently, three
+    # numbers, and the record scores it below. Nothing here feeds the pick.
+    for k, h in hist.items():
+        if 'published' in h or not h.get('trail'):
+            continue
+        for t in h['trail']:
+            if 7 <= (t.get('h') or -1) <= 9 and (t.get('twc_fc') is not None or t.get('nws_fc') is not None):
+                h['published'] = {'h': t['h'], 'twc': t.get('twc_fc'), 'nws': t.get('nws_fc'),
+                                  'ours': t.get('pred')}
+                break
     keep = sorted(hist, reverse=True)[:14]
     for k, h in hist.items():
         if k not in keep and 'trail' in h:

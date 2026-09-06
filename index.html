@@ -54246,6 +54246,28 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             : '<span style="font-weight:600;">not started \u2014 a hit rate is not a return, and no '
               + 'settled day has a recoverable entry price. Scoring begins with the first live bet.</span>')
         + '</div>';
+      /* THE FORWARD STUDY, PRINTED. TWC's own forecast and the NWS's are logged
+         at the first morning bake and scored against the settlement by the
+         bake itself. This line is how the answer arrives without anyone
+         re-running a study: once it shows TWC beating ours over enough days,
+         TWC's number earns a place in the roster. */
+      var PB = R.published || {};
+      var pubLine = '';
+      if (PB.n){
+        var fmt = function(o, name){
+          if (!o || o.mae == null) return null;
+          return name + ' ' + o.mae.toFixed(2) + '\u00B0'
+            + (o.hit && o.hit[1] ? ' (' + o.hit[0] + '/' + o.hit[1] + ' ranges)' : '');
+        };
+        var parts = [fmt(PB.ours, 'ours'), fmt(PB.twc, 'TWC\u2019s own forecast'), fmt(PB.nws, 'NWS')]
+          .filter(function(x){ return x; });
+        pubLine = '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
+          + 'margin-top:5px;line-height:1.6;"><b style="color:#45b491;">MORNING FORECASTS, MEAN MISS</b> '
+          + '\u00B7 ' + PB.n + ' day' + (PB.n === 1 ? '' : 's') + (PB.since ? ' since ' + mtaEsc(PB.since.slice(5).replace('-', '/')) : '')
+          + ' \u00B7 ' + parts.join(' \u00B7 ')
+          + (PB.n < 20 ? ' \u00B7 <span style="opacity:.7;">too few days to judge yet</span>' : '')
+          + '</div>';
+      }
       /* today's own locks belong here too -- they are what gets graded, and the
          top of the panel is for what to do, not for what was written down */
       var lset = [];
@@ -54312,7 +54334,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             ? '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.03em;'
               + 'margin-top:9px;">' + notes.join(SEP) + '</div>'
             : '')
-        + realLine + moneyLine
+        + realLine + moneyLine + pubLine
         + '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
         + 'margin-top:5px;line-height:1.6;">'
         + '<b style="color:#45b491;">' + (dayName(T.date) || 'TODAY') + '</b> '
