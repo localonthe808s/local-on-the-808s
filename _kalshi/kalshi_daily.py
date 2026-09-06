@@ -835,6 +835,46 @@ def nws_forecast(cfg, day):
         return None
 
 
+# THE SETTLEMENT, READ WHERE KALSHI READS IT. weather.com/kalshi is the page
+# the rules name, and the page calls a plain JSON route for every station it
+# lists (found 2026-09-06 in its own bundle; no key, any user agent):
+#
+#     /kalshi/api/climate/primary?date=YYYY-MM-DD
+#
+# One response carries all 37 US stations, each with a status -- no_report,
+# preliminary, official -- and the report's max. The official value equalled
+# Kalshi's expiration_value on 15 of 15 New York days checked. It is what the
+# exchange settles on, hours before the exchange posts the settlement, so it
+# scores a day at ~3 AM instead of ~3 PM, and it is the arbiter the panel
+# should be showing. One fetch per date per run serves every market.
+PORTAL_URL = 'https://weather.com/kalshi/api/climate/primary?date=%s'
+_PORTAL = {}
+_PORTAL_LOCK = threading.Lock()
+
+
+def portal_day(cfg, day):
+    """The portal's row for this market's station and `day`
+    -> {'status', 'max', 'official'} or {} when it has nothing."""
+    key = day.isoformat()
+    with _PORTAL_LOCK:
+        j = _PORTAL.get(key)
+        if j is None:
+            try:
+                j = get_json(PORTAL_URL % key, timeout=30)
+            except Exception as e:
+                print('portal: %s unavailable (%s)' % (key, e))
+                j = {}
+            _PORTAL[key] = j
+    icao = cfg.get('icao') or ('K' + cfg['station'])
+    for r in j.get('results') or []:
+        if (r.get('station') or {}).get('icao') == icao:
+            d = r.get('data') or {}
+            v = d.get('maxTemp')
+            return {'status': r.get('status'), 'max': float(v) if isinstance(v, (int, float)) else None,
+                    'official': bool(d.get('isOfficial'))}
+    return {}
+
+
 def metar_six_max(cfg, day):
     """The day's max from the ASOS six-hourly groups, or None.
 
@@ -2162,6 +2202,11 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # only as a floor for TODAY, below, where being a lower bound is all that is
     # asked of them.
     _cli = {}
+    _portal_today = portal_day(cfg, today)
+    _portal_yday = portal_day(cfg, today - datetime.timedelta(days=1))
+    if _portal_today or _portal_yday:
+        print('%s portal: today %s, yesterday %s' % (cfg['key'],
+              _portal_today.get('status'), (_portal_yday.get('status'), _portal_yday.get('max'))))
     try:
         _cli = cli_read(cfg)
     except Exception as e:
@@ -2648,6 +2693,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                if k < tkey and 'lock' in h
                and (h.get('actual') is None or h.get('truth_source') != 'settlement')]
     settled_by_date = {}
+    portal_official = {}
     if pending:
         try:
             for evk, lad in (_settled or fetch_settled(cfg)).items():
@@ -2658,6 +2704,24 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                 w = next((r['label'] for r in lad if r.get('yes')), None)
                 if w:
                     settled_by_date[dk.isoformat()] = w
+            # THE PORTAL FIRST. For the last few pending days the exchange has
+            # not settled, the portal's OFFICIAL figure is the same number
+            # hours earlier. It scores the day through the day's own ladder;
+            # the row stays re-examinable until the exchange's own settlement
+            # confirms it (which it has on every day checked).
+            for k in sorted(pending)[-4:]:
+                if k in settled_by_date:
+                    continue
+                pd_ = portal_day(cfg, datetime.date(*map(int, k.split('-'))))
+                if pd_.get('official') and pd_.get('max') is not None:
+                    lad = (hist[k].get('lock') or {}).get('ladder') or []
+                    ai = which(lad, pd_['max']) if lad and lad[0].get('lo', 'x') != 'x' else None
+                    if ai is not None:
+                        settled_by_date[k] = lad[ai]['label']
+                        portal_official[k] = pd_['max']
+                        daily[k] = pd_['max']
+                        print('portal: %s official %.0f -> %s (exchange not yet settled)'
+                              % (k, pd_['max'], lad[ai]['label']))
         except Exception as e:
             print('settled lookup failed (%s) -- falling back to observations' % e)
 
@@ -2699,7 +2763,9 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             truth, h['truth_source'] = ours, 'observed'
             h['provisional'] = True
         else:
-            h['truth_source'] = 'settlement'
+            # 'portal' = the settlement source's official figure, before the
+            # exchange has posted; it is re-examined until the exchange agrees
+            h['truth_source'] = 'portal' if k in portal_official else 'settlement'
             h.pop('provisional', None)
             if ours is not None and ours != truth:
                 h['feed_mismatch'] = {'observed': a, 'observed_bracket': ours}
@@ -2929,6 +2995,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # panel leads with this; everything else on screen is an estimate of
             # it. `cli_final` false means the preliminary, whose window closes at
             # 4 PM local and which is wrong about 1 New York day in 3.
+            # the settlement source's own view of today and yesterday
+            'portal': _portal_today, 'portal_yday': _portal_yday,
             'cli_max': (_cli.get(tkey) or {}).get('max'),
             'cli_final': (_cli.get(tkey) or {}).get('final'),
             'cli_at': (_cli.get(tkey) or {}).get('at'),

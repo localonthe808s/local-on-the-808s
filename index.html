@@ -54073,6 +54073,26 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
               + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
             T.cli_final ? '' : 'window shuts at 4 PM; the day can still rise'));
+      /* 4b. THE ARBITER ITSELF. weather.com/kalshi is the page the rules name,
+            and it marks each station-day no report / preliminary / official.
+            Official is the number Kalshi pays on. Yesterday's row is the one
+            that settles the open position; today's turns preliminary after
+            the afternoon report. */
+      var PT = T.portal || {}, PY = T.portal_yday || {};
+      var portalTxt = function(p){
+        if (!p || !p.status) return null;
+        if (p.status === 'official') return 'OFFICIAL ' + T1(p.max) + '\u00B0';
+        if (p.status === 'preliminary') return 'PRELIMINARY ' + T1(p.max) + '\u00B0';
+        return 'NO REPORT';
+      };
+      if (portalTxt(PT) || portalTxt(PY)){
+        qcL.push(qcRow(PY.status === 'official' ? QCG : PY.status === 'preliminary' ? QCA : QCN,
+          'TWC PORTAL',
+          (portalTxt(PT) ? 'TODAY ' + portalTxt(PT) : '')
+            + (portalTxt(PT) && portalTxt(PY) ? ' \u00B7 ' : '')
+            + (portalTxt(PY) ? 'YESTERDAY ' + portalTxt(PY) : ''),
+          'weather.com/kalshi \u2014 official is what pays'));
+      }
 
       /* 4c. and the blended feed, kept honestly labelled. It is logged and
             watched, not trusted -- see _kalshi/obs_log.py. */
