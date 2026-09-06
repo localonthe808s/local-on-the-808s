@@ -54659,7 +54659,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;margin-top:6px;">'
               + 'MINUTE REPLAY \u00B7 WHITE LINE, THE LAST SETTLED DAY MINUTE BY MINUTE \u00B7 <span style="color:#2fbfa8;">TEAL, TODAY\u2019S HOURLY READINGS SO FAR</span></div>' + sent + html + '</div>';
           })
-          .catch(function(){});
+          .catch(function(e){ try { console.warn('minute replay:', e && e.stack || e); } catch (x){} });
       };
       setTimeout(bvMinuteReplay, 0);
 
