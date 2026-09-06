@@ -53516,6 +53516,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         if (x == null || isNaN(x)) return '—';
         return (Math.abs(x - Math.round(x)) < 0.05) ? String(Math.round(x)) : x.toFixed(1);
       };
+      /* ONE DECIMAL, ALWAYS, for numbers that carry one at the source: the
+         station's running high, the consensus, the NWS grid. "74°" beside
+         "72.7°" read as a different kind of number. TWC's forecast is a whole
+         degree at the source and stays one; a fake .0 there is a lie. */
+      var D1 = function(x){ return (x == null || isNaN(x)) ? '\u2014' : (+x).toFixed(1); };
       var DOW2 = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       /* hoisted: the record run and the tomorrow block both name their weekday,
          and both are assembled before the briefing this used to live in */
@@ -54854,7 +54859,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           }
         }
         if (nDead) bits.push(nDead + (nDead > 1 ? ' ranges are' : ' range is')
-          + ' now impossible — it is already ' + T1(T.obs_so_far) + '° today.');
+          + ' now impossible — it is already ' + D1(T.obs_so_far) + '° today.');
         if (sd <= 0.7) bits.push('The day is <b>effectively settled</b>.');
         else if (sd <= 1.3) bits.push('Most of the uncertainty is gone.');
         else bits.push('The hottest part of the day is still ahead.');
@@ -55939,11 +55944,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         if (settledNow){
           var hitLock = T.locked && (T.locked.pick === T.pick);
           out.push('<b>' + dayName(T.date) + ' is done.</b> The high reached '
-            + T1(T.obs_so_far) + '°, which lands in ' + deg(T.pick) + '.');
+            + D1(T.obs_so_far) + '°, which lands in ' + deg(T.pick) + '.');
           if (T.locked) out.push('The noon pick was ' + deg(T.locked.pick) + ' — a '
             + (hitLock ? '<b style="color:#2fbfa8;">win</b>' : '<b style="color:#f2833f;">loss</b>') + '.');
           if (TM){
-            out.push('Next is <b>' + dayName(TM.date) + '</b>: the forecast is ' + T1(TM.pred)
+            out.push('Next is <b>' + dayName(TM.date) + '</b>: the forecast is ' + D1(TM.pred)
               + '°, leaning ' + deg(TM.pick)
               + (TM.agree ? ' — and the market agrees.'
                           : ', while the market expects ' + deg(TM.market_pick) + '.'));
@@ -55998,7 +56003,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     ? ' \u2014 <span style="color:' + MKC + ';">the market sits with TWC</span>'
                     : tr && tr.label === T.pick ? ' \u2014 same range as our lean' : ''));
             }
-            if (T.nws_fc != null) bits.push('NWS says ' + T1(T.nws_fc) + '\u00B0');
+            if (T.nws_fc != null) bits.push('NWS says ' + D1(T.nws_fc) + '\u00B0');
             out.push(bits.join(' \u00B7 ') + '.');
           }
           /* A LATE PEAK IS INVISIBLE ALL AFTERNOON. The six-hour group closes
@@ -56056,12 +56061,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<span style="color:#22604e;"> | </span>'
         + (T.obs_so_far == null
             ? 'NOTHING ON THE BOARD YET'
-            : 'HIGHEST TEMP <span style="color:#2fbfa8;">' + T1(T.obs_so_far) + '\u00B0</span>')
+            : 'HIGHEST TEMP <span style="color:#2fbfa8;">' + D1(T.obs_so_far) + '\u00B0</span>')
         + '<span style="color:#22604e;"> | </span>'
         + (T.pred == null ? ''
             : (T.obs_so_far != null && T.pred > T.obs_so_far + 0.05
                 ? 'FORECAST TO RISE TO ' : 'FORECAST ')
-              + '<span style="color:' + FCC + ';">' + T1(T.pred) + '\u00B0</span>')
+              + '<span style="color:' + FCC + ';">' + D1(T.pred) + '\u00B0</span>')
         + '</div>'
         + (T.pick
             ? '<div style="font:600 8.5px system-ui,sans-serif;color:#45b491;margin-top:2px;">'
