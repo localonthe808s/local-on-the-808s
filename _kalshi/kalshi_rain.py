@@ -375,7 +375,7 @@ def main():
                         > K.MAX_DISAGREE:
                     continue
                 ev = q - price - K.fee_of(price)
-                if ev <= 0.005:
+                if ev < 0.04:       # the same four-cent floor as the temperature plan (MIN_EDGE)
                     continue
                 cost = price + K.fee_of(price)
                 kelly = max(0.0, (q - cost) / (1 - cost)) / K.KELLY_DIV

@@ -54118,7 +54118,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (T.twc_gap == null ? ''
                : ' \u00B7 STATION ' + (T.twc_gap > 0 ? '\u2212' : '+')
                  + T1(Math.abs(T.twc_gap)) + '\u00B0'),
-            'hourly markets settle on this, daily ones do not'));
+            'TWC\u2019s running maximum \u2014 a warning, not a floor; it has read 3\u00B0 high before'));
 
       /* 5. the consensus behind the forecast */
       var nMod = T.n_models || 0;
@@ -54388,7 +54388,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         tiles.push(tile('HARD RANGES', pctOf({n: bt.interior_n, hits: bt.interior_hits}),
                         bt.interior_hits + ' of ' + bt.interior_n));
       }
-      if (fr.n) tiles.push(tile('THE 6 PM CALL', fr.hits + '/' + fr.n));
+      /* the 6 PM call tile is gone: it graded the record's evening lock, which nobody bets on (bets placed at 6 PM won 4%) */
       if (ms.brier != null) tiles.push(tile('BRIER', ms.brier.toFixed(3), 'lower is better'));
       if (cal.gap != null) tiles.push(tile('CALIBRATION', (100 * cal.gap).toFixed(1) + ' pts',
                                            'said vs happened, lower is better'));
@@ -55115,12 +55115,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             /* tomorrow's number always comes off an older run than the morning
                will produce, so it carries the stale discount by definition */
             + line('CONVICTION', convictionOf(tv.ev, TM.pred, TM.ladder, true))
-            + line('WHY', 'The forecast puts ' + deg(tv.r.label) + ' at <b>' + pct(tv.r.ours)
-                + '</b> while the market prices it at <b>' + pct(mnorm(TM.ladder)(tv.r.market))
-                + '</b>. '
-                + (tv.dir === 'against'
-                    ? 'NO pays if the high lands anywhere else \u2014 five ranges to be right in, one to be wrong in.'
-                    : 'YES pays only if the high lands inside it.'))
             + line('EDGE', 'About <b>' + cents(tv.ev) + ' of profit per $1</b> staked, after the '
                 + cents(feeOf(tv.ask)) + ' fee. ' + cents(tv.ask) + ' risked returns '
                 + cents(1 - tv.ask) + ' if it comes in.')
@@ -55145,10 +55139,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + stakeLine(tv.dir, tv.r, tv.ask, tq);
         } else {
           steps = '<div style="font:800 13px system-ui,sans-serif;color:#45b491;">NO BET LINED UP</div>'
-            + line('WHY', 'Every range on ' + dayfull + '&rsquo;s board costs at least what it is '
-                + 'estimated to be worth once the fee is counted. Sitting out is a position.')
+            + line('WHY NOT', (tv
+                ? 'The best gap on ' + dayfull + '&rsquo;s board is <b>' + (tv.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(tv.ev))
+                  + '</b> after the fee, under the ' + cents(KMIN_EDGE) + ' floor a bet has to clear. '
+                : 'No range on ' + dayfull + '&rsquo;s board is priced under what it is estimated to be worth once the fee is counted. ')
+                + 'Sitting out is a position.')
             + line('WHEN', 'Worth another look after <b>8 AM</b> \u2014 the morning runs are much '
-                + 'sharper than tonight&rsquo;s and often open a gap.');
+                + 'sharper than tonight&rsquo;s and often open a gap. The window runs to 1 PM.');
         }
         tomorrow = hdr('TOMORROW \u00B7 ' + dayname + ' ' + TM.date.slice(5).replace('-', '/'))
               .replace('</div>', chip(TM.state) + '</div>')
@@ -55328,7 +55325,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             && c.bet.price >= KMIN_PRICE
             && !(c.market_p != null && Math.abs(c.p - c.market_p) > KMAX_DISAGREE);
         });
-        var fillable = bets.filter(function(c){ return (c.bet.size || 0) >= 10; });
+        /* the same four-cent floor as the temperature plan: a 1c rain edge is not a bet */
+        var fillable = bets.filter(function(c){ return (c.bet.size || 0) >= 10 && (c.bet.ev || 0) >= KMIN_EDGE; });
         var TK = RN.take || {}, MD = RN.model || {}, RR = RN.record || {};
         /* A TABLE, not eight sentences. Every row carried the same five facts in
            prose -- "42% chance YES at 8c . market says 7%" -- so comparing two
@@ -55537,8 +55535,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                             + (b.dir === 'against' ? 'NO' : 'YES') + '</b> on ' + deg(b.r.label)
                             + ' at ' + cents(b.ask) + ' (' + cents(b.ev) + ')';
                         }).join(' &nbsp;·&nbsp; ')
-                        + '. Kalshi&rsquo;s ranges are mutually exclusive, so these are separate '
-                        + 'reads on the same day, not one bet repeated.')
+                        /* THIS LINE USED TO SAY "separate reads, not one bet repeated". On
+                           2026-09-05 the headline was NO 79-80 and the ALSO was YES 78-or-
+                           below: one thesis, bought twice, lost together. Say what they are. */
+                        + '. These are one day and usually one thesis \u2014 if the day runs the other way, '
+                        + 'they lose together. Size them as one bet, not two: the STAKE above is the whole day\u2019s.')
                     : '')
                 + (bookRoll
                     ? kvLine('ALL ' + bookRoll.n, 'Taking all of them costs <b>$'
