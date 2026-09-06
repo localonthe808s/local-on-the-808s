@@ -54794,8 +54794,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (potKnown ? ' That is ' + (100 * risk / pot).toFixed(0) + '% of your ' + $(pot) + '.' : '')
           + ' <b style="color:' + NOC + ';">If it loses you lose ' + $(risk)
           + '</b>; if it wins you make ' + $(win) + '. '
-          + '<span style="color:#9fd9c4;">That is the right size for a ' + pct(q) + ' bet: about '
-          + (100 * k.quarter).toFixed(0) + '% of your money, so a losing streak cannot take you out'
+          + '<span style="color:#9fd9c4;">That is the right size for a ' + pct(q) + ' bet'
+          + (potKnown ? '' : ': about ' + (100 * k.quarter).toFixed(0) + '% of your money')
+          + ', so a losing streak cannot take you out'
           + (capped ? ' — <span style="color:#f2833f;">and only ' + $(forSale)
                       + ' is for sale at this price anyway</span>'
              : forSale != null ? ' (' + $(forSale) + ' is for sale at this price)' : '') + '.</span> '
