@@ -54084,6 +54084,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                              r: r };
         });
       });
+      /* SELL OR HOLD, PER POSITION. The hold study says an early exit loses on
+         average -- because on most days our probability runs above the
+         market's. It never said hold when the bid exceeds our own value. On
+         2026-09-06 the market priced a held NO at 69c against our 60c, the
+         user asked "should I sell while I'm high", and the honest answer was
+         yes. So: what the bid pays after the closing fee, against what the
+         position is worth at settlement by our number, and a verdict. The
+         breakeven is the bid at which the two match. */
+      var sellHold = function(h){
+        var r = h.r || {}, yes = (h.side === 'yes');
+        var pWin = (r.ours == null) ? null : (yes ? r.ours : 1 - r.ours);
+        var out = yes ? r.bid : r.nbid;
+        if (pWin == null || out == null || !(h.n > 0)) return null;
+        var fee = feeOf(out);
+        var sell = h.n * (out - fee), hold = h.n * pWin;
+        var be = Math.min(0.99, pWin + feeOf(pWin));
+        return { pWin: pWin, out: out, fee: fee, sell: sell, hold: hold, diff: sell - hold, be: be,
+                 verdict: (sell - hold) > 0.02 * h.n ? 'SELL' : 'HOLD' };
+      };
       var bookRows = Object.keys(posOn);
       var bookVal = 0, bookCost = 0, bookKnown = bookRows.length > 0;
       bookRows.forEach(function(k){
@@ -56076,6 +56095,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + (h.pl != null
                     ? ' <b style="color:' + (up ? YESC : NOC) + ';">' + (up ? '+' : '\u2212') + '$' + Math.abs(h.pl).toFixed(2) + '</b>'
                     : ' <span style="color:#7b8496;">no bid</span>')
+                + (function(){
+                    var sh = dayDone ? null : sellHold(h);
+                    if (!sh) return '';
+                    var c = sh.verdict === 'SELL' ? '#f2833f' : '#45b491';
+                    return ' <span style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;color:' + c
+                      + ';border:1px solid ' + c + '66;border-radius:999px;padding:1px 5px;vertical-align:middle;">'
+                      + sh.verdict + '</span>';
+                  })()
                 + '</div>';
             }).join('')
           + (bookRows.length > 1
@@ -56108,6 +56135,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          read. A recommendation means one thing on an empty account and quite
          another when you already hold the other side of it. */
       var yourBook = '';
+      var anySell = false;
       if (bookKnown){
         var plc = (bookVal - bookCost) >= 0 ? YESC : NOC;
         yourBook = '<div style="margin-top:8px;padding:8px 10px;border-radius:8px;'
@@ -56169,7 +56197,44 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'Wins if the high settles ' + (yes ? 'inside' : 'outside') + ' ' + deg(k)
                 + (pWin != null ? ' \u2014 Bluish <b>' + pct(pWin) + '</b>' : '')
                 + (mWin != null ? ', the market <b style="color:' + MKC + ';">' + pct(mWin) + '</b>' : '') + '. '
-                + threat + '</div>';
+                + threat + '</div>'
+                + (function(){
+                    var sh = sellHold(h);
+                    if (!sh || dayDone) return '';
+                    if (sh.verdict === 'SELL') anySell = true;
+                    var sellC = sh.verdict === 'SELL' ? '#f2833f' : YESC;
+                    /* the reading that ends it, in the station's units. A NO on a
+                       range dies the minute a reading reaches its floor; a YES
+                       dies when a reading passes its ceiling. The bid is gone
+                       AFTER that reading prints, not before, so the bail has to
+                       key on the earliest readings on the sheet. */
+                    var bail = '';
+                    if (!yes && r.lo != null) bail = 'any reading reaches <b>' + T1(r.lo) + '\u00B0</b>';
+                    else if (!yes && r.hi != null) bail = 'the high is still under <b>' + T1(r.hi + 1) + '\u00B0</b> at 3 PM';
+                    else if (yes && r.hi != null) bail = 'any reading reaches <b>' + T1(r.hi + 1) + '\u00B0</b>';
+                    else if (yes && r.lo != null) bail = 'the high is still under <b>' + T1(r.lo) + '\u00B0</b> at 3 PM';
+                    var exitTxt = 'SELL ' + h.side.toUpperCase() + ' on ' + String(k).replace(/\u00B0/g, '')
+                      + ' - $' + sh.sell.toFixed(2) + ' - limit ' + Math.round(100 * sh.out) + 'c ('
+                      + (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contract' + (h.n === 1 ? '' : 's') + ')';
+                    return '<div style="margin:2px 0 5px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.04);'
+                      + 'font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
+                      + '<b style="color:' + sellC + ';">' + sh.verdict + (sh.verdict === 'SELL' ? ' \u2014 THE BID BEATS OUR OWN VALUE' : ' \u2014 THE BID IS UNDER OUR OWN VALUE') + '.</b> '
+                      + 'Sell now: <b>$' + sh.sell.toFixed(2) + '</b> at the ' + cents(sh.out) + ' bid, after the fee. '
+                      + 'Hold: worth <b>$' + sh.hold.toFixed(2) + '</b> at settlement by our ' + pct(sh.pWin) + '. '
+                      + (sh.verdict === 'SELL'
+                          ? 'The market pays <b style="color:#f2833f;">' + Math.round(100 * sh.diff) + '\u00A2 more</b> than we think it is worth; selling here is a sale at a premium, not a stop-loss.'
+                          : 'Holding is worth <b>' + Math.round(-100 * sh.diff) + '\u00A2 more</b>. Sell only if the bid reaches <b>' + cents(sh.be) + '</b>.')
+                      + (bail ? '<div style="margin-top:3px;"><b style="color:#f2833f;">BAIL IF</b> ' + bail
+                          + ' before the climate report \u2014 on an airport\u2019s 5-minute feed, TWC\u2019s running maximum, or the 1:51 PM six-hour group. '
+                          + 'The market reprices the minute that reading prints; get out at whatever bid is left.</div>' : '')
+                      + '<button type="button" class="cwk-btn2" data-copy="' + mtaEsc(exitTxt)
+                      + '" data-done="COPIED \u2014 THE EXIT, IN KALSHI\u2019S WORDS" style="display:inline-flex;'
+                      + 'align-items:center;margin:5px 0 0;padding:4px 9px;border-radius:7px;background:transparent;'
+                      + 'border:1px dashed rgba(242,131,63,.5);color:#f2833f;font:800 8.5px system-ui,sans-serif;'
+                      + 'letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;">COPY EXIT \u00B7 SELL '
+                      + h.side.toUpperCase() + ' ' + deg(k) + ' \u00B7 $' + sh.sell.toFixed(2) + ' AT ' + cents(sh.out) + '</button>'
+                      + '</div>';
+                  })();
             }).join('')
           /* HOLD, AND WHY. The plan is to hold to settlement, and the reason is
              measured, not asserted: every morning bet in the price replay,
@@ -56183,8 +56248,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               var up = (bookVal - bookCost) > 0.005;
               return '<div style="margin-top:7px;padding:6px 8px;border-radius:6px;background:rgba(0,210,152,.10);'
                 + 'font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
-                + '<b style="color:' + YESC + ';">HOLD TO SETTLEMENT'
-                + (up ? ' \u2014 EVEN THOUGH IT IS UP' : '') + '.</b> '
+                + (anySell
+                    ? '<b style="color:#f2833f;">THE HOLD RULE DOES NOT APPLY TO A BID ABOVE OUR OWN VALUE.</b> It says do not sell on fear; it never said refuse a premium. '
+                    : '<b style="color:' + YESC + ';">HOLD TO SETTLEMENT'
+                      + (up ? ' \u2014 EVEN THOUGH IT IS UP' : '') + '.</b> ')
                 + 'Measured on ' + EX.n + ' morning bets at real quotes: holding returned <b>'
                 + (EX.hold.ret >= 0 ? '+' : '') + EX.hold.ret.toFixed(2) + '</b> per $1'
                 + (EX.exit13 ? ', closing at 1 PM ' + (EX.exit13.ret >= 0 ? '+' : '') + EX.exit13.ret.toFixed(2) : '')
