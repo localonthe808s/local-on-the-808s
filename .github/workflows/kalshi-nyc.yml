@@ -75,14 +75,10 @@ jobs:
         # files, so rain runs in the background and is waited for at the end;
         # its failure still cannot cost the temperature markets their run.
         run: |
-          python3 -u _kalshi/kalshi_rain.py > rain.log 2>&1 &
-          RAIN=$!
           python3 -u _kalshi/kalshi_daily.py
           # the post-mortem: Central Park's one-minute archive, days behind, replayed
           # once the day has settled. Self-throttled to a few requests a day.
           python3 -u _kalshi/minute_replay.py || echo "minute replay failed (kept going)"
-          wait $RAIN || echo "rain step failed (kept going)"
-          echo "----- rain -----"; cat rain.log
 
       - name: Commit if changed
         run: |

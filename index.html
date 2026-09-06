@@ -53567,8 +53567,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         fin(changed);
       };
       cwkPositions(force, function(){
-        var rainDone = fetch('kalshi_rain.json' + cb).then(function(r){ return r.json(); })
-          .then(function(j){ if (j && j.cities) window._cwRain = j; }).catch(function(){});
         fetch('kalshi_ny.json' + cb).then(function(r){ return r.json(); })
           .then(function(j){
             if (!j || !j.today) return fin(false);
@@ -53595,7 +53593,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               } catch (e){}
             }
             if (!changed && !force) return fin(false);   /* the automatic pull: same bake, leave it alone */
-            rainDone.then(function(){ redraw(changed); });
+            redraw(changed);
           }).catch(function(){ fin(false); });
       });
     }
@@ -54418,14 +54416,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       qcL.push(qcRow(nMod >= 4 ? QCG : nMod >= 2 ? QCA : QCR, 'MODELS',
         nMod + ' IN THE CONSENSUS', nMod >= 4 ? '' : 'upstream models are missing'));
 
-      /* 6. the rain board is a separate file and a separate bake; it can fail
-            on its own, and the job is written so that it does */
-      var qRN = window._cwRain;
-      var rAge = qRN ? ageOf(qRN.updated, qRN.updated_utc) : null;
-      qcL.push(!qRN
-        ? qcRow(QCR, 'RAIN', 'NOT LOADED', 'the 22-city board did not arrive')
-        : qcRow((rAge != null && rAge < 90) ? QCG : qcNight ? QCN : QCA, 'RAIN',
-            ((qRN.cities || []).length) + ' CITIES · ' + ageTxt(rAge)));
 
       /* 7. the lock. Past noon with nothing locked means the run that writes
             the day's graded decision never happened -- the failure that makes
@@ -55891,83 +55881,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + rows2;
       })();
 
-      /* ---- WILL IT RAIN: a different market, a different model ------------
-         22 binary city markets a day against the temperature ladders' seven.
-         The model is a logistic on how many of six models produce measurable
-         precipitation -- validated leave-one-city-out at Brier 0.083 against
-         climatology's 0.195 -- and it is a far simpler thing than the
-         temperature distribution: no ladder, no floor, no rounding line. */
+      /* the WILL IT RAIN board was removed 2026-09-06 (user: "we should be
+         tracking the overall weather behind the scenes already"); the rain
+         market model left with it */
       var rain = '';
-      (function(){
-        var RN = window._cwRain;
-        if (!RN || !RN.cities || !RN.cities.length) return;
-        /* THE SAME TWO RULES, EXTRAPOLATED -- and labelled as such. The rain
-           board is a separate model with its own scoring, and its betting
-           record is ONE trade (Trenton YES at 4c, lost). So there is no rain
-           evidence for a price floor either way.
-
-           What there is: 435 temperature bets at a nickel or less, zero
-           winners, and the identical shape on this board an hour ago -- New
-           Orleans NO at 1c because we said 33% where the market said 1%.
-           Fading a liquid market's near-certainty for pennies is a mechanism,
-           not a quirk of temperature ladders. Revisit when rain has a real
-           sample rather than one. */
-        var bets = RN.cities.filter(function(c){
-          return c.bet && c.bet.ev > 0
-            && c.bet.price >= KMIN_PRICE
-            && !(c.market_p != null && Math.abs(c.p - c.market_p) > KMAX_DISAGREE);
-        });
-        /* the same four-cent floor as the temperature plan: a 1c rain edge is not a bet */
-        var fillable = bets.filter(function(c){ return (c.bet.size || 0) >= 10 && (c.bet.ev || 0) >= KMIN_EDGE; });
-        var TK = RN.take || {}, MD = RN.model || {}, RR = RN.record || {};
-        /* A TABLE, not eight sentences. Every row carried the same five facts in
-           prose -- "42% chance YES at 8c . market says 7%" -- so comparing two
-           cities meant reading both sentences and holding them in your head.
-           Columns do that comparison for you. Tabular figures here and only
-           here: these are columns of numbers that have to line up vertically,
-           which is exactly what tabular-nums is for. */
-        var rcell = function(v, col, w){
-          return '<div style="text-align:right;font-variant-numeric:tabular-nums;'
-            + 'color:' + col + ';' + (w ? 'font-weight:800;' : '') + '">' + v + '</div>';
-        };
-        /* THE SAME COLUMNS AS THE CITIES. The rain board was a table under a
-           tinted box; now each fillable city is a card on the shared shape:
-           name on top, the edge in its bar, then our odds against the
-           market's, the side and its price, and what is for sale. */
-        var rMax = 0;
-        fillable.forEach(function(c){ rMax = Math.max(rMax, c.bet.ev || 0); });
-        var cardFn = window._cwColCard;
-        var rows3 = !(fillable.length && cardFn) ? '' :
-          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax('
-          + (PHONE ? 78 : 96) + 'px,1fr));gap:4px;margin-top:8px;">'
-          + fillable.map(function(c){
-              var b = c.bet, yes = (b.side === 'yes');
-              return cardFn({ name: c.city, ev: b.ev, evMax: rMax,
-                              sub: '<span style="color:' + FCC + ';">' + Math.round(100 * c.p) + '%</span> vs <span style="color:' + MKC + ';">' + Math.round(100 * (c.market_p || 0)) + '%</span>',
-                              bet: { side: yes ? 'YES' : 'NO', price: b.price, label: yes ? 'rain' : 'no rain' },
-                              offer: b.size });
-            }).join('')
-          + '</div>';
-        var box = '';
-        if (fillable.length){
-          box = rows3
-            + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.04em;margin-top:6px;">'
-            + fillable.length + ' OF ' + bets.length + ' MISPRICED CITIES WITH SIZE BEHIND THEM \u00B7 OURS VS THE MARKET, THEN THE SIDE TO BUY'
-            + (bets.length > fillable.length ? ' \u00B7 ' + (bets.length - fillable.length) + ' TOO THIN TO TAKE' : '') + '</div>';
-        } else {
-          box = '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:7px;'
-            + 'line-height:1.45;">Nothing on the rain board is both mispriced by ' + cents(KMIN_EDGE) + ' and fillable '
-            + 'right now. ' + (bets.length ? bets.length + ' cities look mispriced but the '
-            + 'book behind them is too thin to take.' : '') + '</div>';
-        }
-        rain = hdr('WILL IT RAIN \u00B7 ' + (((window._cwRain || {}).cities || []).length || 3) + ' CITIES')
-          + box
-          /* the four footnotes that sat here are gone: what the contract settles
-             on, how the six models vote, the held-out Brier and the live
-             record. All true, none of it changes a decision at the moment
-             someone is reading a board of prices. */
-          + '';
-      })();
 
       var play = '';
       if (vbest){
@@ -56697,7 +56614,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             return '<div style="display:contents;">' + L4.concat(R4).map(cell).join('') + '</div></div>';
           })()
         + cities
-        + rain
 
         /* bookkeeping lives down here and stays quiet: it is how the forecast
            keeps itself honest, not something to read before betting */
@@ -57930,11 +57846,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          Baked by _kalshi/kalshi_daily.py because Kalshi 403s any browser. */
       if (!window._cwKalshi && !window._cwKalshiReq){
         window._cwKalshiReq = 1;
-        /* the rain board is a separate model in its own file; it loads
-           alongside and the panel shows it only once it has arrived */
-        fetch('kalshi_rain.json?v=' + Math.floor(Date.now() / 6e5))
-          .then(function(r){ return r.json(); })
-          .then(function(j){ if (j && j.cities) window._cwRain = j; }).catch(function(){});
         fetch('kalshi_ny.json?v=' + Math.floor(Date.now() / 6e5)).then(function(r){ return r.json(); })
           .then(function(j){ if (j && j.today){ window._cwKalshiHead = j; if (cwkCity() === 'ny' || !window._cwKalshi) window._cwKalshi = j; cwDrawSensors(); } }).catch(function(){});
       }
