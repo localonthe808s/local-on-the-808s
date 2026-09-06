@@ -2621,6 +2621,22 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         if _late:
             _ph.append(max(_late)[1])
     peak_hour = int(statistics.median(_ph)) if _ph else None
+    # MODEL VERSUS SENSOR, RIGHT NOW. The runs' expected temperature at the
+    # latest observed hour against what the station actually read. On
+    # 2026-09-06 Las Vegas had a monsoon cell over the airport at 1 PM (78 in
+    # rain) while the runs expected the high 80s and the bake held 67% on
+    # 86-87; nothing on the sheet said the runs were eight degrees warm. This
+    # does not move the forecast (a nudge toward the current reading measured
+    # WORSE on New York); it makes the gap visible so the plan can be doubted.
+    model_resid = None
+    _hobs = {h: v for h, v in (obh.get(tkey) or {}).items() if h0 <= h <= now.hour and v is not None}
+    if _hobs:
+        _hh = max(_hobs)
+        _exp = [x for x in ((fc.get(tkey) or {}).get(_hh) for fc in fcm.values()) if x is not None]
+        if _exp:
+            _e = statistics.median(_exp)
+            model_resid = {'hour': _hh, 'expected': round(_e, 1), 'observed': round(_hobs[_hh], 1),
+                           'diff': round(_hobs[_hh] - _e, 1)}
 
     cands = [x for x in (obs_far, fadj) if x is not None]
     if not cands:
@@ -3270,6 +3286,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # New York +2.0 on the afternoon that made the case for it.
             'six_max': _six, 'six_window': SIX_WINDOW.get(cfg['key']),
             'own5_max': _own5, 'own5_station': OWN5.get(cfg['key']),
+            'model_resid': model_resid,
             # THE REPORT THE DAY IS ACTUALLY SETTLED ON. Verified against the
             # exchange's own expiration_value on 112 of 112 settled days. The
             # panel leads with this; everything else on screen is an estimate of

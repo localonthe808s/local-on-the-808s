@@ -56275,6 +56275,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            paragraph does -- how is today going -- and answering it twice, in
            two places, made the reader hunt for the half they had not seen. */
         if (verdict) out.push(verdict.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, ''));
+        /* MODEL VERSUS SENSOR. When the runs are well off the latest reading,
+           the lean above is suspect and the sheet must say so before anything
+           else is read (Las Vegas in monsoon rain, 2026-09-06). */
+        var MR = T.model_resid;
+        if (!settledNow && MR && MR.diff != null && Math.abs(MR.diff) >= 3){
+          var warm = MR.diff < 0;
+          out.unshift('<b style="color:#f2833f;">The models are running ' + D1(Math.abs(MR.diff)) + '\u00B0 '
+            + (warm ? 'warm' : 'cold') + ' right now</b> \u2014 they expected ' + D1(MR.expected) + '\u00B0 at '
+            + hr12(MR.hour) + ' and the station read ' + D1(MR.observed) + '\u00B0. '
+            + (warm ? 'The lean above has not been corrected for it; the forecast is the one voice still above the readings.'
+                    : 'The day is running ahead of the runs; the ranges above the lean deserve more weight than the sheet gives them.'));
+        }
         /* THE CLOCK VERDICT, FIRST. "This is the window" / "past the window" is
            measured (price_study, every settled day) and it decides whether
            anything below is worth acting on; it led the hour chart, a screen
