@@ -2701,7 +2701,13 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # own maximum has reached TWC's figure, the figure goes into the floor.
     _twcmax = (_twc or {}).get('max') if isinstance(_twc, dict) else None
     _aptmax = apt_max(cfg, today) if OWN5.get(cfg['key']) is None else None
-    _twc_corr = (_twcmax is not None and _aptmax is not None and _aptmax >= _twcmax - 1e-9)
+    # and never a spike: the one-minute archive puts the true peak at most 4 F
+    # above the hourly maximum in New York (90th percentile 3); Chicago's bad
+    # 86 sat 3 above its hourly 83. A corroborated figure more than 2 above the
+    # hourly stream is still treated as a warning. Newark runs warm, so the
+    # airport check alone is not enough.
+    _twc_corr = (_twcmax is not None and _aptmax is not None and _aptmax >= _twcmax - 1e-9
+                 and rmax is not None and _twcmax <= rmax + 2.0 + 1e-9)
     if _twc_corr:
         live = _twcmax if live is None else max(live, _twcmax)
         print('%s TWC running max %.0f corroborated by an airport at %.1f: counted as a floor' % (cfg['key'], _twcmax, _aptmax))
