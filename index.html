@@ -56537,10 +56537,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            replay with where the day stands, move it up"): today's axis, then
            how the last settled day actually unfolded minute by minute, then
            the clock. The replay fills in asynchronously from kalshi_minutes.json. */
+        /* TODAY STAYS ON SCREEN EVEN WHEN THE DAY READS AS DONE. Hiding the axis
+           and the hour chart at 95% odds left "where's today?" (user,
+           2026-09-06, 3 PM with the peak still an hour off). The plan box is
+           what a done day switches off, not the picture of the day. */
         + hdr('WHERE THE DAY STANDS')
-        + (dayDone ? '' : scale + timing)
+        + scale + timing
         + '<div id="bv-minute-replay"></div>'
-        + (dayDone ? '' : (typeof track === 'string' ? track : '') + verdict)
+        + (typeof track === 'string' ? track : '') + verdict
 
         /* TODAY LEFT, TOMORROW RIGHT.  The two boards answer one question
            together -- is the market drifting toward us or away from us
