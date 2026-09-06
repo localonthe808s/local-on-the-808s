@@ -2640,8 +2640,13 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # bracket level is weaker evidence than it looks. Scoring on the settlement
     # is exact, and comparing our own figure against it turns any future drift
     # in the feed into a visible flag instead of a silent wrong record.
+    # "pending" is any day not yet scored FROM A SETTLEMENT -- not merely a day
+    # with no score. Built only for unscored days, the lookup came back empty on
+    # every run once the record was full, so the re-examination loop below had
+    # nothing to compare against and two wrong legacy days stood for weeks.
     pending = [k for k, h in hist.items()
-               if k < tkey and 'lock' in h and h.get('actual') is None]
+               if k < tkey and 'lock' in h
+               and (h.get('actual') is None or h.get('truth_source') != 'settlement')]
     settled_by_date = {}
     if pending:
         try:
@@ -2666,11 +2671,17 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # So: a day scored from a SETTLEMENT is final and never touched again. A day
     # scored from an OBSERVATION is provisional and is re-examined every run
     # until the settlement appears, then rewritten to agree with it.
+    # LEGACY ROWS TOO. Days scored before `truth_source` existed carry no
+    # flag at all and were treated as final -- and two of them were wrong:
+    # 2026-09-02 stood at 70 and 2026-09-03 at 83 while the exchange paid 71
+    # and 84 (found 2026-09-06 by diffing the record against every settled
+    # expiration_value). A row is final only once it has been scored from a
+    # settlement; anything else is re-examined while a settlement exists.
     for k, h in hist.items():
         if k >= tkey or 'lock' not in h:
             continue
         was = h.get('actual')
-        if was is not None and not (h.get('truth_source') == 'observed'
+        if was is not None and not (h.get('truth_source') != 'settlement'
                                     and settled_by_date.get(k)):
             continue
         a = daily.get(k)
