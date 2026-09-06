@@ -2660,6 +2660,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                 'market_pick': trows[tm]['label'], 'market_p': trows[tm]['mid'],
                 'agree': tb == tm,
                 'ladder': [{'label': r['label'], 'lo': r['lo'], 'hi': r['hi'],
+                            'ticker': r.get('ticker'),
                             'ours': round(pp, 4), 'market': r['mid'],
                             'bid': r['bid'], 'ask': r['ask'],
                             'nbid': r['nbid'], 'nask': r['nask'],

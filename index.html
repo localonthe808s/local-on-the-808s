@@ -53644,6 +53644,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          "72.7°" read as a different kind of number. TWC's forecast is a whole
          degree at the source and stays one; a fake .0 there is a lie. */
       var D1 = function(x){ return (x == null || isNaN(x)) ? '\u2014' : (+x).toFixed(1); };
+      var dayLabel2 = function(iso){
+        var dt = new Date(iso + 'T12:00:00');
+        return (isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() + ' ') + String(iso).slice(5).replace('-', '/');
+      };
       var DOW2 = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       /* hoisted: the record run and the tomorrow block both name their weekday,
          and both are assembled before the briefing this used to live in */
@@ -56324,7 +56328,51 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          you would keep closing now. The YOU HOLD box further down keeps the
          reasoning; this is the glance. */
       var posTop = '';
-      if (bookKnown && !PHONE){
+      /* THE WHOLE BOOK, not just this market. The user sold both New York
+         positions and bought Las Vegas while the sheet sat on the New York
+         tab saying nothing -- "you're not aware of what I'm doing on there"
+         (2026-09-06). Positions on another tab's city are listed with the
+         city and switch the tab on tap; positions on tomorrow's market are
+         listed with the day; anything else shows its ticker. */
+      var POSALL = (window._cwPot && window._cwPot.positions) || [];
+      var onToday = {};
+      (T.ladder || []).forEach(function(r){ if (r.ticker) onToday[r.ticker] = true; });
+      var tomRows = {};
+      (((T.tomorrow || {}).ladder) || []).forEach(function(r){ if (r.ticker) tomRows[r.ticker] = r; });
+      var tickerRange = function(tk){
+        var m = String(tk || '').match(/-([BT])([\d.]+)$/);
+        if (!m) return tk;
+        if (m[1] === 'B'){ var c = parseFloat(m[2]); return (Math.floor(c)) + ' to ' + (Math.ceil(c)); }
+        return 'edge ' + m[2];
+      };
+      var otherRows = POSALL.filter(function(h){ return h.contracts > 0 && !onToday[h.ticker]; }).map(function(h){
+        var cityDef = CWK_CITIES.filter(function(c){ return String(h.ticker || '').indexOf(c.ev) === 0; })[0];
+        var tr = tomRows[h.ticker];
+        var cost = (h.cost != null ? h.cost : h.traded);
+        var tag, range, extra = '', clickable = '';
+        if (tr){
+          tag = (T.tomorrow && T.tomorrow.date) ? dayLabel2(T.tomorrow.date) : 'TOMORROW';
+          range = tr.label;
+          var out = (h.side === 'yes') ? tr.bid : tr.nbid;
+          if (out != null && cost != null){
+            var pl = out * h.contracts - cost, up = pl >= 0;
+            extra = ' <b style="color:' + (up ? YESC : NOC) + ';">' + (up ? '+' : '\u2212') + '$' + Math.abs(pl).toFixed(2) + '</b>';
+          }
+        } else if (cityDef){
+          tag = cityDef.tab; range = tickerRange(h.ticker);
+          extra = ' <span style="color:#4aa3e0;">open tab \u2192</span>';
+          clickable = ' class="cwk-city" data-city="' + cityDef.key + '"';
+        } else {
+          tag = mtaEsc(String(h.ticker || '').replace(/^KXHIGH/, '').split('-')[0]); range = tickerRange(h.ticker);
+        }
+        return '<div' + clickable + ' style="font:700 9px system-ui,sans-serif;color:#fff;margin-top:2px;white-space:nowrap;'
+          + (clickable ? 'cursor:pointer;' : '') + '">'
+          + '<b style="color:' + (h.side === 'yes' ? YESC : NOC) + ';">' + String(h.side).toUpperCase() + '</b> '
+          + deg(range) + ' <span style="color:#f5a524;">\u00B7 ' + tag + '</span>'
+          + (cost != null ? ' <span style="color:#9fd9c4;">\u00B7 $' + (+cost).toFixed(2) + ' in</span>' : '')
+          + extra + '</div>';
+      }).join('');
+      if ((bookKnown || otherRows) && !PHONE){
         var bookPL = bookVal - bookCost;
         posTop = '<div style="display:inline-block;text-align:center;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
@@ -56347,12 +56395,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   })()
                 + '</div>';
             }).join('')
+          + otherRows
           + (bookRows.length > 1
               ? '<div style="font:800 8px system-ui,sans-serif;margin-top:3px;color:' + (bookPL >= 0 ? YESC : NOC) + ';">'
                 + 'BOOK ' + (bookPL >= 0 ? '+' : '\u2212') + '$' + Math.abs(bookPL).toFixed(2) + '</div>'
               : '')
           + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
-          + 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW</div>'
+          + (bookKnown ? 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW' : 'NOTHING ON THIS MARKET \u00B7 THE BOOK IS ELSEWHERE') + '</div>'
           + '</div>';
       }
       /* IN THE MIDDLE OF THE TOP, not tucked under the clock: the date line on
