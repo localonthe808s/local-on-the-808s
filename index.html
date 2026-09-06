@@ -54589,10 +54589,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'border-radius:50%;background:#0d1117;border:2px solid #2fbfa8;"></div>';
         }
         if (crowded){
-          nmark += label((xn + xo) / 2, '#2fbfa8',
-            (Math.abs(T.now_temp - T.obs_so_far) < 0.25)
-              ? T1(T.now_temp) + '° NOW &amp; PEAK' + nowTime
-              : T1(T.now_temp) + '° NOW' + nowTime + ' · ' + T1(T.obs_so_far) + '° PEAK' + peakTime);
+          /* two facts, two lines: the reading on the lower line by its ring,
+             the peak on the line above by its tick -- one run-on label read
+             as a single fact */
+          if (Math.abs(T.now_temp - T.obs_so_far) < 0.25)
+            nmark += label((xn + xo) / 2, '#2fbfa8', T1(T.now_temp) + '° NOW &amp; PEAK' + nowTime);
+          else {
+            nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '° NOW' + nowTime);
+            omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '° PEAK' + peakTime, -20);
+          }
         } else {
           if (xn != null) nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '° NOW' + nowTime);
           if (xo != null) omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '° PEAK' + peakTime);
@@ -54620,7 +54625,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'transform:translateX(' + anchor(x) + ');font:800 6.5px system-ui,sans-serif;letter-spacing:.04em;'
             + 'color:' + u[2] + ';white-space:nowrap;">' + u[0] + '</div>';
         });
-        scale = '<div style="position:relative;height:' + (96 + (fcLabelTop === 23 ? 10 : 0)) + 'px;margin:14px 6px 0;">'
+        scale = '<div style="position:relative;height:' + (96 + (fcLabelTop === 23 ? 10 : 0)) + 'px;margin:' + (crowded ? 26 : 14) + 'px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
           + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>'
