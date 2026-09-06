@@ -387,13 +387,18 @@ async function obsSnapshot(env) {
         const ny = rows.find((x) => x.key === 'ny_high');
         if (ny) {
           ny.apt5 = {};
+          // TODAY ONLY. The window reaches back twelve hours, and filtering by
+          // the hour alone let yesterday evening's readings count as "since
+          // 7 AM" -- all three airports showed the same 73.4 on the first tick.
+          const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+            year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
           for (const st of (j.STATION || [])) {
             const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
             let mx = null, last = null, lastAt = null;
             for (let i = 0; i < ts.length; i++) {
               const v = vs[i]; if (typeof v !== 'number') continue;
               const hh = Number(ts[i].slice(11, 13));
-              if (hh >= 7 && (mx == null || v > mx)) mx = v;
+              if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) mx = v;
               last = v; lastAt = ts[i].slice(11, 16);
             }
             ny.apt5[st.STID] = { max7: mx, last, at: lastAt };
@@ -438,6 +443,9 @@ function foldLead(sum, snap) {
       if (!cur || v > cur.v + 1e-9) d[src] = { v, at: r.t };
     }
     d.seen = r.t;
+    // the airports' 5-minute maxima ride along, latest reading per station,
+    // so the public summary can show the regional picture without the raw trail
+    if (r.apt5) d.apt5 = { at: r.t, s: r.apt5 };
   }
   // 30 days is far more than any analysis needs and keeps the value small
   const cutoff = new Date(Date.parse(snap.t) - 30 * 864e5).toISOString().slice(0, 10);
@@ -459,8 +467,10 @@ async function logObs(env) {
   await env.OBS.put(`obs:${snap.t}`, JSON.stringify(snap.rows), {
     expirationTtl: 60 * 60 * 24 * 120        // 120 days is far past any analysis
   });
+  const ny = snap.rows.find((r) => r.key === 'ny_high');
+  const apt = ny && ny.apt5 ? ' apt5 ' + Object.keys(ny.apt5).map((k) => `${k}:${ny.apt5[k].max7}`).join(' ') : ' apt5 none';
   const lead = snap.rows.filter((r) => r.max7 != null && r.iem != null && r.max7 > r.iem);
-  return `${snap.rows.length} rows` + (lead.length
+  return `${snap.rows.length} rows` + apt + (lead.length
     ? `, max7 above iem: ${lead.map((r) => `${r.key} +${(r.max7 - r.iem).toFixed(1)}`).join(' ')}`
     : '');
 }

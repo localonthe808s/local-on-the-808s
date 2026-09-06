@@ -53941,6 +53941,21 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 ticks + (ticks === 1 ? ' TICK' : ' TICKS') + ' LOGGED',
                 'no city-day has closed yet \u2014 needs about two weeks'));
             }
+            /* THE AIRPORTS' 5-MINUTE MAXIMA, the regional early warning. Central
+               Park's own 5-minute stream is not public; LaGuardia, JFK and
+               Newark's are (Synoptic). When the three are peaking between the
+               hourly reports, the park usually is too. Today's row, latest tick. */
+            var nyToday = days['ny_high|' + T.date];
+            if (nyToday && nyToday.apt5 && nyToday.apt5.s){
+              var A = nyToday.apt5.s;
+              var parts = Object.keys(A).map(function(k){
+                var a = A[k];
+                return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : T1(a.max7) + '\u00B0') + '</b>'
+                  + (a.last != null ? ' <span style="opacity:.7;">(' + T1(a.last) + '\u00B0 at ' + mtaEsc(a.at || '') + ')</span>' : '');
+              });
+              rows.push(qcRow(QCG, 'AIRPORTS 5-MIN', parts.join(' \u00B7 '),
+                'highest 5-minute reading since 7 AM at LGA, JFK, EWR \u2014 the park\u2019s own is not public'));
+            }
             el.innerHTML = hdr('LEAD STUDY')
               + '<div style="margin-top:2px;">' + rows.join('') + '</div>';
           })
