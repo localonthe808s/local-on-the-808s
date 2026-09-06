@@ -54073,6 +54073,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
               + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
             T.cli_final ? '' : 'window shuts at 4 PM; the day can still rise'));
+      /* 4a. THE FIRST HARD NUMBER OF THE DAY. The ASOS appends its own six-hour
+            maximum to the observation nearest 00/06/12/18Z, and that group sees
+            between the hourly reports the METAR stream throws away: 98.1% exact
+            against settlements over 322 market-days, safe as a floor by
+            construction. The 12-18Z window closes at 1:51 PM local, which is
+            the earliest moment the settlement is partly known. */
+      if (T.six_max != null){
+        var sixAhead = (T.obs_so_far != null && T.six_max > T.obs_so_far + 0.05);
+        qcL.push(qcRow(QCG, 'SIX-HOURLY', T1(T.six_max) + '\u00B0 FROM THE ASOS MAX GROUP'
+          + (sixAhead ? ' \u00B7 ABOVE THE HOURLY HIGH' : ''),
+          'closes at 1:51 PM local; the day cannot settle below it'));
+      }
       /* 4b. THE ARBITER ITSELF. weather.com/kalshi is the page the rules name,
             and it marks each station-day no report / preliminary / official.
             Official is the number Kalshi pays on. Yesterday's row is the one

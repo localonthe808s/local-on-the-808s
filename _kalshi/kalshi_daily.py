@@ -84,9 +84,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Chicago settles on CLIMDW, which is MIDWAY, not O'Hare -- the two routinely
 # differ by a degree and O'Hare would have been wrong all season.
 def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None,
-         skill=True, twc_geocode=False):
+         skill=True, twc_geocode=False, bias_hl=None):
     return {'key': key, 'series': series, 'label': city + ' daily high',
-            'wfo': wfo, 'skill': skill, 'twc_geocode': twc_geocode,
+            'wfo': wfo, 'skill': skill, 'twc_geocode': twc_geocode, 'bias_hl': bias_hl,
             'station': station, 'network': net, 'lat': lat, 'lon': lon,
             'field': 'max_temp_f', 'tz': tz, 'tzlabel': tzl,
             'city': city, 'cli': cli,
@@ -104,7 +104,7 @@ MARKETS = [
     # the one market that matters most. Revisit with the live trail.
     _mkt('ny_high',  'KXHIGHNY',   'New York',     'NYC', 'NY_ASOS', 40.7789, -73.9692,
          'America/New_York',    'ET', 'CLINYC', 'highest-temperature-in-nyc', 'OKX',
-         skill=False, twc_geocode=True),
+         skill=False, twc_geocode=True, bias_hl=7),
     _mkt('chi_high', 'KXHIGHCHI',  'Chicago',      'MDW', 'IL_ASOS', 41.786,  -87.752,
          'America/Chicago',     'CT', 'CLIMDW', 'highest-temperature-in-chicago', 'LOT'),
     _mkt('mia_high', 'KXHIGHMIA',  'Miami',        'MIA', 'FL_ASOS', 25.791,  -80.316,
@@ -1241,12 +1241,54 @@ SKILL_POWER = 2
 SKILL_MAE_FLOOR = 0.3         # degF; below this a model's weight stops growing
 
 
-def biases_factory(fcm, daily, skill=True):
-    """-> f(prior_days) giving each model's mean (peak - actual) over them,
+# HOW LONG THE BIAS REMEMBERS. A flat 30-day mean was fitted on 67 summer
+# days. On 539 New York days from January 2025 (hourly obs, floor included,
+# walk-forward) a shorter memory wins at every hour and in every season:
+#
+#     9 AM, 539 days     MAE    within 1F   Brier
+#     flat 30 days       0.929    64.2%     .559
+#     flat 21 days       0.920    67.7%     .555
+#     flat 10 days       0.903    65.1%     .552
+#     EWMA half-life 7   0.906    67.2%     .551   (spring +4, summer +4.4,
+#                                                   autumn +1, winter level)
+#     EWMA half-life 4..10 all within noise of 7; 14 is back to the flat 30.
+#
+# The model's error drifts with the regime on a scale of a week or two, and a
+# month-long mean averages across regimes. An exponential window keeps the
+# whole 90 days for stability but lets the last fortnight dominate.
+BIAS_SPAN = 90                # days an EWMA bias looks back
+
+
+def biases_factory(fcm, daily, skill=True, half_life=None):
+    """-> f(prior_days) giving each model's bias (peak - actual) over them,
     plus its skill weight under '__w__' (see SKILL_POWER above). With
-    skill=False every weight is 1 -- the plain mean, which New York keeps."""
+    skill=False every weight is 1 -- the plain mean, which New York keeps.
+    With half_life set, the bias is an exponentially weighted mean over the
+    last BIAS_SPAN days ending at the last prior day, instead of a flat mean
+    over `prior`."""
+    any_fc = fcm[sorted(fcm)[0]] if fcm else {}
+    all_keys = sorted(k for k in any_fc if k in daily and len(any_fc[k]) >= 20)
+
     def f(prior):
         out, w = {}, {}
+        if half_life and prior:
+            last = max(prior)
+            span = [k for k in all_keys if k <= last][-BIAS_SPAN:]
+            lam = 0.5 ** (1.0 / half_life)
+            for m, fc in fcm.items():
+                pts = [(max(fc[k].values()) - daily[k], lam ** j)
+                       for j, k in enumerate(reversed(span))
+                       if k in fc and len(fc[k]) >= 20]
+                if len(pts) < BIAS_MIN:
+                    out[m] = None
+                    continue
+                ws = sum(wt for _, wt in pts)
+                out[m] = sum(e * wt for e, wt in pts) / ws
+                if skill:
+                    mae = sum(abs(e) * wt for e, wt in pts) / ws
+                    w[m] = 1.0 / max(mae, SKILL_MAE_FLOOR) ** SKILL_POWER
+            out['__w__'] = w
+            return out
         for m, fc in fcm.items():
             e = [max(fc[p].values()) - daily[p]
                  for p in prior if p in fc and p in daily and len(fc[p]) >= 20]
@@ -2333,7 +2375,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     if bias is None:
         print('not enough scored history for a bias (%d days)' % nb)
         return 0
-    bias_of = biases_factory(fcm, daily, cfg.get('skill', True))
+    bias_of = biases_factory(fcm, daily, cfg.get('skill', True), cfg.get('bias_hl'))
     h0_of = lambda k: climate_day_start(
         cfg, datetime.date(*map(int, k.split('-'))))
 
@@ -3045,7 +3087,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'lock_hour': LOCK_HOUR,
             # the panel renders these rather than hardcoding them: the prose had
             # already drifted from the constants twice after a refit
-            'damp': SWING_DAMP, 'bias_days': BIAS_K, 'resid_days': RESID_M,
+            'damp': SWING_DAMP, 'bias_days': BIAS_K, 'bias_hl': cfg.get('bias_hl'),
+            'resid_days': RESID_M,
             # deep link straight to today's event, so the panel is one click
             # from actually placing the bet
             'link': (cfg['url'] + '/' + event_ticker(cfg, today).lower())
