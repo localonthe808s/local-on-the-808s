@@ -53475,6 +53475,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             window._cwKalshi = j;
             var changed = (stale !== j.updated);
             if (changed) try { cwDrawSensors(); } catch (e){}
+            if (changed && stale){
+              /* the bake's slot is the last :05/:20/:35/:50 at or before the
+                 script started; the landing is now. Keep the last six. */
+              try {
+                var st0 = Date.parse(j.started_utc || '');
+                if (!isNaN(st0)){
+                  var mins = new Date(st0).getUTCMinutes();
+                  var slotMin = [50, 35, 20, 5].filter(function(m){ return m <= mins; })[0];
+                  var slot = (slotMin == null) ? st0 - ((mins + 10) * 60000) : st0 - ((mins - slotMin) * 60000) - new Date(st0).getUTCSeconds() * 1000;
+                  var lat = Date.now() - slot;
+                  if (lat > 30000 && lat < 30 * 60000){
+                    var arr = JSON.parse(localStorage.getItem('bv_kalshi_lat') || '[]');
+                    arr.push(Math.round(lat)); localStorage.setItem('bv_kalshi_lat', JSON.stringify(arr.slice(-6)));
+                  }
+                }
+              } catch (e){}
+            }
             if (!changed && !force) return fin(false);   /* the automatic pull: same bake, leave it alone */
             rainDone.then(function(){ redraw(changed); });
           }).catch(function(){ fin(false); });
@@ -53876,10 +53893,21 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          sheet sat on "landing..." for most of a quarter hour. The bake stamps
          when it started and when it wrote, and the difference is how long the
          last one took; the countdown adds that, so it counts to the landing. */
+      /* MEASURED BY THE SHEET ITSELF. The bake's own stamps only span the
+         script, not the checkout before it or the push after it, and the
+         first try read 13 seconds for a run that landed five minutes after
+         its slot. So the page records, each time a new bake arrives, how long
+         after its slot it landed, and uses the median of the last six. Until
+         it has measured one, five minutes. */
       var cwkLatency = (function(){
-        var a = Date.parse(K.started_utc || ''), b = Date.parse(K.updated_utc || '');
-        if (isNaN(a) || isNaN(b) || b < a) return 6 * 60000;       /* a typical run, until measured */
-        return Math.min(Math.max(b - a, 60000), 20 * 60000);
+        try {
+          var arr = JSON.parse(localStorage.getItem('bv_kalshi_lat') || '[]');
+          if (arr.length >= 2){
+            arr = arr.slice().sort(function(a, b){ return a - b; });
+            return Math.min(Math.max(arr[Math.floor(arr.length / 2)], 60000), 20 * 60000);
+          }
+        } catch (e){}
+        return 5 * 60000;
       })();
       var cwkDueIn = function(){
         var d = new Date(nowET);
