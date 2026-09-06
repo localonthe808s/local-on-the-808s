@@ -55383,6 +55383,34 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               out.push('<b>Watch ' + (top.lo - 0.5).toFixed(1) + '°</b> — if it stalls '
                 + dn.toFixed(1) + '° short, the range below takes over.');
           }
+          /* THE SETTLING PARTY'S OWN FORECAST. Kalshi pays on The Weather
+             Company's reading, and TWC publishes a forecast for the same
+             station; the NWS point forecast sits beside it. Neither feeds
+             the pick -- there is no archive to test them on -- but a reader
+             deciding whether to trust a 2-degree gap against the market
+             should see where the two official forecasts stand. Logged on
+             the trail every hour from 2026-09-06 so this can be judged. */
+          if (T.twc_fc != null || T.nws_fc != null){
+            var rowOf = function(v){
+              var rr = Math.round(v);
+              return (T.ladder || []).filter(function(r){
+                return (r.lo == null || rr >= r.lo) && (r.hi == null || rr <= r.hi);
+              })[0];
+            };
+            var bits = [];
+            if (T.twc_fc != null){
+              var tr = rowOf(T.twc_fc), gap = (T.pred == null) ? null : T.twc_fc - T.pred;
+              bits.push('<b>TWC\u2019s own forecast is ' + T1(T.twc_fc) + '\u00B0</b>'
+                + (gap != null && Math.abs(gap) >= 0.95
+                    ? ', ' + Math.abs(gap).toFixed(1) + '\u00B0 ' + (gap < 0 ? 'under' : 'over') + ' ours'
+                    : gap != null ? ', in line with ours' : '')
+                + (tr && T.market_pick && tr.label === T.market_pick && tr.label !== T.pick
+                    ? ' \u2014 <span style="color:' + MKC + ';">the market sits with TWC</span>'
+                    : tr && tr.label === T.pick ? ' \u2014 same range as our lean' : ''));
+            }
+            if (T.nws_fc != null) bits.push('NWS says ' + T1(T.nws_fc) + '\u00B0');
+            out.push(bits.join(' \u00B7 ') + '.');
+          }
         }
         /* THE DAY'S READ BELONGS WITH THE BRIEFING, not four sections down
            under the degree scale. "The noon pick is holding" and "the hottest

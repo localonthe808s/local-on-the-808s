@@ -760,6 +760,67 @@ def twc_today(cfg, day):
 # admits the 06-12Z, 12-18Z and 18-00Z groups -- 2am to 8pm local -- and drops
 # both 00-06Z groups, which straddle midnight and would import the previous
 # evening. The uncovered hours are night, which cannot hold a daily maximum.
+# THE SETTLING PARTY'S OWN FORECAST, AND THE NWS'S -- LOGGED, NOT USED.
+# Kalshi pays on The Weather Company's figure. TWC also publishes a forecast
+# for the same station on the same endpoint family, and on 2026-09-06 at
+# 3 AM it said 73 for New York while this model's consensus said 75.2 and
+# the market leaned 73-74. Whether TWC's forecast is a better predictor of
+# TWC's observation than the raw models is exactly the kind of thing that
+# cannot be backtested (no archive of either), so both go on the hourly
+# trail from today and get judged forward. Nothing here feeds the pick.
+NWS_GRID = {}
+
+
+def twc_forecast(cfg, day):
+    """TWC's forecast max for `day` at the market's station -> degF, or None."""
+    icao = cfg.get('icao') or ('K' + cfg['station'])
+    try:
+        j = get_json('https://api.weather.com/v3/wx/forecast/daily/3day?icaoCode=%s'
+                     '&units=e&language=en-US&format=json&apiKey=%s' % (icao, TWC_KEY),
+                     timeout=30)
+    except Exception as e:
+        print('twc forecast: %s unavailable (%s)' % (icao, e))
+        return None
+    times = j.get('validTimeLocal') or []
+    for i, t in enumerate(times):
+        if str(t)[:10] != day.isoformat():
+            continue
+        # the day part goes null once TWC considers the daytime over; the
+        # calendar-day figure stays
+        for fld in ('temperatureMax', 'calendarDayTemperatureMax'):
+            col = j.get(fld) or []
+            if i < len(col) and isinstance(col[i], (int, float)):
+                return float(col[i])
+    return None
+
+
+def nws_forecast(cfg, day):
+    """The NWS gridpoint forecast max for `day` -> degF, or None."""
+    from zoneinfo import ZoneInfo
+    try:
+        url = NWS_GRID.get(cfg['key'])
+        if not url:
+            j = get_json('https://api.weather.gov/points/%.4f,%.4f' % (cfg['lat'], cfg['lon']),
+                         timeout=30)
+            url = NWS_GRID[cfg['key']] = j['properties']['forecastGridData']
+        j = get_json(url, timeout=45)
+        z = ZoneInfo(cfg.get('tz', 'America/New_York'))
+        best = None
+        for v in j['properties']['maxTemperature']['values']:
+            st, dur = v['validTime'].split('/')
+            t = datetime.datetime.fromisoformat(st.replace('Z', '+00:00')).astimezone(z)
+            if t.date() != day or v.get('value') is None:
+                continue
+            m = re.match(r'P(?:(\d+)D)?T?(?:(\d+)H)?', dur)
+            hours = (int(m.group(1) or 0) * 24 + int(m.group(2) or 0)) if m else 0
+            if best is None or hours > best[0]:
+                best = (hours, float(v['value']))
+        return round(best[1] * 9.0 / 5.0 + 32.0, 1) if best else None
+    except Exception as e:
+        print('nws forecast: %s unavailable (%s)' % (cfg['key'], e))
+        return None
+
+
 def metar_six_max(cfg, day):
     """The day's max from the ASOS six-hourly groups, or None.
 
@@ -2200,6 +2261,13 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     _six = metar_six_max(cfg, today)
     if _six is not None:
         print('%s six-hourly: %.1f degF from the ASOS max groups' % (cfg['key'], _six))
+    # the two published forecasts, for the trail (see twc_forecast)
+    _twcf = twc_forecast(cfg, today)
+    _nwsf = nws_forecast(cfg, today)
+    if _twcf is not None or _nwsf is not None:
+        print('%s published forecasts: TWC %s, NWS %s' % (
+            cfg['key'], ('%.0f' % _twcf) if _twcf is not None else '-',
+            ('%.0f' % _nwsf) if _nwsf is not None else '-'))
 
 
     bias, nb = rolling_bias(fc, daily, tkey)
@@ -2524,6 +2592,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # the size of the best available edge at this hour. Prices alone
             # cannot answer "when should the bet go on" -- this can.
             'edge': (lambda b: round(b['ev'], 4) if b else None)(best_bet(rows, ps)),
+            # the published forecasts as of this hour, judged forward
+            'twc_fc': _twcf, 'nws_fc': _nwsf,
         })
         del trail[:-24]
 
@@ -2838,6 +2908,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'cli_final': (_cli.get(tkey) or {}).get('final'),
             'cli_at': (_cli.get(tkey) or {}).get('at'),
             'twc_max': _twc.get('max'), 'twc_now': _twc.get('now'),
+            'twc_fc': _twcf, 'nws_fc': _nwsf,
             'twc_gap': (round(_twc['max'] - rmax, 1)
                         if _twc.get('max') is not None and rmax is not None
                         else None),
