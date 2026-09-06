@@ -55168,30 +55168,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + '</div>';
         var TK = K.take || {}, CR = K.correlation || {};
         cities = hdr('ALL ' + MK.length + ' CITIES')
-          /* the number the whole exercise is trying to maximise: not accuracy,
-             not edge, but dollars that can actually be bought today */
-          + (TK.n
-              ? '<div style="margin-top:7px;padding:8px 10px;border-radius:8px;'
-                + 'background:rgba(46,204,113,.10);border:1px solid ' + YESC + '3a;">'
-                + '<div style="font:800 14px system-ui,sans-serif;color:' + YESC + ';">'
-                + 'EXPECTED TAKE TODAY \u00B7 $' + TK.ev.toFixed(2) + '</div>'
-                + kvLine('FROM', '<b>' + TK.n + ' mispriced ranges</b> across <b>' + TK.cities
-                    + '</b> ' + (TK.cities > 1 ? 'cities' : 'city') + ', staking <b>$'
-                    + TK.stake.toFixed(0) + '</b>. Every position is capped by what is '
-                    + 'actually on offer.')
-                + (TK.scale != null && TK.scale < 1
-                    ? kvLine('CAPPED', 'Sized one at a time these ' + TK.n + ' bets would want $'
-                        + TK.raw_stake.toFixed(0) + ', more than the whole pot. No more than '
-                        + (100 * TK.cap).toFixed(0) + '% of your money goes out on any one day, so each is cut to '
-                        + (100 * TK.scale).toFixed(0) + '% of its full size.')
-                    : '')
-                + '</div>'
-              : '')
-          /* the seven-cities-are-independent-bets explainer is gone. It argued
-             for the strategy; the table below it shows the strategy. */
-          /* the CITY / BLUISH / BEST BET / EDGE header went with the rows: the
-             columns label themselves. */
-          + ''
+          /* the EXPECTED TAKE box that sat here is gone (user, 2026-09-06): the
+             columns below carry every number a reader acts on, and the day's
+             expected dollars are still in the file (today.take) for the record. */
           + rows2;
       })();
 
@@ -55406,13 +55385,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                  below the 78.5° line it is 0.3° above. */
               ? stakeLine(vbest.dir, vbest.r, vbest.ask, pq)
                 + kvLine('CONVICTION', convictionOf(vbest.ev, T.pred, T.ladder, stale))
-                + kvLine('WHY', (vbest.dir === 'against'
-                      ? 'It pays if the high lands anywhere OUTSIDE ' + deg(vbest.r.label)
-                        + ' — five ranges to be right in, one to be wrong in. '
-                      : 'It pays only if the high lands inside ' + deg(vbest.r.label) + '. ')
-                    + 'Bluish puts that at <b style="color:' + FCC + ';">' + pct(pq)
-                    + '</b>; Kalshi prices it at <b style="color:' + MKC + ';">'
-                    + pct(vbest.ask) + '</b>.')
                 + kvLine('EDGE', '<b>' + cents(vbest.ev) + ' per $1</b> staked, after the fee. '
                     + 'Over many bets at this price that is what the difference is worth; '
                     + 'on any single day it wins or it does not.')
