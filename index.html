@@ -54259,8 +54259,38 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var fee = feeOf(out);
         var sell = h.n * (out - fee), hold = h.n * pWin;
         var be = Math.min(0.99, pWin + feeOf(pWin));
+        /* THE VERDICT IS DECIDED BY READINGS, NEVER BY THE BID. On 2026-09-06
+           the market swung New York to 73-74 on three stalled hourly reports
+           while TWC's running maximum (75 at 3:05) and LaGuardia (75.2 at
+           2:30) both said otherwise; the 3:51 report read 75 and the rung went
+           0 -> 94c in one minute. A verdict that compared the bid to a
+           probability invited selling into that swing. So: SELL only when the
+           day has been decided against the position by the sensors -- the
+           running maximum (hourly, six-hourly, the 5-minute feed) past the
+           range, or stuck outside it with the peak measured as behind us, or
+           the climate report in -- and HOLD otherwise, naming the reading. */
+        var rm = null;
+        [T.obs_peak_read, T.own5_max, T.six_max].forEach(function(v){ if (v != null && (rm == null || v > rm)) rm = v; });
+        var PDp = (T.peak_done && T.peak_done.p != null) ? T.peak_done.p : 0;
+        var rep0 = (T.portal && T.portal.max != null && (T.portal.official || PDp >= 0.85)) ? T.portal.max : null;
+        var dead = false, why = '';
+        var lo = r.lo, hi = r.hi;
+        if (rep0 != null){
+          var inR = (lo == null || rep0 >= lo - 0.5) && (hi == null || rep0 <= hi + 0.5);
+          dead = yes ? !inR : inR;
+          if (dead) why = 'the climate report reads ' + T1(rep0) + '\u00B0, ' + (inR ? 'inside' : 'outside') + ' ' + deg(r.label);
+        } else if (rm != null){
+          if (yes){
+            if (hi != null && rm >= hi + 0.5){ dead = true; why = 'the station has already reached ' + T1(rm) + '\u00B0, past the top of ' + deg(r.label); }
+            else if (lo != null && rm < lo - 0.5 && PDp >= 0.85){ dead = true; why = 'the high so far is ' + T1(rm) + '\u00B0, under ' + deg(r.label) + ', and the peak is ' + Math.round(100 * PDp) + '% behind us'; }
+          } else {
+            var inside = (lo == null || rm >= lo - 0.5) && (hi == null || rm <= hi + 0.5);
+            if (inside && (hi == null || PDp >= 0.85)){ dead = true; why = 'the high so far is ' + T1(rm) + '\u00B0, inside ' + deg(r.label) + (hi == null ? '' : ', and the peak is ' + Math.round(100 * PDp) + '% behind us'); }
+          }
+        }
         return { pWin: pWin, pOurs: pOurs, mWin: mWin, w: w, out: out, fee: fee, sell: sell, hold: hold,
-                 diff: sell - hold, be: be, verdict: (sell - hold) > 0.02 * h.n ? 'SELL' : 'HOLD' };
+                 diff: sell - hold, be: be, dead: dead, why: why, runMax: rm, peakP: PDp,
+                 verdict: (dead && out > 0.005) ? 'SELL' : 'HOLD' };
       };
       var bookRows = Object.keys(posOn);
       var bookVal = 0, bookCost = 0, bookKnown = bookRows.length > 0;
@@ -56574,17 +56604,21 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       + (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contract' + (h.n === 1 ? '' : 's') + ')';
                     return '<div style="margin:2px 0 5px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.04);'
                       + 'font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
-                      + '<b style="color:' + sellC + ';">' + sh.verdict + (sh.verdict === 'SELL' ? ' \u2014 THE BID BEATS OUR OWN VALUE' : ' \u2014 THE BID IS UNDER OUR OWN VALUE') + '.</b> '
-                      + 'Sell now: <b>$' + sh.sell.toFixed(2) + '</b> at the ' + cents(sh.out) + ' bid, after the fee. '
-                      + 'Hold: worth <b>$' + sh.hold.toFixed(2) + '</b> at settlement by '
+                      + '<b style="color:' + sellC + ';">' + sh.verdict + (sh.verdict === 'SELL'
+                          ? ' \u2014 THE READINGS HAVE DECIDED IT AGAINST YOU'
+                          : ' \u2014 THE PRICE IS NOT A REASON') + '.</b> '
+                      + (sh.verdict === 'SELL'
+                          ? mtaEsc(sh.why).replace(/&lt;/g, '<').replace(/&gt;/g, '>') + '. Salvage <b>$' + sh.sell.toFixed(2) + '</b> at the ' + cents(sh.out) + ' bid. '
+                          : 'A held position exits only on a reading, never on the bid: measured on 215 morning bets, holding returned +0.56 per $1 and every exit rule less. '
+                            + 'Sell now would keep <b>$' + sh.sell.toFixed(2) + '</b>; ')
+                      + (sh.verdict === 'SELL' ? '' : 'holding is worth <b>$' + sh.hold.toFixed(2) + '</b> at settlement by ')
                       + (sh.w < 1
                           ? 'a <b>' + pct(sh.pWin) + '</b> read \u2014 ours ' + pct(sh.pOurs) + ', the market ' + pct(sh.mWin)
                             + ', weighted ' + Math.round(100 * sh.w) + '/' + Math.round(100 * (1 - sh.w))
                             + ' for this hour because that is what the study says pays. '
                           : 'our ' + pct(sh.pWin) + '. ')
-                      + (sh.verdict === 'SELL'
-                          ? 'The market pays <b style="color:#f2833f;">' + moneyDiff(sh.diff) + ' more</b> than we think it is worth; selling here is a sale at a premium, not a stop-loss.'
-                          : 'Holding is worth <b>' + moneyDiff(-sh.diff) + ' more</b>. Sell only if the bid reaches <b>' + cents(sh.be) + '</b>.')
+                      + (sh.verdict === 'SELL' ? ''
+                          : (sh.runMax != null ? 'The station\u2019s high so far is <b>' + T1(sh.runMax) + '\u00B0</b>' + (sh.peakP ? ', the peak ' + Math.round(100 * sh.peakP) + '% behind us' : '') + '. ' : ''))
                       + (bail ? '<div style="margin-top:3px;"><b style="color:#f2833f;">BAIL IF</b> ' + bail
                           + ' before the climate report \u2014 on an airport\u2019s 5-minute feed, TWC\u2019s running maximum, or the 1:51 PM six-hour group. '
                           + 'The market reprices the minute that reading prints; get out at whatever bid is left.</div>' : '')
