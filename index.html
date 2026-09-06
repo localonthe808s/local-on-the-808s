@@ -53227,7 +53227,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            the very top right (user, 2026-09-06: "move the top section back up
            to the top right"). The buttons pin to the top of the row. */
         + '<div style="display:flex;align-items:flex-start;gap:8px;">'
-        + '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:0 1 auto;">'
+        /* the left column: the tabs, then the title beneath them */
+        + '<div style="flex:1 1 auto;min-width:0;">'
+        + '<div style="display:flex;flex-wrap:wrap;gap:5px;">'
         + CWK_CITIES.map(function(c){
             var on = (c.key === cwkCity());
             return '<button type="button" class="cwk-city" data-city="' + c.key + '" style="flex:0 0 auto;'
@@ -53236,6 +53238,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + ';font:800 8px system-ui,sans-serif;letter-spacing:.09em;cursor:pointer;'
               + '-webkit-tap-highlight-color:transparent;">' + c.tab + '</button>';
           }).join('')
+        + '</div>'
+        + '<div style="margin-top:9px;"><span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
+        + mtaEsc(title).toUpperCase() + '</span></div>'
         + '</div>'
         /* The freshness sits with the controls it belongs to: what the data
            says, how old it is, when the next lands, and the button that
@@ -53250,10 +53255,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ((meta && !narrow) ? '' : 'margin-left:auto;') + cwkBtnCss + 'flex:0 0 auto;">\u21BB</button>'
         + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + 'flex:0 0 auto;">'
         + '&#10005;</button></div>'
-        /* ROW TWO: the title, on the left, level with the space under the tabs */
-        + '<div style="display:flex;align-items:center;gap:8px;margin-top:' + (mid && !narrow ? '-52px' : '6px') + ';">'
-        + '<span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
-        + mtaEsc(title).toUpperCase() + '</span></div>'
         + (sub ? '<div style="margin-top:4px;">' + sub + '</div>' : '')
         + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta + '</div>' : '')
         + '</div></div>'
