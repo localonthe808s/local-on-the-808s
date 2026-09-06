@@ -54317,8 +54317,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               return min >= 60 ? Math.floor(min / 60) + ' h ' + (min % 60 ? (min % 60) + ' min' : '') : min + ' min';
             };
             var names = { LGA: 'LaGuardia', EWR: 'Newark', JFK: 'JFK' };
-            var html = '';
-            /* the newest replayed day, as a sentence and a curve */
+            var html = '', chart = '', sent = '';
+            /* the newest replayed day: the curve sits directly under today's
+               axis so the two drawings read as one; the words come after */
             if (last){
               var bits = [];
               bits.push('settled <b>' + T1(last.cli_max) + '°</b>'
@@ -54343,7 +54344,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                      : a.lead_min < 0 ? dur(a.lead_min) + ' after' : 'the same minute as')
                   + ' the park');
               });
-              html += '<div style="margin-top:6px;font:600 9.5px system-ui,sans-serif;color:#fff;line-height:1.55;">'
+              sent = '<div style="margin-top:3px;font:600 9.5px system-ui,sans-serif;color:#fff;line-height:1.55;">'
                 + '<b style="color:#63dbb6;">' + dayLabel(last.date) + '</b> · ' + bits.join(' · ') + '</div>';
               /* the curve: every 5 minutes, the :51 reports as dots, the settlement
                  minute as a line. The gap between the dots and the line is the
@@ -54363,7 +54364,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   return (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1);
                 }).join('');
                 var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" '
-                  + 'style="display:block;width:100%;height:' + H + 'px;margin-top:5px;">';
+                  + 'style="display:block;width:100%;height:' + H + 'px;margin-top:0;">';
                 /* hour ticks */
                 for (var hh = 0; hh <= 24; hh += 6){
                   svg += '<line x1="' + X(hh * 60).toFixed(1) + '" x2="' + X(hh * 60).toFixed(1)
@@ -54392,10 +54393,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + T1(last.cli_max) + '° · ' + m12(last.cli_at_min) + '</text>';
                 }
                 svg += '</svg>';
-                html += svg
-                  + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
-                  + 'EVERY FIVE MINUTES OF THE DAY · WHITE DOTS ARE THE HOURLY :51 REPORTS THE MARKET SAW · '
-                  + 'DASHED LINE IS THE HIGHEST OF THEM · ORANGE IS THE MINUTE THE DAY SETTLED ON</div>';
+                chart = svg;
               }
             }
             /* the pattern over every replayed day */
@@ -54426,9 +54424,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + S.n + ' SETTLED DAY' + (S.n === 1 ? '' : 'S') + ' REPLAYED'
               + (S.archive_off_by ? ' · THE ARCHIVE DISAGREED WITH THE CLIMATE REPORT BY A DEGREE ON ' + S.archive_off_by : '')
               + (S.n < 10 ? ' · THIN, READ AS A SKETCH' : '') + '</div>';
-            el.innerHTML = '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,210,152,.12);">'
-              + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
-              + 'MINUTE REPLAY \u00B7 HOW THE LAST SETTLED DAY ACTUALLY UNFOLDED</div>' + html + '</div>';
+            el.innerHTML = '<div style="margin:0 6px;">' + chart
+              + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;margin-top:6px;">'
+              + 'MINUTE REPLAY \u00B7 HOW THE LAST SETTLED DAY ACTUALLY UNFOLDED</div>' + sent + html + '</div>';
           })
           .catch(function(){});
       };
@@ -54697,7 +54695,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         if (r.lo != null) lo0 = (lo0 == null) ? r.lo : Math.min(lo0, r.lo);
         if (r.hi != null) hi0 = (hi0 == null) ? r.hi : Math.max(hi0, r.hi);
       });
-      var scale = '', verdict = '';
+      var scale = '', verdict = '', scaleLegend = '';
       if (lo0 != null && hi0 != null && T.pred != null){
         var s0 = lo0 - 2.5, s1 = hi0 + 2.5;
         [T.now_temp, T.obs_so_far].forEach(function(v){
@@ -54847,8 +54845,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         scale = '<div style="position:relative;height:96px;margin:' + topRoom + 'px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
-          + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>'
-          + '<div style="font:700 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:4px;">'
+          + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>';
+        /* the legend follows the replay curve, so the two drawings touch */
+        scaleLegend = '<div style="font:700 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:4px;">'
           + '<span style="color:' + FCC + ';">▮ OURS</span> &nbsp; <span style="color:' + MKC + ';">▮ KALSHI</span>'
           + ' &nbsp; per range · the shading is our odds · the band is the likely range · the outline is the market’s lean</div>';
 
@@ -56326,9 +56325,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            how the last settled day actually unfolded minute by minute, then
            the clock. The replay fills in asynchronously from kalshi_minutes.json. */
         + hdr('WHERE THE DAY STANDS')
-        + (dayDone ? '' : scale + verdict)
+        + (dayDone ? '' : scale)
         + '<div id="bv-minute-replay"></div>'
-        + (dayDone ? '' : timing)
+        + (dayDone ? '' : scaleLegend + verdict + timing)
 
         /* TODAY LEFT, TOMORROW RIGHT.  The two boards answer one question
            together -- is the market drifting toward us or away from us
