@@ -55008,62 +55008,66 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                             gfs_seamless: 'GFS', icon_seamless: 'ICON', gem_seamless: 'GEM' };
         var prep = '';
         if (TM.pred != null){
+          /* SAME FOUR ROWS AS THE LEFT COLUMN: the day and its state, the
+             forecast line, a column chart of the same shape, the plan box.
+             Without ranges the columns are the voices instead -- each run,
+             TWC, the NWS -- so the two sides line up and the reader's eye
+             finds the same thing in the same place. */
           var tsd = TM.sd || 1.4;
-          var mods = Object.keys(TM.models || {}).map(function(m){ return [MODEL_NAMES[m] || m, TM.models[m]]; })
-            .sort(function(a, b){ return a[1] - b[1]; });
-          /* a bare axis: no ranges yet, so no range labels -- ticks every
-             degree, our band, the two official marks */
-          var vals = [TM.pred - 2 * tsd, TM.pred + 2 * tsd];
-          if (TM.twc_fc != null) vals.push(TM.twc_fc);
-          if (TM.nws_fc != null) vals.push(TM.nws_fc);
-          mods.forEach(function(m){ vals.push(m[1]); });
-          var a0 = Math.floor(Math.min.apply(null, vals)) - 1, a1 = Math.ceil(Math.max.apply(null, vals)) + 1;
-          var ax = function(v){ return 100 * (v - a0) / (a1 - a0); };
-          var ticks = '';
-          for (var tv = a0; tv <= a1; tv++){
-            ticks += '<div style="position:absolute;left:' + ax(tv).toFixed(1) + '%;top:8px;height:9px;width:1px;'
-              + 'background:rgba(0,210,152,' + (tv % 2 ? '.35' : '.15') + ');"></div>'
-              + (tv % 2 ? '<div style="position:absolute;left:' + ax(tv).toFixed(1) + '%;top:19px;transform:translateX(-50%);'
-                  + 'font:700 7px system-ui,sans-serif;color:#2c7f66;">' + tv + '</div>' : '');
-          }
-          var pband = '<div style="position:absolute;left:' + ax(TM.pred - tsd).toFixed(1) + '%;width:'
-            + (ax(TM.pred + tsd) - ax(TM.pred - tsd)).toFixed(1) + '%;top:9px;height:7px;border-radius:3px;'
-            + 'background:' + FCC + '55;"></div>'
-            + '<div style="position:absolute;left:' + ax(TM.pred).toFixed(1) + '%;top:6px;height:13px;width:2px;'
-            + 'background:' + FCC + ';transform:translateX(-1px);"></div>'
-            + '<div style="position:absolute;left:' + ax(TM.pred).toFixed(1) + '%;top:-8px;transform:translateX(-50%);'
-            + 'font:800 8px system-ui,sans-serif;color:' + FCC + ';white-space:nowrap;">OURS ' + T1(TM.pred) + '\u00B0</div>';
-          var fm = '';
-          [['TWC', TM.twc_fc, MKC], ['NWS', TM.nws_fc, '#8fb3d9']].forEach(function(f, fi){
-            if (f[1] == null) return;
-            fm += '<div style="position:absolute;left:' + ax(f[1]).toFixed(1) + '%;top:9px;height:9px;width:2px;'
-              + 'background:' + f[2] + ';transform:translateX(-1px);"></div>'
-              + '<div style="position:absolute;left:' + ax(f[1]).toFixed(1) + '%;top:' + (29 + 9 * fi) + 'px;'
-              + 'transform:translateX(-50%);font:800 7px system-ui,sans-serif;letter-spacing:.04em;color:' + f[2]
-              + ';white-space:nowrap;">' + f[0] + ' ' + T1(f[1]) + '\u00B0</div>';
-          });
+          var MODEL_NAMES = { ncep_hrrr_conus: 'HRRR', ncep_nbm_conus: 'NBM', ecmwf_ifs025: 'ECMWF',
+                              gfs_seamless: 'GFS', icon_seamless: 'ICON', gem_seamless: 'GEM' };
+          var voices = Object.keys(TM.models || {}).map(function(m){ return { n: MODEL_NAMES[m] || m, v: TM.models[m], c: FCC }; });
+          voices.sort(function(a, b){ return a.v - b.v; });
+          if (TM.twc_fc != null) voices.push({ n: 'TWC', v: TM.twc_fc, c: MKC, official: true });
+          if (TM.nws_fc != null) voices.push({ n: 'NWS', v: TM.nws_fc, c: '#8fb3d9', official: true });
+          var vs = voices.map(function(x){ return x.v; }).concat([TM.pred - tsd, TM.pred + tsd]);
+          var v0 = Math.floor(Math.min.apply(null, vs)) - 1, v1 = Math.ceil(Math.max.apply(null, vs)) + 1;
+          var H = 88;                     /* the ladder chart's bar height, so the rows line up */
+          var hOf = function(v){ return Math.max(3, Math.round(H * (v - v0) / (v1 - v0))); };
+          var oursY = H - hOf(TM.pred);
+          var cols = '<div style="position:relative;">'
+            /* our number as a line across every column, so each voice reads as above or below it */
+            + '<div style="position:absolute;left:0;right:0;top:' + oursY + 'px;height:0;border-top:1px dashed ' + FCC + '99;"></div>'
+            + '<div style="position:absolute;right:0;top:' + (oursY - 10) + 'px;font:800 7px system-ui,sans-serif;color:' + FCC + ';">OURS ' + T1(TM.pred) + '\u00B0</div>'
+            + '<div style="display:grid;grid-template-columns:repeat(' + voices.length + ',1fr);gap:3px;">'
+            + voices.map(function(x){
+                return '<div style="min-width:0;text-align:center;">'
+                  + '<div style="height:' + H + 'px;display:flex;align-items:flex-end;justify-content:center;">'
+                  + '<div style="width:44%;max-width:30px;min-width:5px;height:' + hOf(x.v) + 'px;border-radius:3px 3px 0 0;background:'
+                  + (x.official ? x.c : 'rgba(245,165,36,.42)') + ';"></div></div>'
+                  + '<div style="height:1px;background:rgba(0,210,152,.18);margin:0 1px;"></div>'
+                  + '<div style="font:800 8px system-ui,sans-serif;margin-top:4px;color:' + (x.official ? x.c : '#63dbb6') + ';">' + x.n + '</div>'
+                  + '<div style="font:800 9px system-ui,sans-serif;color:' + (x.official ? x.c : FCC) + ';">' + T1(x.v) + '\u00B0</div>'
+                  + '</div>';
+              }).join('')
+            + '</div></div>'
+            + '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;margin-top:6px;">'
+            + '<span style="color:' + FCC + ';">\u25AE THE RUNS, BIAS-CORRECTED</span> &nbsp; '
+            + '<span style="color:' + MKC + ';">\u25AE TWC</span> &nbsp; <span style="color:#8fb3d9;">\u25AE NWS</span></div>';
           var ph = TM.peak_hour;
-          prep = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;">'
-            + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>'
-            + '<div style="position:relative;height:50px;margin:14px 6px 0;">' + ticks + pband + fm + '</div>'
-            + '<div style="font:600 9px system-ui,sans-serif;color:#9fd9c4;margin-top:8px;line-height:1.55;">'
-            + (mods.length
-                ? 'The runs, bias-corrected: ' + mods.map(function(m){ return m[0] + ' <b>' + T1(m[1]) + '\u00B0</b>'; }).join(' \u00B7 ')
-                  + (mods.length > 1 ? ' \u2014 a ' + T1(mods[mods.length - 1][1] - mods[0][1]) + '\u00B0 spread. ' : '. ')
+          var spread = voices.length > 1 ? (Math.max.apply(null, voices.map(function(x){ return x.v; })) - Math.min.apply(null, voices.map(function(x){ return x.v; }))) : null;
+          var tplan = '<div style="margin-top:8px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.055);">'
+            + '<div style="font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:#359478;">THE PLAN FOR ' + dn0.toUpperCase() + '</div>'
+            + '<div style="font:800 14px system-ui,sans-serif;color:#63dbb6;margin-top:4px;">WAIT \u00B7 RANGES LIST AT ' + mtaEsc(TM.state.opens || '10 AM') + '</div>'
+            + kvLine('LEAN', 'Our number is <b style="color:' + FCC + ';">' + T1(TM.pred) + '\u00B0</b>, likely ' + T1(TM.pred - tsd) + '\u2013' + T1(TM.pred + tsd) + '\u00B0.'
+                + (spread != null ? ' The voices span ' + T1(spread) + '\u00B0' + (spread >= 3 ? ' \u2014 a wide day.' : '.') : ''))
+            + ((TM.twc_fc != null || TM.nws_fc != null)
+                ? kvLine('OFFICIAL', (TM.twc_fc != null ? 'TWC, which settles it, says <b style="color:' + MKC + ';">' + T1(TM.twc_fc) + '\u00B0</b>' : '')
+                    + (TM.twc_fc != null && TM.nws_fc != null ? '; ' : '')
+                    + (TM.nws_fc != null ? 'the NWS says <b>' + T1(TM.nws_fc) + '\u00B0</b>' : '') + '.'
+                    + (TM.twc_fc != null && Math.abs(TM.twc_fc - TM.pred) >= 1.5 ? ' <span style="color:#f2833f;">That is a real gap; the morning runs decide it.</span>' : ''))
                 : '')
-            + (ph != null ? 'Peak near ' + (ph % 12 || 12) + (ph < 12 ? ' AM' : ' PM') + (ph >= 16 ? ', late enough to miss the 4 PM report. ' : '. ') : '')
-            + '</div>'
-            + '<div style="font:600 8.5px system-ui,sans-serif;color:#45b491;margin-top:8px;line-height:1.6;">'
-            + '<b style="color:#63dbb6;">THE CLOCK</b> \u00B7 ranges list around ' + mtaEsc(TM.state.opens || '10 AM') + ' today'
-            + ' \u00B7 first bake with the morning runs 8:05 AM ' + dn0 + ' \u00B7 window 8 AM\u20131 PM \u00B7 hold to settlement</div>';
+            + (ph != null ? kvLine('PEAK', 'Near ' + (ph % 12 || 12) + (ph < 12 ? ' AM' : ' PM') + (ph >= 16 ? ' \u2014 late enough to miss the 4 PM report; the afternoon readings will run under the final.' : '.')) : '')
+            + kvLine('THE CLOCK', 'Ranges list around ' + mtaEsc(TM.state.opens || '10 AM') + ' today. First bake with the morning runs 8:05 AM ' + dn0 + '. Window 8 AM\u20131 PM. Hold to settlement.')
+            + '</div>';
+          prep = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;min-height:2.8em;">'
+            + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>'
+            + cols + tplan;
         }
         tomorrow = hdr('TOMORROW · ' + dn0.slice(0,3).toUpperCase() + ' '
                        + TM.date.slice(5).replace('-', '/')).replace('</div>', chip(TM.state) + '</div>')
           + (prep
               ? prep
-                + '<div style="font:.6rem system-ui,sans-serif;color:#2c7f66;margin-top:8px;line-height:1.5;">'
-                + 'Kalshi lists ' + dn0 + '&rsquo;s ranges around ' + mtaEsc(TM.state.opens || '10 AM')
-                + '; the bet gets priced then.</div>'
               : '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:6px;line-height:1.5;">'
                 + 'Kalshi has not listed ' + dn0 + '&rsquo;s ranges yet \u2014 they go up around '
                 + (TM.state.opens || '10 AM') + ' on ' + (dayName(T.date) || 'the day before')
