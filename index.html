@@ -54256,6 +54256,151 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           : qcRow(QCR, 'LOCK', 'NOT LOCKED', 'a run finished after '
               + t12(lockH + ':00') + ' and wrote no decision'));
 
+      /* MINUTE REPLAY -- the post-mortem. Central Park's one-minute record is
+         archived (NCEI via IEM) days after the fact, so it can never help a
+         live bet; it CAN replay a settled day and say what the hourly stream
+         hid: the minute the high landed, whether the 1:51 PM six-hour group
+         saw it, and whether the airports peaked first. Written by
+         _kalshi/minute_replay.py once a day; fails soft here. New York only. */
+      var bvMinuteReplay = function(){
+        var el = document.getElementById('bv-minute-replay');
+        if (!el) {
+          if ((bvMinuteReplay._n = (bvMinuteReplay._n || 0) + 1) < 6) setTimeout(bvMinuteReplay, 300);
+          return;
+        }
+        bvMinuteReplay._n = 0;
+        if (String(T.event || '').indexOf('KXHIGHNY') !== 0) return;
+        fetch('kalshi_minutes.json?v=' + Math.floor(Date.now() / 6e5), { cache: 'no-store' })
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(M){
+            if (!M || !M.days || !M.days.length) return;
+            var S = M.summary || {};
+            var done = M.days.filter(function(d){ return d.complete && d.cli_max != null; });
+            var last = done.length ? done[done.length - 1] : null;
+            var dayLabel = function(iso){
+              var dt = new Date(iso + 'T12:00:00');
+              return dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+                + ' ' + iso.slice(5).replace('-', '/');
+            };
+            var m12 = function(min){
+              var h = Math.floor(min / 60), mm = min % 60;
+              return ((h % 12) || 12) + ':' + (mm < 10 ? '0' : '') + mm + (h < 12 ? ' AM' : ' PM');
+            };
+            var dur = function(min){
+              min = Math.abs(min);
+              return min >= 60 ? Math.floor(min / 60) + ' h ' + (min % 60 ? (min % 60) + ' min' : '') : min + ' min';
+            };
+            var names = { LGA: 'LaGuardia', EWR: 'Newark', JFK: 'JFK' };
+            var html = '';
+            /* the newest replayed day, as a sentence and a curve */
+            if (last){
+              var bits = [];
+              bits.push('settled <b>' + T1(last.cli_max) + '°</b>'
+                + (last.cli_at_min != null ? ' at <b>' + m12(last.cli_at_min) + '</b>' : ''));
+              if (last.hourly_max != null){
+                bits.push((last.hidden >= 1)
+                  ? '<span style="color:#f2833f;">the hourly reports never went above ' + T1(last.hourly_max)
+                    + '° — the settled number was invisible until the climate report</span>'
+                  : 'the hourly reports showed ' + T1(last.hourly_max) + '°');
+              }
+              if (last.six_max != null){
+                var sg = last.cli_max - last.six_max;
+                bits.push('the 1:51 PM six-hour group saw ' + T1(last.six_max) + '°'
+                  + (sg >= 1 ? ', <span style="color:#f2833f;">' + T1(sg) + '° short</span>' : ' — it had it'));
+              }
+              var A = last.airports || {};
+              Object.keys(A).forEach(function(k){
+                var a = A[k];
+                if (a.lead_min == null) return;
+                bits.push(names[k] + ' reached its own high (' + T1(a.max) + '°) '
+                  + (a.lead_min > 0 ? '<b style="color:#63dbb6;">' + dur(a.lead_min) + ' before</b>'
+                     : a.lead_min < 0 ? dur(a.lead_min) + ' after' : 'the same minute as')
+                  + ' the park');
+              });
+              html += '<div style="margin-top:6px;font:600 9.5px system-ui,sans-serif;color:#fff;line-height:1.55;">'
+                + '<b style="color:#63dbb6;">' + dayLabel(last.date) + '</b> · ' + bits.join(' · ') + '</div>';
+              /* the curve: every 5 minutes, the :51 reports as dots, the settlement
+                 minute as a line. The gap between the dots and the line is the
+                 blind spot, drawn. */
+              if (last.curve && last.curve.length > 50){
+                var W = 600, H = 84, PL = 26, PR = 8, PT = 12, PB = 14;
+                var ys = last.curve.map(function(p){ return p[1]; });
+                var lo = Math.floor(Math.min.apply(null, ys)) - 1;
+                var hi = Math.ceil(Math.max(last.cli_max, Math.max.apply(null, ys))) + 1;
+                var X = function(min){ return PL + (W - PL - PR) * min / 1440; };
+                var Y = function(v){ return PT + (H - PT - PB) * (hi - v) / (hi - lo); };
+                var path = last.curve.map(function(p, i){
+                  return (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1);
+                }).join('');
+                var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" '
+                  + 'style="display:block;width:100%;height:' + H + 'px;margin-top:5px;">';
+                /* hour ticks */
+                for (var hh = 0; hh <= 24; hh += 6){
+                  svg += '<line x1="' + X(hh * 60).toFixed(1) + '" x2="' + X(hh * 60).toFixed(1)
+                    + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="rgba(255,255,255,.07)" stroke-width="1"/>'
+                    + '<text x="' + X(hh * 60).toFixed(1) + '" y="' + (H - 3) + '" fill="#45b491" font-size="7" '
+                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="middle">'
+                    + (hh === 0 ? '12 AM' : hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : (hh % 12) + (hh < 12 ? ' AM' : ' PM')) + '</text>';
+                }
+                /* the hourly max, the line the market could see */
+                if (last.hourly_max != null){
+                  svg += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(last.hourly_max).toFixed(1)
+                    + '" y2="' + Y(last.hourly_max).toFixed(1) + '" stroke="rgba(255,255,255,.28)" stroke-width="1" stroke-dasharray="3 3"/>'
+                    + '<text x="' + (PL - 3) + '" y="' + (Y(last.hourly_max) + 2.5).toFixed(1) + '" fill="#9fd9c4" font-size="7.5" '
+                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="end">' + T1(last.hourly_max) + '°</text>';
+                }
+                svg += '<path d="' + path + '" fill="none" stroke="#63dbb6" stroke-width="1.4" stroke-linejoin="round"/>';
+                (last.hourly || []).forEach(function(p){
+                  svg += '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="2.2" fill="#fff"/>';
+                });
+                if (last.cli_at_min != null){
+                  var xs = X(last.cli_at_min).toFixed(1), anchor = last.cli_at_min > 1000 ? 'end' : 'start';
+                  svg += '<line x1="' + xs + '" x2="' + xs + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="#f2833f" stroke-width="1"/>'
+                    + '<text x="' + (last.cli_at_min > 1000 ? +xs - 3 : +xs + 3) + '" y="' + (PT - 3) + '" fill="#f2833f" font-size="7.5" '
+                    + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + anchor + '">SETTLED '
+                    + T1(last.cli_max) + '° · ' + m12(last.cli_at_min) + '</text>';
+                }
+                svg += '</svg>';
+                html += svg
+                  + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
+                  + 'EVERY FIVE MINUTES OF THE DAY · WHITE DOTS ARE THE HOURLY :51 REPORTS THE MARKET SAW · '
+                  + 'DASHED LINE IS THE HIGHEST OF THEM · ORANGE IS THE MINUTE THE DAY SETTLED ON</div>';
+              }
+            }
+            /* the pattern over every replayed day */
+            var tl = [];
+            if (S.peak_median_12) tl.push(tile('PEAK LANDS', mtaEsc(S.peak_median_12),
+              'median of ' + S.timed_n + ' timed day' + (S.timed_n === 1 ? '' : 's')));
+            if (S.timed_n) tl.push(tile('AFTER 1:51 PM', S.after_six_n + ' of ' + S.timed_n,
+              'past the six-hour group', S.after_six_n > S.timed_n / 2 ? '#f2833f' : '#fff'));
+            if (S.hidden_n != null) tl.push(tile('HOURLY MISSED IT', S.hidden_n + ' of ' + S.n,
+              'settled above every :51 report' + (S.hidden_mean != null ? ' · by ' + S.hidden_mean.toFixed(1) + '° on average' : ''),
+              S.hidden_n > S.n / 2 ? '#f2833f' : '#fff'));
+            var AP = S.airports || {};
+            var apKeys = Object.keys(AP).filter(function(k){ return AP[k].n; });
+            if (apKeys.length){
+              var top = apKeys.sort(function(a, b){ return AP[b].led_n / AP[b].n - AP[a].led_n / AP[a].n; })[0];
+              tl.push(tile('AIRPORTS FIRST', names[top] + ' ' + AP[top].led_n + ' of ' + AP[top].n,
+                apKeys.filter(function(k){ return k !== top; }).map(function(k){
+                  return names[k] + ' ' + AP[k].led_n + ' of ' + AP[k].n; }).join(' · ')
+                + (AP[top].lead_median != null ? ' · median ' + (AP[top].lead_median > 0 ? dur(AP[top].lead_median) + ' ahead' : dur(AP[top].lead_median) + ' behind') : '')));
+            }
+            if (tl.length){
+              html += '<div style="display:grid;grid-template-columns:repeat(' + Math.min(4, tl.length) + ',minmax(0,1fr));'
+                + 'gap:8px 12px;margin-top:8px;">' + tl.join('') + '</div>';
+            }
+            html += '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:6px;">'
+              + 'CENTRAL PARK’S ONE-MINUTE RECORD, NCEI VIA IEM · WHOLE DEGREES · '
+              + (M.lag_days != null ? 'RUNS ' + M.lag_days + ' DAY' + (M.lag_days === 1 ? '' : 'S') + ' BEHIND · ' : '')
+              + S.n + ' SETTLED DAY' + (S.n === 1 ? '' : 'S') + ' REPLAYED'
+              + (S.archive_off_by ? ' · THE ARCHIVE DISAGREED WITH THE CLIMATE REPORT BY A DEGREE ON ' + S.archive_off_by : '')
+              + (S.n < 10 ? ' · THIN, READ AS A SKETCH' : '') + '</div>';
+            el.innerHTML = '<div style="margin-top:9px;">' + hdr('MINUTE REPLAY') + html + '</div>';
+          })
+          .catch(function(){});
+      };
+      setTimeout(bvMinuteReplay, 0);
+
       var qcBox = hdr('SYSTEM')
         + '<div style="margin-top:2px;">' + qcL.join('') + '</div>'
         /* filled in asynchronously from the worker; see bvLeadStudy below */
@@ -56073,6 +56218,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + (strip || '') + '</div>'
         + betStrip
         + tallyLines
+        /* filled in asynchronously from kalshi_minutes.json; see bvMinuteReplay */
+        + '<div id="bv-minute-replay"></div>'
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
         + '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.05em;margin-top:8px;">'
