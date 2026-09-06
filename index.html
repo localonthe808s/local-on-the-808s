@@ -54572,7 +54572,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'transform:translateX(' + anchor(x) + ');font:800 7.5px system-ui,sans-serif;'
             + 'color:' + col + ';white-space:nowrap;">' + txt + '</div>';
         };
-        var peakTime = (T.obs_through != null) ? ' · BY ' + t12(T.obs_through + ':00') : '';
+        /* the peak's own hour: the warmest hourly reading's. "BY 9 AM" was the
+           hour the running maximum was computed through, which read as the
+           time of the peak; overnight highs made that plainly wrong. */
+        var peakTime = (T.obs_peak_hour != null) ? ' · ' + t12(T.obs_peak_hour + ':00')
+                     + (T.obs_peak_read != null && Math.abs(T.obs_peak_read - T.obs_so_far) > 0.2
+                          ? ' (' + T1(T.obs_peak_read) + '° read)' : '')
+                     : (T.obs_through != null) ? ' · THROUGH ' + t12(T.obs_through + ':00') : '';
         var nowTime = T.now_at ? ' · ' + t12(T.now_at) : '';
         var fcTime = (T.peak_hour != null && !dayDone) ? ' · PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') : '';
         var omark = '', nmark = '';

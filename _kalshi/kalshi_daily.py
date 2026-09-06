@@ -2551,6 +2551,16 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     cands_fl = [x for x in (est, live) if x is not None]
     obs_far = max(cands_fl) if cands_fl else None
     obs_hr = max(obh.get(tkey) or {0: 0}) if obh.get(tkey) else None
+    # WHEN the day's highest reading came, not just through which hour the
+    # running maximum was computed: "PEAK · BY 9 AM" read as if the peak had
+    # been at 9 when it was the 1 AM reading. The hour of the warmest hourly
+    # reading inside the climate day, and the reading itself, so the panel can
+    # say "69.1 read at 1 AM" beside the offset-corrected estimate.
+    obs_peak_hour, obs_peak_read = None, None
+    _day_obs = {h: v for h, v in (obh.get(tkey) or {}).items() if h0 <= h <= now.hour}
+    if _day_obs:
+        obs_peak_hour = max(_day_obs, key=lambda h: (_day_obs[h], -h))
+        obs_peak_read = _day_obs[obs_peak_hour]
     yday = daily.get((today - datetime.timedelta(days=1)).isoformat())
     # the remaining-hours cut-off is the CLOCK hour, matching residuals(), not
     # whichever hour last reported -- otherwise the spread is measured for one
@@ -3207,6 +3217,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'pred': round(pred, 2), 'sd': sd, 'bias': round(bias, 2),
             'bias_days': nb, 'sd_days': nsd,
             'obs_so_far': obs_far, 'obs_through': obs_hr,
+            'obs_peak_hour': obs_peak_hour, 'obs_peak_read': obs_peak_read,
             # WHAT THE EXCHANGE IS SETTLING ON, next to what the station read.
             # The panel shows both, because the gap is the thing worth seeing
             # and it is not small: Chicago ran +4.0 the day this was wired in,
