@@ -54510,25 +54510,46 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (r.hi == null) return Math.round(r.lo) + '+';
           return Math.round(r.lo) + '\u2013' + Math.round(r.hi);
         };
+        /* THE AXIS CARRIES THE WHOLE QUESTION. Each range band is shaded by
+           our probability and holds a two-bar histogram -- ours and the
+           market's -- so where the mass sits is visible without reading the
+           columns below. The band the market leads gets its outline. The
+           labels carry both percentages. Every marker carries its time: the
+           reading's, the peak's, and the hour the runs put the forecast peak. */
+        var mnf = mnorm(T.ladder);
+        var HB = 30;                        /* px reserved under the axis for labels */
         var edges = '';
         (T.ladder || []).forEach(function(r, ix){
           var a = xp(r.lo == null ? s0 : r.lo - 0.5);
           var b = xp(r.hi == null ? s1 : r.hi + 0.5);
-          var isLead = (r.label === T.pick), isOut = dead(r);
+          var isLead = (r.label === T.pick), isMkt = (r.label === T.market_pick), isOut = dead(r);
+          var pO = r.ours || 0, pM = (r.market == null) ? null : mnf(r.market);
           edges += '<div style="position:absolute;left:' + a.toFixed(1) + '%;width:'
-            + (b - a).toFixed(1) + '%;top:0;bottom:9px;background:'
-            + (isLead ? 'rgba(245,165,36,.13)'
-               : isOut ? 'rgba(255,255,255,.015)'
-               : (ix % 2 ? 'rgba(255,255,255,.055)' : 'rgba(255,255,255,.022)'))
-            + ';border-radius:3px;"></div>';
+            + (b - a).toFixed(1) + '%;top:0;bottom:' + HB + 'px;background:rgba(245,165,36,'
+            + (isOut ? '0.015' : (0.03 + 0.42 * pO).toFixed(3)) + ');border-radius:3px;'
+            + (isMkt ? 'box-shadow:inset 0 0 0 1px ' + MKC + '99;' : '') + '"></div>';
           if (r.lo != null)
-            edges += '<div style="position:absolute;left:' + a.toFixed(1) + '%;top:0;bottom:9px;'
+            edges += '<div style="position:absolute;left:' + a.toFixed(1) + '%;top:0;bottom:' + HB + 'px;'
               + 'width:1px;background:rgba(255,255,255,.16);"></div>';
-          edges += '<div style="position:absolute;left:' + ((a + b) / 2).toFixed(1) + '%;bottom:-1px;'
+          /* the two-bar histogram, rising from the band's floor */
+          var hO = Math.round(44 * pO), hM = (pM == null) ? 0 : Math.round(44 * pM);
+          var mid = (a + b) / 2;
+          edges += '<div style="position:absolute;left:' + mid.toFixed(1) + '%;bottom:' + (HB + 1) + 'px;'
+            + 'transform:translateX(-100%);width:7px;height:' + hO + 'px;background:' + FCC + (isLead ? '' : '99')
+            + ';border-radius:2px 2px 0 0;margin-left:-1px;"></div>'
+            + '<div style="position:absolute;left:' + mid.toFixed(1) + '%;bottom:' + (HB + 1) + 'px;'
+            + 'width:7px;height:' + hM + 'px;background:' + MKC + (isMkt ? '' : '99')
+            + ';border-radius:2px 2px 0 0;margin-left:1px;"></div>';
+          edges += '<div style="position:absolute;left:' + mid.toFixed(1) + '%;bottom:' + (HB - 13) + 'px;'
             + 'transform:translateX(-50%);white-space:nowrap;font:' + (isLead ? '800' : '700')
-            + ' 7px system-ui,sans-serif;color:'
-            + (isLead ? FCC : isOut ? '#22604e' : '#359478') + ';'
-            + (isOut ? 'text-decoration:line-through;' : '') + '">' + cellLabel(r) + '</div>';
+            + ' 7.5px system-ui,sans-serif;color:'
+            + (isLead ? FCC : isOut ? '#22604e' : '#63dbb6') + ';'
+            + (isOut ? 'text-decoration:line-through;' : '') + '">' + cellLabel(r) + '</div>'
+            + '<div style="position:absolute;left:' + mid.toFixed(1) + '%;bottom:' + (HB - 24) + 'px;'
+            + 'transform:translateX(-50%);white-space:nowrap;font:700 6.5px system-ui,sans-serif;">'
+            + '<span style="color:' + (isLead ? FCC : '#9a7a3a') + ';">' + pct(pO) + '</span>'
+            + '<span style="color:#22604e;"> · </span>'
+            + '<span style="color:' + (isMkt ? MKC : '#3f6c8f') + ';">' + (pM == null ? '—' : pct(pM)) + '</span></div>';
         });
         /* our range, our best guess, and what the park has already recorded */
         var band = '<div style="position:absolute;left:' + xp(T.pred - sd).toFixed(1) + '%;'
@@ -54536,66 +54557,70 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + 'background:rgba(245,165,36,.26);border-radius:3px;"></div>'
           + '<div style="position:absolute;left:' + xp(T.pred).toFixed(1) + '%;top:4px;height:17px;'
           + 'width:2px;background:' + FCC + ';transform:translateX(-1px);"></div>';
-        /* the current reading rides ON the axis as a ring, so it never fights
-           the peak marker's label above it */
         var anchor = function(x){ return x < 14 ? '0' : x > 86 ? '-100%' : '-50%'; };
-        /* Two markers, one axis. Equality is not the collision test -- overnight
-           the reading falls BELOW the day's peak, and 74 against 75 renders one
-           degree apart, which overprints just as badly as being identical.
-           Test PIXEL distance, and when they are close say both in one label. */
         var xn = (T.now_temp == null) ? null : xp(T.now_temp);
         var xo = (T.obs_so_far == null) ? null : xp(T.obs_so_far);
-        var crowded = (xn != null && xo != null && Math.abs(xn - xo) < 11);
+        var xf = xp(T.pred);
+        var crowded = (xn != null && xo != null && Math.abs(xn - xo) < 13);
         var tick = function(x, col, top, h){
           return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + top
             + 'px;height:' + h + 'px;width:2px;background:' + col
             + ';transform:translateX(-1px);"></div>';
         };
-        var label = function(x, col, txt){
-          return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:-9px;'
-            + 'transform:translateX(' + anchor(x) + ');font:800 8px system-ui,sans-serif;'
+        var label = function(x, col, txt, top){
+          return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (top == null ? -9 : top) + 'px;'
+            + 'transform:translateX(' + anchor(x) + ');font:800 7.5px system-ui,sans-serif;'
             + 'color:' + col + ';white-space:nowrap;">' + txt + '</div>';
         };
+        var peakTime = (T.obs_through != null) ? ' · BY ' + t12(T.obs_through + ':00') : '';
+        var nowTime = T.now_at ? ' · ' + t12(T.now_at) : '';
+        var fcTime = (T.peak_hour != null && !dayDone) ? ' · PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') : '';
         var omark = '', nmark = '';
         if (xo != null) omark = tick(xo, '#2fbfa8', 2, 21);
         if (xn != null){
-          nmark = '<div title="' + T1(T.now_temp) + '\u00B0 right now" style="position:absolute;'
+          nmark = '<div title="' + T1(T.now_temp) + '° right now" style="position:absolute;'
             + 'left:' + xn.toFixed(1) + '%;top:8px;width:9px;height:9px;margin-left:-4.5px;'
             + 'border-radius:50%;background:#0d1117;border:2px solid #2fbfa8;"></div>';
         }
         if (crowded){
           nmark += label((xn + xo) / 2, '#2fbfa8',
             (Math.abs(T.now_temp - T.obs_so_far) < 0.25)
-              ? T1(T.now_temp) + '\u00B0 NOW &amp; PEAK'
-              : T1(T.now_temp) + '\u00B0 NOW \u00B7 ' + T1(T.obs_so_far) + '\u00B0 PEAK');
+              ? T1(T.now_temp) + '° NOW &amp; PEAK' + nowTime
+              : T1(T.now_temp) + '° NOW' + nowTime + ' · ' + T1(T.obs_so_far) + '° PEAK' + peakTime);
         } else {
-          if (xn != null) nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '\u00B0 NOW');
-          if (xo != null) omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '\u00B0 PEAK');
+          if (xn != null) nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '° NOW' + nowTime);
+          if (xo != null) omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '° PEAK' + peakTime);
         }
-        /* THE TWO OFFICIAL FORECASTS, ON THE SAME AXIS. The band is ours; a
-           reader deciding whether to trust a two-degree gap against the market
-           should see where TWC's own number and the NWS's sit on the ranges,
-           not just read them in a bullet. Marks go BELOW the axis, so the NOW
-           and PEAK labels above it keep their room. */
-        var fmark = '';
-        [['TWC', T.twc_fc, MKC], ['NWS', T.nws_fc, '#8fb3d9']].forEach(function(f, fi){
-          if (f[1] == null) return;
-          var xf = xp(f[1]);
-          if (xf == null || xf < 0 || xf > 100) return;
-          fmark += '<div style="position:absolute;left:' + xf.toFixed(1) + '%;top:14px;height:9px;width:2px;'
-            + 'background:' + f[2] + ';transform:translateX(-1px);"></div>'
-            + '<div style="position:absolute;left:' + xf.toFixed(1) + '%;top:' + (24 + 9 * fi) + 'px;'
-            + 'transform:translateX(' + anchor(xf) + ');font:800 7px system-ui,sans-serif;'
-            + 'letter-spacing:.04em;color:' + f[2] + ';white-space:nowrap;">' + f[0] + ' ' + T1(f[1]) + '\u00B0</div>';
+        /* the forecast, labelled with the hour the runs put its peak -- above
+           the axis unless the NOW/PEAK labels are already there */
+        var fcLabelTop = (xo != null && Math.abs(xf - xo) < 16) || (xn != null && Math.abs(xf - xn) < 16) ? 23 : -9;
+        var fmark = label(xf, FCC, T1(T.pred) + '° FORECAST' + fcTime, fcLabelTop);
+        /* the official forecasts and the station's own hard numbers, under the axis */
+        var under = [];
+        if (T.twc_fc != null) under.push(['TWC ' + T1(T.twc_fc) + '°', T.twc_fc, MKC]);
+        if (T.nws_fc != null) under.push(['NWS ' + T1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
+        if (T.six_max != null && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3))
+          under.push(['6-HR MAX ' + T1(T.six_max) + '°', T.six_max, '#2fbfa8']);
+        if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
+          under.push(['TWC MAX ' + T1(T.twc_max) + '°', T.twc_max, '#f2833f']);
+        var lastX = -99, row = 0;
+        under.sort(function(a, b){ return a[1] - b[1]; }).forEach(function(u){
+          var x = xp(u[1]);
+          if (x < 0 || x > 100) return;
+          row = (Math.abs(x - lastX) < 9) ? row + 1 : 0; lastX = x;
+          fmark += '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (14 + (fcLabelTop === 23 ? 10 : 0)) + 'px;height:8px;width:2px;'
+            + 'background:' + u[2] + ';transform:translateX(-1px);"></div>'
+            + '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (24 + (fcLabelTop === 23 ? 10 : 0) + 9 * row) + 'px;'
+            + 'transform:translateX(' + anchor(x) + ');font:800 6.5px system-ui,sans-serif;letter-spacing:.04em;'
+            + 'color:' + u[2] + ';white-space:nowrap;">' + u[0] + '</div>';
         });
-        scale = '<div style="position:relative;height:' + (fmark ? 52 : 40) + 'px;margin:14px 6px 0;">'
+        scale = '<div style="position:relative;height:' + (96 + (fcLabelTop === 23 ? 10 : 0)) + 'px;margin:14px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
           + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>'
-          /* the caption is gone: the marks are labelled on the axis itself
-             (75 NOW, 76.7 PEAK sit against their own marks) and the shaded band
-             is named by the forecast line above. */
-          + '';
+          + '<div style="font:700 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:4px;">'
+          + '<span style="color:' + FCC + ';">▮ OURS</span> &nbsp; <span style="color:' + MKC + ';">▮ KALSHI</span>'
+          + ' &nbsp; per range · the shading is our odds · the band is the likely range · the outline is the market’s lean</div>';
 
         /* plain-language read on how it is going */
         var bits = [];
