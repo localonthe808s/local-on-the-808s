@@ -54339,7 +54339,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   svg += '<line x1="' + X(hh * 60).toFixed(1) + '" x2="' + X(hh * 60).toFixed(1)
                     + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="rgba(255,255,255,.07)" stroke-width="1"/>'
                     + '<text x="' + X(hh * 60).toFixed(1) + '" y="' + (H - 3) + '" fill="#45b491" font-size="7" '
-                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="middle">'
+                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="'
+                    + (hh === 0 ? 'start' : hh === 24 ? 'end' : 'middle') + '">'
                     + (hh === 0 ? '12 AM' : hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : (hh % 12) + (hh < 12 ? ' AM' : ' PM')) + '</text>';
                 }
                 /* the hourly max, the line the market could see */
