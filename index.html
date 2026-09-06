@@ -53223,9 +53223,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ';background:#0d1117;padding:' + (narrow ? '6px 0 8px' : '2px 0 8px')
         + ';margin:-2px 0 0;z-index:2;">'
         + '<div style="position:relative;">'
-        /* THE CITY TABS, at the very top: the same sheet for each market, like
-           the view tabs on the other widgets (user, 2026-09-06). */
-        + '<div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 7px;">'
+        /* ROW ONE: the city tabs on the left, the clock and the two buttons at
+           the very top right (user, 2026-09-06: "move the top section back up
+           to the top right"). The buttons pin to the top of the row. */
+        + '<div style="display:flex;align-items:flex-start;gap:8px;">'
+        + '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:0 1 auto;">'
         + CWK_CITIES.map(function(c){
             var on = (c.key === cwkCity());
             return '<button type="button" class="cwk-city" data-city="' + c.key + '" style="flex:0 0 auto;'
@@ -53235,35 +53237,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '-webkit-tap-highlight-color:transparent;">' + c.tab + '</button>';
           }).join('')
         + '</div>'
-        + '<div style="display:flex;align-items:center;gap:8px;">'
-        + '<span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
-        + mtaEsc(title).toUpperCase() + '</span>'
-        /* THE MIDDLE OF THE TITLE ROW: the live positions, centred between the
-           title and the clock (user, 2026-09-06: "good middle but move it to
-           the top"). Markup, not escaped; absent on a phone. */
-        + ''
-        /* the subtitle left the title row: it is two lines of live numbers now,
-           not a fixed label, and it needs the full width rather than whatever
-           is left beside a title and two buttons. Passed as markup, so it is
-           not escaped here. */
         /* The freshness sits with the controls it belongs to: what the data
            says, how old it is, when the next lands, and the button that
            fetches it early -- one cluster, and it stays on screen because the
-           header is sticky. It shrinks before the buttons do. */
-        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;text-align:right;">' + meta + '</div>' : '')
+           header is sticky. Under it, LIVE POSITIONS, right-aligned along the
+           same wall (user, 2026-09-06). */
+        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;text-align:right;">' + meta
+            + (mid ? '<div style="margin-top:6px;text-align:right;">' + mid + '</div>' : '') + '</div>' : '')
         /* REFRESH, then close. Both share the X's geometry so the pair reads as
-           one control cluster rather than a button bolted on. Refresh sits
-           first because it is the one you reach for repeatedly: this is a live
-           market, and a sheet opened five minutes ago quotes a price that has
-           since moved. */
+           one control cluster rather than a button bolted on. */
         + '<button id="cw-kalshi-r" aria-label="Refresh data" title="Refresh" style="'
-        + ((meta && !narrow) ? '' : 'margin-left:auto;') + cwkBtnCss + '">\u21BB</button>'
-        + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + '">'
+        + ((meta && !narrow) ? '' : 'margin-left:auto;') + cwkBtnCss + 'flex:0 0 auto;">\u21BB</button>'
+        + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + 'flex:0 0 auto;">'
         + '&#10005;</button></div>'
-        /* LIVE POSITIONS under the clock, against the right wall (past the two
-           buttons), text left-aligned -- positioned absolutely so the title row
-           and its buttons stay exactly where they were (user, 2026-09-06) */
-        + ((mid && !narrow) ? '<div style="position:absolute;right:92px;top:68px;text-align:left;max-width:46%;">' + mid + '</div>' : '')
+        /* ROW TWO: the title, on the left, level with the space under the tabs */
+        + '<div style="display:flex;align-items:center;gap:8px;margin-top:' + (mid && !narrow ? '-52px' : '6px') + ';">'
+        + '<span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
+        + mtaEsc(title).toUpperCase() + '</span></div>'
         + (sub ? '<div style="margin-top:4px;">' + sub + '</div>' : '')
         + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta + '</div>' : '')
         + '</div></div>'
@@ -56439,7 +56429,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }).join('');
       if ((bookKnown || otherRows) && !PHONE){
         var bookPL = bookVal - bookCost;
-        posTop = '<div style="display:block;text-align:left;">'
+        posTop = '<div style="display:block;text-align:right;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
           + bookRows.map(function(k){
               var h = posOn[k], up = (h.pl || 0) >= 0;
