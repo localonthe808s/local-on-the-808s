@@ -54301,7 +54301,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           qcL.push(qcRow(onThis ? QCG : QCN, 'ACCOUNT',
             (st.n ? st.n + ' OPEN POSITION' + (st.n === 1 ? '' : 'S') : 'NO OPEN POSITIONS')
               + (st.n ? ' \u00B7 ' + (onThis ? onThis + ' ON THIS MARKET' : 'NONE ON ' + CITY.tab) : ''),
-            'live from the exchange' + (st.at ? ', ' + ageTxt(Date.now() - st.at) : '')));
+            'live from the exchange' + (st.at ? ', ' + ageTxt((Date.now() - st.at) / 60000) : '')));
         else
           qcL.push(qcRow(QCN, 'ACCOUNT', 'NOT FETCHED YET', 'press refresh'));
       })();
