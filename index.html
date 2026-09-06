@@ -54349,7 +54349,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                  minute as a line. The gap between the dots and the line is the
                  blind spot, drawn. */
               if (last.curve && last.curve.length > 50){
-                var W = 600, H = 84, PL = 26, PR = 8, PT = 12, PB = 14;
+                /* DRAWN AT THE REAL PIXEL WIDTH. A fixed 600-unit viewBox stretched
+                   to the sheet with preserveAspectRatio=none pulled every glyph
+                   wide (user, 2026-09-06: "fix this display"). The fill runs after
+                   layout, so the container's width is known here. */
+                var W = Math.max(320, Math.round(el.clientWidth || 600)), H = 88, PL = 30, PR = 10, PT = 16, PB = 16;
                 var ys = last.curve.map(function(p){ return p[1]; });
                 var lo = Math.floor(Math.min.apply(null, ys)) - 1;
                 var hi = Math.ceil(Math.max(last.cli_max, Math.max.apply(null, ys))) + 1;
@@ -54358,13 +54362,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 var path = last.curve.map(function(p, i){
                   return (i ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1);
                 }).join('');
-                var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" '
+                var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" '
                   + 'style="display:block;width:100%;height:' + H + 'px;margin-top:5px;">';
                 /* hour ticks */
                 for (var hh = 0; hh <= 24; hh += 6){
                   svg += '<line x1="' + X(hh * 60).toFixed(1) + '" x2="' + X(hh * 60).toFixed(1)
                     + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="rgba(255,255,255,.07)" stroke-width="1"/>'
-                    + '<text x="' + X(hh * 60).toFixed(1) + '" y="' + (H - 3) + '" fill="#45b491" font-size="7" '
+                    + '<text x="' + X(hh * 60).toFixed(1) + '" y="' + (H - 3) + '" fill="#45b491" font-size="8" '
                     + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="'
                     + (hh === 0 ? 'start' : hh === 24 ? 'end' : 'middle') + '">'
                     + (hh === 0 ? '12 AM' : hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : (hh % 12) + (hh < 12 ? ' AM' : ' PM')) + '</text>';
@@ -54373,7 +54377,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 if (last.hourly_max != null){
                   svg += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(last.hourly_max).toFixed(1)
                     + '" y2="' + Y(last.hourly_max).toFixed(1) + '" stroke="rgba(255,255,255,.28)" stroke-width="1" stroke-dasharray="3 3"/>'
-                    + '<text x="' + (PL - 3) + '" y="' + (Y(last.hourly_max) + 2.5).toFixed(1) + '" fill="#9fd9c4" font-size="7.5" '
+                    + '<text x="' + (PL - 3) + '" y="' + (Y(last.hourly_max) + 2.5).toFixed(1) + '" fill="#9fd9c4" font-size="8" '
                     + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="end">' + T1(last.hourly_max) + '°</text>';
                 }
                 svg += '<path d="' + path + '" fill="none" stroke="#63dbb6" stroke-width="1.4" stroke-linejoin="round"/>';
@@ -54383,7 +54387,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 if (last.cli_at_min != null){
                   var xs = X(last.cli_at_min).toFixed(1), anchor = last.cli_at_min > 1000 ? 'end' : 'start';
                   svg += '<line x1="' + xs + '" x2="' + xs + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="#f2833f" stroke-width="1"/>'
-                    + '<text x="' + (last.cli_at_min > 1000 ? +xs - 3 : +xs + 3) + '" y="' + (PT - 3) + '" fill="#f2833f" font-size="7.5" '
+                    + '<text x="' + (last.cli_at_min > 1000 ? +xs - 3 : +xs + 3) + '" y="' + (PT - 3) + '" fill="#f2833f" font-size="8.5" '
                     + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + anchor + '">SETTLED '
                     + T1(last.cli_max) + '° · ' + m12(last.cli_at_min) + '</text>';
                 }
