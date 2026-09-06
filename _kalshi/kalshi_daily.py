@@ -1075,7 +1075,12 @@ def fresh_runs(cfg, hour):
          '&temperature_unit=fahrenheit&timezone=%s&models=%s'
          % (cfg['lat'], cfg['lon'],
             urllib.parse.quote(cfg.get('tz', 'America/New_York')), ','.join(models_for(cfg))))
-    h = get_json(u, timeout=90)['hourly']
+    # 30 s, not 90. On the runner this call hangs outright and then succeeds
+    # at once on retry: the 2026-09-06 06:58Z log shows "open-meteo.com 93s/3
+    # +1retry" on nine of twenty cities and 186s on two -- every one of them
+    # exactly the 90 s timeout plus the backoff, never a slow answer. A hung
+    # socket costs whatever the timeout is, so the timeout is the cost.
+    h = get_json(u, timeout=30)['hourly']
     today = local_now(cfg).date().isoformat()
     out = {}
     for m in models_for(cfg):
