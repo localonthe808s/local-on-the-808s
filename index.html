@@ -55028,7 +55028,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var cols = '<div style="position:relative;">'
             /* our number as a line across every column, so each voice reads as above or below it */
             + '<div style="position:absolute;left:0;right:0;top:' + oursY + 'px;height:0;border-top:1px dashed ' + FCC + '99;"></div>'
-            + '<div style="position:absolute;right:0;top:' + (oursY - 10) + 'px;font:800 7px system-ui,sans-serif;color:' + FCC + ';">OURS ' + T1(TM.pred) + '\u00B0</div>'
+            /* the label sits at the LEFT end of the line: the voices are sorted
+               coolest first, so the shortest bars are there and nothing is
+               under it; at the right end it sat on the NWS bar */
+            + '<div style="position:absolute;left:0;top:' + (oursY - 10) + 'px;font:800 7px system-ui,sans-serif;color:' + FCC + ';">OURS ' + T1(TM.pred) + '\u00B0</div>'
             + '<div style="display:grid;grid-template-columns:repeat(' + voices.length + ',1fr);gap:3px;">'
             + voices.map(function(x){
                 return '<div style="min-width:0;text-align:center;">'
