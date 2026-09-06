@@ -54205,6 +54205,31 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '<span style="display:inline-block;width:1px;height:11px;margin:0 4px 2px 2px;'
               + 'background:#00D298;opacity:.45;vertical-align:top;"></span>LIVE DAYS START HERE</span>'
             : '');
+      /* THE FORECAST AND THE BET ARE TWO DIFFERENT SCORES. On 2026-09-05 the
+         noon pick was 79-80 at 48% and the day settled 79: green. The plan's
+         bet was NO on that same range, because the market priced it at 60%
+         against our 48%: it lost. One strip showed the first and looked like
+         a lie about the second. The second row is the plan's bets. */
+      var betRows = scored.filter(function(h){ return !h.backtest && h.bet_result; });
+      var betStrip = '';
+      if (betRows.length){
+        var bw = betRows.filter(function(h){ return h.bet_result.won; }).length;
+        betStrip = '<div style="margin-top:6px;line-height:0;display:flex;align-items:center;flex-wrap:wrap;">'
+          + '<span style="font:700 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
+          + 'line-height:11px;margin-right:6px;">THE PLAN\u2019S BETS</span>'
+          + betRows.slice(-45).map(function(h){
+              var b = h.lock && h.lock.bet;
+              return '<span title="' + mtaEsc(h.date) + ' \u2014 '
+                + (b ? (b.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(b.label) + ' at ' + cents(b.price) : 'bet')
+                + ' \u2014 ' + (h.bet_result.won ? 'WON' : 'LOST') + (h.provisional ? ' (provisional)' : '') + '"'
+                + ' style="display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 2px 2px 0;'
+                + 'background:' + (h.bet_result.won ? YESC : NOC) + ';"></span>';
+            }).join('')
+          + '<span style="font:700 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;'
+          + 'line-height:11px;margin-left:6px;">' + bw + '\u2013' + (betRows.length - bw)
+          + ' \u00B7 THE TOP ROW IS THE FORECAST\u2019S PICK; A RIGHT PICK CAN STILL BE A LOSING BET WHEN THE MARKET AGREED FIRST</span>'
+          + '</div>';
+      }
       var lv = R.live || {}, bt = R.backtest || {}, fr = R.final || {};
       var SEP = ' <span style="color:#22604e;">\u00B7</span> ';
       /* the measure that actually has to hold for the staking to work: a stated
@@ -54339,9 +54364,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var pctOf = function(t){ return t.n ? Math.round(100 * t.hits / t.n) + '%' : '\u2014'; };
       var tiles = [];
       tiles.push(lv.n
-        ? tile('LIVE', wlDash(lv), pctOf(lv) + ' of ' + lv.n
+        ? tile('FORECAST, LIVE', wlDash(lv), 'top range right, ' + lv.n
             + (lv.n === 1 ? ' day' : ' days'))
-        : tile('LIVE', '\u2014', 'no results yet'));
+        : tile('FORECAST, LIVE', '\u2014', 'no results yet'));
+      if (betRows.length){
+        var bwin = betRows.filter(function(h){ return h.bet_result.won; }).length;
+        tiles.push(tile('THE PLAN\u2019S BETS', bwin + '\u2013' + (betRows.length - bwin),
+          'won\u2013lost, ' + betRows.length + (betRows.length === 1 ? ' bet' : ' bets')));
+      }
       if (bt.n) tiles.push(tile('PAST DAYS', wlDash(bt), pctOf(bt) + ' of ' + bt.n));
       if (bt.interior_n){
         var ez = {n: bt.n - bt.interior_n, hits: bt.hits - bt.interior_hits};
@@ -55831,6 +55861,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + hdr('RECORD')
         + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
         + (strip || '') + '</div>'
+        + betStrip
         + tallyLines
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
