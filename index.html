@@ -54157,7 +54157,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               /* the top-of-sheet line: latest reading and the high since 7 AM
                  at each airport, newest reading first */
               var topEl = document.getElementById('bv-apt5-top');
-              if (topEl){
+              /* the live poll owns the card once it has painted; this five-minute
+                 summary only fills the gap before it (a race on tab switch) */
+              if (topEl && !topEl.getAttribute('data-live')){
                 var atUtc = Date.parse(nyToday.apt5.at || '');
                 var atTxt = isNaN(atUtc) ? '' : new Date(atUtc).toLocaleTimeString('en-US',
                   { timeZone: CITY.tz, hour: 'numeric', minute: '2-digit' });
@@ -54506,6 +54508,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   ? 'These are the settlement station\u2019s own readings \u2014 the number that settles, before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor; the true peak runs about 0.3\u00B0 above the 5-minute samples.'
                   : 'Central Park\u2019s own 5-minute stream is not public; when the three airports are peaking between the hourly reports, the park usually is too.')
               + '</div>';
+            el2.setAttribute('data-live', '1');
             var np = {}; rows.forEach(function(k){ np[k] = d.s[k].max7; });
             window._cwSensPrev = Object.assign({}, prev, np);
           })
