@@ -55552,8 +55552,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                             + (bookRoll.dropped > 1 ? 's are' : ' is')
                             + ' too small to buy even one contract at this pot size.' : ''))
                     : '')
-              : kvLine('WHY NOT', 'Every range costs at least what it is estimated to be worth '
-                    + 'once the fee is counted. Sitting out is a position.'))
+              : kvLine('WHY NOT', (vbest && vbest.ev > -0.5
+                    ? 'The best gap on the board is <b>' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))
+                      + '</b> after the fee, ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label)
+                      + ' at ' + cents(vbest.ask) + ' \u2014 under the ' + cents(KMIN_EDGE) + ' floor a bet has to clear. '
+                    : 'No range is priced under what it is estimated to be worth once the fee is counted. ')
+                    + 'This changes: each bake brings the newest runs and the newest price, and a gap opens on about one day in three. Sitting out is a position.'))
           /* the TIMING row is gone: the chip beside the headline already says
              IN THE WINDOW / WINDOW HAS PASSED, and a row restating it in a
              sentence was the same fact twice in one box. */
