@@ -2580,6 +2580,21 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         tkey2 = tdate.isoformat()
         trows = fetch_market(cfg, event_ticker(cfg, tdate))
         tp = point_forecast(fcm, biases, tkey2, 0, daily.get(tkey) or obs_far)
+        # THE PREP, WHETHER OR NOT THE LADDER EXISTS. Before ~10 AM there is no
+        # market for tomorrow and the column stood empty. What a reader can
+        # prepare against without a ladder: our number, each run's own peak,
+        # the two official forecasts, and when the peak comes.
+        t_models, t_ph = {}, []
+        for _m, _fc in fcm.items():
+            _day = _fc.get(tkey2) or {}
+            if len(_day) >= 20 and biases.get(_m) is not None:
+                _pk = max(_day.items(), key=lambda kv: kv[1])
+                t_models[_m] = round(_pk[1] - biases[_m], 1)
+                t_ph.append(_pk[0])
+        t_prep = {'pred': round(tp, 2) if tp is not None else None, 'sd': TOMORROW_SD,
+                  'models': t_models,
+                  'peak_hour': int(statistics.median(t_ph)) if t_ph else None,
+                  'twc_fc': twc_forecast(cfg, tdate), 'nws_fc': nws_forecast(cfg, tdate)}
         if trows and tp is not None and -40.0 < tp < 130.0:
             tps = distribution(trows, tp, TOMORROW_SD, None)
             tb = max(range(len(trows)), key=lambda i: tps[i])
@@ -2601,9 +2616,11 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                 'link': (cfg['url'] + '/' + event_ticker(cfg, tdate).lower())
                         if cfg.get('url') else None,
             }
+            tom.update({k: v for k, v in t_prep.items() if k not in ('pred', 'sd')})
         elif not trows:
             tom = {'date': tkey2, 'event': event_ticker(cfg, tdate),
                    'state': market_state(cfg, [], now), 'ladder': []}
+            tom.update(t_prep)
     except Exception as e:
         print('tomorrow unavailable: %s' % e)
 

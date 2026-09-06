@@ -54961,12 +54961,74 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            is assembled after this block, so it is not assigned yet */
         var d0 = new Date(TM.date + 'T12:00:00');
         var dn0 = isNaN(d0) ? '' : ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d0.getDay()];
+        /* THE PREP, before the ladder exists. "Nothing to plan against" left
+           the column empty all morning. There is plenty to prepare against
+           without a ladder: our number and its likely range, where each run
+           puts the peak, the two official forecasts, and the clock. */
+        var MODEL_NAMES = { ncep_hrrr_conus: 'HRRR', ncep_nbm_conus: 'NBM', ecmwf_ifs025: 'ECMWF',
+                            gfs_seamless: 'GFS', icon_seamless: 'ICON', gem_seamless: 'GEM' };
+        var prep = '';
+        if (TM.pred != null){
+          var tsd = TM.sd || 1.4;
+          var mods = Object.keys(TM.models || {}).map(function(m){ return [MODEL_NAMES[m] || m, TM.models[m]]; })
+            .sort(function(a, b){ return a[1] - b[1]; });
+          /* a bare axis: no ranges yet, so no range labels -- ticks every
+             degree, our band, the two official marks */
+          var vals = [TM.pred - 2 * tsd, TM.pred + 2 * tsd];
+          if (TM.twc_fc != null) vals.push(TM.twc_fc);
+          if (TM.nws_fc != null) vals.push(TM.nws_fc);
+          mods.forEach(function(m){ vals.push(m[1]); });
+          var a0 = Math.floor(Math.min.apply(null, vals)) - 1, a1 = Math.ceil(Math.max.apply(null, vals)) + 1;
+          var ax = function(v){ return 100 * (v - a0) / (a1 - a0); };
+          var ticks = '';
+          for (var tv = a0; tv <= a1; tv++){
+            ticks += '<div style="position:absolute;left:' + ax(tv).toFixed(1) + '%;top:8px;height:9px;width:1px;'
+              + 'background:rgba(0,210,152,' + (tv % 2 ? '.35' : '.15') + ');"></div>'
+              + (tv % 2 ? '<div style="position:absolute;left:' + ax(tv).toFixed(1) + '%;top:19px;transform:translateX(-50%);'
+                  + 'font:700 7px system-ui,sans-serif;color:#2c7f66;">' + tv + '</div>' : '');
+          }
+          var pband = '<div style="position:absolute;left:' + ax(TM.pred - tsd).toFixed(1) + '%;width:'
+            + (ax(TM.pred + tsd) - ax(TM.pred - tsd)).toFixed(1) + '%;top:9px;height:7px;border-radius:3px;'
+            + 'background:' + FCC + '55;"></div>'
+            + '<div style="position:absolute;left:' + ax(TM.pred).toFixed(1) + '%;top:6px;height:13px;width:2px;'
+            + 'background:' + FCC + ';transform:translateX(-1px);"></div>'
+            + '<div style="position:absolute;left:' + ax(TM.pred).toFixed(1) + '%;top:-8px;transform:translateX(-50%);'
+            + 'font:800 8px system-ui,sans-serif;color:' + FCC + ';white-space:nowrap;">OURS ' + T1(TM.pred) + '\u00B0</div>';
+          var fm = '';
+          [['TWC', TM.twc_fc, MKC], ['NWS', TM.nws_fc, '#8fb3d9']].forEach(function(f, fi){
+            if (f[1] == null) return;
+            fm += '<div style="position:absolute;left:' + ax(f[1]).toFixed(1) + '%;top:9px;height:9px;width:2px;'
+              + 'background:' + f[2] + ';transform:translateX(-1px);"></div>'
+              + '<div style="position:absolute;left:' + ax(f[1]).toFixed(1) + '%;top:' + (29 + 9 * fi) + 'px;'
+              + 'transform:translateX(-50%);font:800 7px system-ui,sans-serif;letter-spacing:.04em;color:' + f[2]
+              + ';white-space:nowrap;">' + f[0] + ' ' + T1(f[1]) + '\u00B0</div>';
+          });
+          var ph = TM.peak_hour;
+          prep = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;">'
+            + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>'
+            + '<div style="position:relative;height:50px;margin:14px 6px 0;">' + ticks + pband + fm + '</div>'
+            + '<div style="font:600 9px system-ui,sans-serif;color:#9fd9c4;margin-top:8px;line-height:1.55;">'
+            + (mods.length
+                ? 'The runs, bias-corrected: ' + mods.map(function(m){ return m[0] + ' <b>' + T1(m[1]) + '\u00B0</b>'; }).join(' \u00B7 ')
+                  + (mods.length > 1 ? ' \u2014 a ' + T1(mods[mods.length - 1][1] - mods[0][1]) + '\u00B0 spread. ' : '. ')
+                : '')
+            + (ph != null ? 'Peak near ' + (ph % 12 || 12) + (ph < 12 ? ' AM' : ' PM') + (ph >= 16 ? ', late enough to miss the 4 PM report. ' : '. ') : '')
+            + '</div>'
+            + '<div style="font:600 8.5px system-ui,sans-serif;color:#45b491;margin-top:8px;line-height:1.6;">'
+            + '<b style="color:#63dbb6;">THE CLOCK</b> \u00B7 ranges list around ' + mtaEsc(TM.state.opens || '10 AM') + ' today'
+            + ' \u00B7 first bake with the morning runs 8:05 AM ' + dn0 + ' \u00B7 window 8 AM\u20131 PM \u00B7 hold to settlement</div>';
+        }
         tomorrow = hdr('TOMORROW · ' + dn0.slice(0,3).toUpperCase() + ' '
                        + TM.date.slice(5).replace('-', '/')).replace('</div>', chip(TM.state) + '</div>')
-          + '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:6px;line-height:1.5;">'
-          + 'Kalshi has not listed ' + dn0 + '&rsquo;s ranges yet \u2014 they go up around '
-          + (TM.state.opens || '10 AM') + ' on ' + (dayName(T.date) || 'the day before')
-          + '. Nothing to plan against until then.</div>';
+          + (prep
+              ? prep
+                + '<div style="font:.6rem system-ui,sans-serif;color:#2c7f66;margin-top:8px;line-height:1.5;">'
+                + 'Kalshi lists ' + dn0 + '&rsquo;s ranges around ' + mtaEsc(TM.state.opens || '10 AM')
+                + '; the bet gets priced then.</div>'
+              : '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:6px;line-height:1.5;">'
+                + 'Kalshi has not listed ' + dn0 + '&rsquo;s ranges yet \u2014 they go up around '
+                + (TM.state.opens || '10 AM') + ' on ' + (dayName(T.date) || 'the day before')
+                + '. Nothing to plan against until then.</div>');
       } else if (TM && TM.ladder && TM.ladder.length){
         var tvb = [null];
         TM.ladder.forEach(function(r){
