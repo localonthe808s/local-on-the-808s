@@ -54604,7 +54604,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         }
         /* the forecast, labelled with the hour the runs put its peak -- above
            the axis unless the NOW/PEAK labels are already there */
-        var fcLabelTop = (xo != null && Math.abs(xf - xo) < 16) || (xn != null && Math.abs(xf - xn) < 16) ? 23 : -9;
+        /* when the forecast sits within a few degrees of NOW or PEAK its label
+           goes on a third line ABOVE the axis, not below into the official
+           forecasts' labels */
+        var fcNear = (xo != null && Math.abs(xf - xo) < 16) || (xn != null && Math.abs(xf - xn) < 16);
+        var fcLabelTop = fcNear ? (crowded ? -31 : -20) : -9;
         var fmark = label(xf, FCC, T1(T.pred) + '° FORECAST' + fcTime, fcLabelTop);
         /* the official forecasts and the station's own hard numbers, under the axis */
         var under = [];
@@ -54631,11 +54635,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           row = (Math.abs(x - lastX) < 9) ? row + 1 : 0; lastX = x;
           fmark += '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (14 + (fcLabelTop === 23 ? 10 : 0)) + 'px;height:8px;width:2px;'
             + 'background:' + u[2] + ';transform:translateX(-1px);"></div>'
-            + '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (24 + (fcLabelTop === 23 ? 10 : 0) + 9 * row) + 'px;'
+            + '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (24 + 9 * row) + 'px;'
             + 'transform:translateX(' + anchor(x) + ');font:800 6.5px system-ui,sans-serif;letter-spacing:.04em;'
             + 'color:' + u[2] + ';white-space:nowrap;">' + u[0] + '</div>';
         });
-        scale = '<div style="position:relative;height:' + (96 + (fcLabelTop === 23 ? 10 : 0)) + 'px;margin:' + (crowded ? 26 : 14) + 'px 6px 0;">'
+        var topRoom = fcNear ? (crowded ? 38 : 26) : (crowded ? 26 : 14);
+        scale = '<div style="position:relative;height:96px;margin:' + topRoom + 'px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
           + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>'
