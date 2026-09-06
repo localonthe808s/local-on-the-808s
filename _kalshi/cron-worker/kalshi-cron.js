@@ -435,8 +435,169 @@ async function logObs(env) {
     : '');
 }
 
+// ALERTS, so the day does not arrive as a loss. On 2026-09-05 the 79 that
+// settled New York surfaced at 4:25 PM and the holder learned it from the
+// balance. Every five-minute tick now looks at the things that change a held
+// position and pushes a message through ntfy.sh -- a topic the phone
+// subscribes to, no account, no key. Three triggers, New York only:
+//   1. the climate portal's status for yesterday/today flips (preliminary,
+//      official) -- the number that pays, the moment it exists;
+//   2. TWC's running maximum crosses a range edge on a rung you hold;
+//   3. the market on a rung you hold moves 25 points or more from where it
+//      was when you were last told.
+// SETUP:  wrangler secret put NTFY_TOPIC   (a long random string; subscribe to
+//         https://ntfy.sh/<that string> in the ntfy app). No topic, no alerts.
+// State lives in KV under alert:state; a 30-minute cool-down per message key
+// stops a flapping market from paging you every five minutes.
+const ALERT_KEY = 'alert:state';
+const ALERT_SERIES = 'KXHIGHNY';
+const ALERT_COOLDOWN_MS = 30 * 60 * 1000;
+
+function rungBounds(m) {
+  // Kalshi states open bounds strictly: less/cap 79 = 78 or below.
+  const f = m.floor_strike, c = m.cap_strike, st = m.strike_type;
+  if (st === 'between') return [Number(f), Number(c)];
+  if (st === 'less' || st === 'less_or_equal') {
+    const hi = Number(c != null ? c : f); return [null, st === 'less' ? hi - 1 : hi];
+  }
+  const lo = Number(f); return [st === 'greater' ? lo + 1 : lo, null];
+}
+function rungLabel(b) {
+  if (b[0] == null) return `${b[1]} or below`;
+  if (b[1] == null) return `${b[0]} or above`;
+  return `${b[0]} to ${b[1]}`;
+}
+function inRung(v, b) {
+  const r = Math.round(v);
+  return (b[0] == null || r >= b[0]) && (b[1] == null || r <= b[1]);
+}
+async function notify(env, state, key, title, body, priority) {
+  const now = Date.now();
+  const last = (state.sent || {})[key] || 0;
+  if (now - last < ALERT_COOLDOWN_MS) return false;
+  const r = await fetch(`https://ntfy.sh/${env.NTFY_TOPIC}`, {
+    method: 'POST', body,
+    headers: { 'Title': title, 'Priority': priority || 'default' }
+  });
+  state.sent = state.sent || {};
+  state.sent[key] = now;
+  return r.ok;
+}
+function localDate(offsetDays) {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+async function alertTick(env) {
+  if (!env.NTFY_TOPIC || !env.OBS) return 'alerts off';
+  const state = (await env.OBS.get(ALERT_KEY, { type: 'json' })) || {};
+  const out = [];
+  // 1. the portal, yesterday and today
+  state.portal = state.portal || {};
+  for (const off of [-1, 0]) {
+    const day = localDate(off);
+    try {
+      const j = await (await fetch(`https://weather.com/kalshi/api/climate/primary?date=${day}`,
+        { headers: { 'User-Agent': 'Mozilla/5.0 bluishvoid-alerts' } })).json();
+      const row = (j.results || []).find((r) => r.station && r.station.icao === 'KNYC');
+      if (!row) continue;
+      const st = row.status, v = row.data && row.data.maxTemp;
+      const was = state.portal[day];
+      if (st !== 'no_report' && st !== was) {
+        await notify(env, state, `portal:${day}:${st}`,
+          `Central Park ${day}: ${st.toUpperCase()} ${v}°`,
+          `weather.com/kalshi shows the ${day} high as ${v}° (${st}). ` +
+          (st === 'official' ? 'This is the number that pays.' : 'Preliminary; the final comes ~3 AM.'),
+          st === 'official' ? 'high' : 'default');
+        out.push(`portal ${day} ${st} ${v}`);
+      }
+      state.portal[day] = st;
+    } catch (e) { out.push(`portal ${day} err`); }
+  }
+  // 2+3 need the held rungs
+  let held = [];
+  try {
+    const pos = await kalshiGet(env, '/trade-api/v2/portfolio/positions',
+                                '?count_filter=position&limit=200');
+    held = (pos.market_positions || [])
+      .map((m) => ({ ticker: m.ticker, n: Number(m.position_fp != null ? m.position_fp : m.position) }))
+      .filter((h) => h.n !== 0 && h.ticker.startsWith(ALERT_SERIES + '-'));
+  } catch (e) { out.push('positions err'); }
+  if (!held.length) {
+    state.mkt = {}; state.max7 = null;
+    await env.OBS.put(ALERT_KEY, JSON.stringify(state));
+    return out.concat(['no NY position']).join(', ');
+  }
+  // TWC's running max at Central Park (v3 current with the ICAO is the park)
+  let max7 = null;
+  try {
+    const j = await (await fetch(`https://api.weather.com/v3/wx/observations/current?icaoCode=KNYC` +
+      `&units=e&language=en-US&format=json&apiKey=${TWC_KEY}`)).json();
+    if (typeof j.temperatureMaxSince7Am === 'number') max7 = j.temperatureMaxSince7Am;
+  } catch (e) { /* no reading this tick */ }
+  const nyHour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
+    hour: 'numeric', hour12: false }).format(new Date()));
+  if (nyHour < 7) max7 = null;                  // before 7 AM the field is yesterday's
+  state.mkt = state.mkt || {};
+  for (const h of held) {
+    let m;
+    try {
+      m = (await (await fetch(`${KALSHI}/trade-api/v2/markets/${h.ticker}`,
+        { headers: { 'Accept': 'application/json', 'User-Agent': 'bluishvoid-alerts' } })).json()).market;
+    } catch (e) { out.push(`${h.ticker} err`); continue; }
+    if (!m) continue;
+    const b = rungBounds(m), label = rungLabel(b), side = h.n > 0 ? 'YES' : 'NO';
+    const bid = Number(m.yes_bid_dollars), ask = Number(m.yes_ask_dollars);
+    const mid = (isFinite(bid) && isFinite(ask) && ask > 0) ? (bid + ask) / 2 : null;
+    // 3. the market moved on your rung
+    if (mid != null) {
+      const anchor = state.mkt[h.ticker];
+      if (anchor != null && Math.abs(mid - anchor) >= 0.25) {
+        const dir = mid > anchor ? 'up' : 'down';
+        const good = (side === 'YES') === (mid > anchor);
+        await notify(env, state, `mkt:${h.ticker}:${Math.round(mid * 4)}`,
+          `${label}: market ${dir} ${Math.round(anchor * 100)}¢ → ${Math.round(mid * 100)}¢`,
+          `You hold ${Math.abs(h.n)} ${side}. The YES price moved from ${Math.round(anchor * 100)}¢ to ` +
+          `${Math.round(mid * 100)}¢ -- ${good ? 'in your favour' : 'against you'}. ` +
+          `The afternoon market prices the hourly readings, not the peak; the plan is to hold.`,
+          good ? 'default' : 'high');
+        out.push(`${h.ticker} ${anchor}->${mid}`);
+        state.mkt[h.ticker] = mid;
+      } else if (anchor == null) {
+        state.mkt[h.ticker] = mid;
+      }
+    }
+    // 2. TWC's running max crossed an edge of your rung
+    if (max7 != null && state.max7 != null && max7 !== state.max7) {
+      const wasIn = inRung(state.max7, b), nowIn = inRung(max7, b);
+      const wasAbove = b[1] != null && state.max7 > b[1] + 0.5, nowAbove = b[1] != null && max7 > b[1] + 0.5;
+      if (wasIn !== nowIn || wasAbove !== nowAbove) {
+        const bad = (side === 'YES') ? !nowIn : nowIn;
+        await notify(env, state, `max7:${h.ticker}:${max7}`,
+          `Central Park running max ${max7}° (TWC)`,
+          `TWC's temperatureMaxSince7Am went ${state.max7}° → ${max7}°, ` +
+          (nowIn ? `inside ${label}` : nowAbove ? `above ${label}` : `below ${label}`) +
+          `. You hold ${Math.abs(h.n)} ${side} on ${label}${bad ? ' -- this is against you' : ''}. ` +
+          `max7 is a blended field and has read high before; the climate report decides.`,
+          bad ? 'high' : 'default');
+        out.push(`max7 ${state.max7}->${max7}`);
+      }
+    }
+  }
+  if (max7 != null) state.max7 = max7;
+  await env.OBS.put(ALERT_KEY, JSON.stringify(state));
+  return out.length ? out.join(', ') : `quiet (${held.length} NY position${held.length === 1 ? '' : 's'})`;
+}
+
 export default {
   async scheduled(event, env, ctx) {
+    ctx.waitUntil((async () => {
+      try {
+        console.log(`[alerts] ${new Date().toISOString()} ${await alertTick(env)}`);
+      } catch (e) {
+        console.log(`[alerts] FAILED ${e}`);
+      }
+    })());
     // EVERY tick logs; only the original four minutes dispatch. The cron went to
     // */5 for the observation trail, and the daily job must not suddenly run
     // twelve times an hour -- it takes ~5 minutes and the runs would overlap.
@@ -520,6 +681,7 @@ export default {
       schedule_utc: ['*/5 12-23 * * *', '*/5 0-4 * * *'],
       dispatch_minutes: [5, 20, 35, 50],
       obs_log: env.OBS ? 'KV bound' : 'NO KV BINDING - not logging',
+      alerts: env.NTFY_TOPIC ? 'ntfy topic set; New York positions watched every 5 min' : 'off (no NTFY_TOPIC)',
       now_utc: new Date().toISOString(),
       note: 'Triggering is cron-only. Runs appear at github.com/' + OWNER + '/' + REPO + '/actions'
     };

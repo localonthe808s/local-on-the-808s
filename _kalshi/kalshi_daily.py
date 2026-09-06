@@ -2495,6 +2495,16 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     rest = [v for h, v in (fc.get(tkey) or {}).items() if h >= hr0]
     fpeak = max(rest) if rest else None
     fadj = point_forecast(fcm, biases, tkey, hr0, yday)
+    # WHEN the runs put the peak. At or after 4 PM local it lands after the
+    # 1:51 PM six-hour group and the 4 PM preliminary report, so every intraday
+    # reading understates the final. The panel says so in the briefing.
+    _ph = []
+    for _m, _fc in fcm.items():
+        _day = _fc.get(tkey) or {}
+        _late = [(v, h) for h, v in _day.items() if h >= hr0]
+        if _late:
+            _ph.append(max(_late)[1])
+    peak_hour = int(statistics.median(_ph)) if _ph else None
 
     cands = [x for x in (obs_far, fadj) if x is not None]
     if not cands:
@@ -3110,6 +3120,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'now_temp': round(ob_last[0][1], 1) if ob_last else None,
             'now_at': ob_last[0][0][11:16] if ob_last else None,
             'fc_peak': round(fpeak, 2) if fpeak is not None else None,
+            'peak_hour': peak_hour,
             'ours': [round(p, 4) for p in ps],
             'pick': rows[best]['label'], 'p': round(ps[best], 4),
             'market_pick': rows[mbest]['label'], 'market_p': rows[mbest]['mid'],

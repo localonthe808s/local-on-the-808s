@@ -54232,7 +54232,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + (rl.roi == null ? '' : ' \u00B7 ' + (rl.roi > 0 ? '+' : '') + rl.roi + '%')
         + (rl.open ? '<span style="color:#359478;font-weight:600;"> \u00B7 ' + rl.open
             + ' still open</span>' : '')
-        + '</div>';
+        + '</div>'
+        /* each fill, graded: the record of what actually happened, not the
+           modelled book. This is the number Stage 0 exists to produce. */
+        + ((rl.recent || []).length
+            ? '<div style="font:600 8.5px system-ui,sans-serif;color:#9fd9c4;margin-top:3px;line-height:1.6;">'
+              + rl.recent.slice().reverse().map(function(t){
+                  return mtaEsc(String(t.date).slice(5).replace('-', '/')) + ' <b style="color:'
+                    + (t.side === 'yes' ? YESC : NOC) + ';">' + String(t.side).toUpperCase() + '</b> '
+                    + deg(t.range) + ' \u00B7 ' + (+t.contracts).toFixed(t.contracts % 1 ? 2 : 0)
+                    + ' at ' + cents(t.price) + ' \u2192 <b style="color:' + (t.won ? YESC : NOC) + ';">'
+                    + (t.won ? 'won +' : 'lost \u2212') + '$' + Math.abs(t.pl).toFixed(2) + '</b>';
+                }).join(SEP)
+              + '</div>'
+            : '');
 
       var mn = R.money || {};
       var moneyLine =
@@ -54516,15 +54529,21 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 : 'One contract is more than the edge justifies at this size. ')
             + 'Skip it, or take one and know it is oversized.');
         }
-        return kvLine('STAKE', '<b style="font-size:11px;">' + n + ' contract'
-          + (n === 1 ? '' : 's') + ' at ' + cents(price) + '</b> \u2014 '
-          + (potKnown ? '$' + (n * k.cost).toFixed(2) + ', ' : '')
-          + (100 * k.quarter).toFixed(1) + '% of the pot at quarter Kelly. '
-          + (capped ? '<span style="color:#f2833f;">Only ' + Math.floor(have)
-                      + ' on offer, so that is the whole book.</span> '
-             : have != null ? '<span style="color:#359478;">' + Math.floor(have)
-                      + ' available.</span> ' : '')
-          + 'Wins ' + cents((1 - k.cost) * n) + ', loses ' + cents(k.cost * n) + '.');
+        /* THE SIZE IS THE FIRST THING IN THE PLAN, and the loss at that size
+           sits beside it. On 2026-09-05 the plan said one contract and the
+           fill was thirty-three, the whole account, on a 52% bet. The edge
+           does not scale with the size; the loss does. */
+        return kvLine('STAKE', '<b style="font-size:13px;color:#fff;">' + n + ' contract'
+          + (n === 1 ? '' : 's') + ' at ' + cents(price) + '</b>'
+          + (potKnown ? ' \u2014 $' + (n * k.cost).toFixed(2) + ' of your $' + pot.toFixed(2) + ' pot' : '')
+          + ' \u00B7 <b style="color:' + NOC + ';">loses $' + (k.cost * n).toFixed(2)
+          + ' if wrong</b>, wins $' + ((1 - k.cost) * n).toFixed(2) + '. '
+          + '<span style="color:#9fd9c4;">' + (100 * k.quarter).toFixed(1) + '% of the pot at quarter Kelly'
+          + (capped ? ' \u2014 <span style="color:#f2833f;">only ' + Math.floor(have)
+                      + ' on offer, so that is the whole book</span>'
+             : have != null ? ' \u2014 ' + Math.floor(have) + ' available' : '') + '.</span> '
+          + '<span style="color:#f2833f;">Ten times this size is the same '
+          + pct(q) + ' bet losing $' + (10 * k.cost * n).toFixed(2) + '.</span>');
       };
 
       var vbest = null;
@@ -55339,7 +55358,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                  The direction was also simply wrong: it said "below" whatever
                  the sign, so a 78.8° forecast was reported as sitting 0.3°
                  below the 78.5° line it is 0.3° above. */
-              ? kvLine('CONVICTION', convictionOf(vbest.ev, T.pred, T.ladder, stale))
+              ? stakeLine(vbest.dir, vbest.r, vbest.ask, pq)
+                + kvLine('CONVICTION', convictionOf(vbest.ev, T.pred, T.ladder, stale))
                 + kvLine('WHY', (vbest.dir === 'against'
                       ? 'It pays if the high lands anywhere OUTSIDE ' + deg(vbest.r.label)
                         + ' — five ranges to be right in, one to be wrong in. '
@@ -55365,7 +55385,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                         + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
                         + '<b style="color:' + NOC + ';">never above ' + cents(pmax) + '</b>')
                     : '')
-                + stakeLine(vbest.dir, vbest.r, vbest.ask, pq)
                 + (book.length > 1
                     ? kvLine('ALSO', book.slice(1).map(function(b){
                           return '<b style="color:' + (b.dir === 'against' ? NOC : YESC) + ';">'
@@ -55473,6 +55492,17 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             }
             if (T.nws_fc != null) bits.push('NWS says ' + T1(T.nws_fc) + '\u00B0');
             out.push(bits.join(' \u00B7 ') + '.');
+          }
+          /* A LATE PEAK IS INVISIBLE ALL AFTERNOON. The six-hour group closes
+             at 1:51 PM and the preliminary report at 4 PM; a high set after
+             them shows in nothing until the final report at ~3 AM. On those
+             days every intraday reading runs under the final, and the
+             afternoon market prices the readings. Say so before it happens. */
+          if (T.peak_hour != null && T.peak_hour >= 16){
+            var ph = T.peak_hour % 12 || 12;
+            out.push('<b>Late peak</b> \u2014 the runs put the high near ' + ph + ' PM, after the '
+              + '1:51 PM six-hour group and the 4 PM preliminary report. Every reading through the '
+              + 'afternoon will run under the final, and the market will price the readings.');
           }
         }
         /* THE DAY'S READ BELONGS WITH THE BRIEFING, not four sections down
