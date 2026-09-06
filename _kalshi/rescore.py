@@ -125,6 +125,17 @@ def compare(cfg):
 def main():
     keys = [c for c in K.MARKETS] if '--all' in sys.argv else \
            [c for c in K.MARKETS if c['key'] == 'ny_high']
+    # --city las   replays one market; BV_SKILL=0 / BV_BIAS_HL=7 override its
+    # model settings so a variant can be scored without editing MARKETS
+    if '--city' in sys.argv:
+        only = sys.argv[sys.argv.index('--city') + 1]
+        keys = [c for c in K.MARKETS if c['key'].startswith(only)]
+    for c in keys:
+        if os.environ.get('BV_SKILL') is not None:
+            c['skill'] = os.environ['BV_SKILL'] not in ('0', 'false', 'no')
+        if os.environ.get('BV_BIAS_HL'):
+            c['bias_hl'] = float(os.environ['BV_BIAS_HL'])
+        print('  %s: skill=%s bias_hl=%s' % (c['key'], c['skill'], c.get('bias_hl')))
     print('REPLAYING TODAY\'S MODEL OVER THE FROZEN RECORD')
     print('nothing here is written back; the record stays as it was decided.')
     tot = []

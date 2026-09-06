@@ -53401,9 +53401,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       { key: 'ny',  file: 'kalshi_ny.json',  tab: 'NEW YORK',  title: 'BELVEDERE CASTLE',
         tz: 'America/New_York',    ev: 'KXHIGHNY-',  station: 'Central Park' },
       { key: 'las', file: 'kalshi_las.json', tab: 'LAS VEGAS', title: 'LAS VEGAS',
-        tz: 'America/Los_Angeles', ev: 'KXHIGHTLV-', station: 'Harry Reid Intl' },
+        tz: 'America/Los_Angeles', ev: 'KXHIGHTLV-', station: 'Harry Reid Intl', own5: 'KLAS' },
       { key: 'aus', file: 'kalshi_aus.json', tab: 'AUSTIN',    title: 'AUSTIN',
-        tz: 'America/Chicago',     ev: 'KXHIGHAUS-', station: 'Camp Mabry' }
+        tz: 'America/Chicago',     ev: 'KXHIGHAUS-', station: 'Austin-Bergstrom', own5: 'KAUS' }
     ];
     function cwkCity(){
       try {
@@ -54153,7 +54153,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                Park's own 5-minute stream is not public; LaGuardia, JFK and
                Newark's are (Synoptic). When the three are peaking between the
                hourly reports, the park usually is too. Today's row, latest tick. */
-            var nyToday = days['ny_high|' + T.date];
+            var nyToday = days[CITY.key + '_high|' + T.date];
             if (nyToday && nyToday.apt5 && nyToday.apt5.s){
               var A = nyToday.apt5.s;
               /* the top-of-sheet line: latest reading and the high since 7 AM
@@ -54162,23 +54162,30 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               if (topEl){
                 var atUtc = Date.parse(nyToday.apt5.at || '');
                 var atTxt = isNaN(atUtc) ? '' : new Date(atUtc).toLocaleTimeString('en-US',
-                  { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
-                var names = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark' };
-                var ks = Object.keys(A).sort(function(a, b){ return (A[b].max7 || 0) - (A[a].max7 || 0); });
+                  { timeZone: CITY.tz, hour: 'numeric', minute: '2-digit' });
+                var names = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark', KLAS: 'Harry Reid (the settlement sensor)',
+                              KVGT: 'North Las Vegas', KAUS: 'Bergstrom (the settlement sensor)', KATT: 'Camp Mabry' };
+                var own = CITY.own5;   /* the station that settles, when its own 5-minute feed is public */
+                var ks = Object.keys(A).sort(function(a, b){
+                  if (a === own) return -1; if (b === own) return 1;
+                  return (A[b].max7 || 0) - (A[a].max7 || 0); });
                 topEl.innerHTML = '<div style="margin-top:7px;font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
-                  + 'AIRPORTS, 5-MINUTE READINGS' + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
+                  + (own ? 'THE SETTLEMENT SENSOR, 5-MINUTE READINGS' : 'AIRPORTS, 5-MINUTE READINGS') + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
                   + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
                   + ks.map(function(k){
                       var a = A[k];
-                      return '<div><b style="color:#63dbb6;">' + (names[k] || k) + '</b> '
+                      return '<div' + (k === own ? ' style="font-size:11px;"' : '') + '><b style="color:' + (k === own ? '#fff' : '#63dbb6') + ';">' + (names[k] || k) + '</b> '
                         + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '') + '</span>' : '\u2014')
                         + (a.max7 != null ? ' <span style="color:#9fd9c4;">\u00B7 high since 7 AM <b>' + T1(a.max7) + '\u00B0</b></span>' : '')
                         + '</div>';
                     }).join('')
                   + '</div>'
                   + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
-                  + 'Central Park\u2019s own 5-minute stream is not public; when the three airports '
-                  + 'are peaking between the hourly reports, the park usually is too.</div>';
+                  + (own
+                      ? 'These are the settlement station\u2019s own readings, at most five minutes old \u2014 the number that settles, '
+                        + 'before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor.'
+                      : 'Central Park\u2019s own 5-minute stream is not public; when the three airports '
+                        + 'are peaking between the hourly reports, the park usually is too.') + '</div>';
               }
               var parts = Object.keys(A).map(function(k){
                 var a = A[k];
@@ -56607,7 +56614,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + 'it has read 3\u00B0 high before, so it is a warning, never a floor. Refreshed every bake.</div>'
             : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, ' + mtaEsc(CITY.station) + ' \u2014 no reading yet'
               + (etH < 7 ? ' (its since-7 AM field holds yesterday until 7 AM)' : '') + '</div>')
-        + (isNY ? '<div id="bv-apt5-top"></div>' : '')
+        + '<div id="bv-apt5-top"></div>'
         + '</div>'
         + yourBook
 

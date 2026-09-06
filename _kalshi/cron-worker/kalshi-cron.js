@@ -300,8 +300,18 @@ const OBS_MARKETS = [
   ['aus_high', 'KAUS', 'TX_ASOS', 'AUS'],
   ['den_high', 'KDEN', 'CO_ASOS', 'DEN'],
   ['lax_high', 'KLAX', 'CA_ASOS', 'LAX'],
-  ['phl_high', 'KPHL', 'PA_ASOS', 'PHL']
+  ['phl_high', 'KPHL', 'PA_ASOS', 'PHL'],
+  ['las_high', 'KLAS', 'NV_ASOS', 'LAS']      // the panel's second tab (2026-09-06)
 ];
+// THE 5-MINUTE FEEDS, per market. New York's settlement sensor (Central Park)
+// has no public 5-minute stream, so the three airports stand in for it. Las
+// Vegas settles on Harry Reid (KLAS) and Austin on Bergstrom (KAUS) -- FAA
+// airports, and their 5-minute observations ARE the settlement sensor's own.
+const APT5 = {
+  ny_high:  { stids: 'KLGA,KJFK,KEWR', tz: 'America/New_York' },
+  las_high: { stids: 'KLAS,KVGT',      tz: 'America/Los_Angeles' },
+  aus_high: { stids: 'KAUS,KATT',      tz: 'America/Chicago' }
+};
 
 // THE STATION TRAP, and it cost a whole 45-day study before it was found.
 //   v3 /wx/observations/current?icaoCode=KNYC -> Central Park   RIGHT
@@ -380,33 +390,33 @@ async function obsSnapshot(env) {
   // row, to be judged against TWC's field and the settlement: when the region
   // is peaking between the hourly reports, the park usually is too.
   if (env && env.SYNOPTIC_TOKEN) {
-    try {
-      const r = await fetch('https://api.synopticdata.com/v2/stations/timeseries?stid=KLGA,KJFK,KEWR' +
-        `&recent=720&vars=air_temp&units=temp|F&obtimezone=local&token=${env.SYNOPTIC_TOKEN}`);
-      if (r.ok) {
+    for (const key of Object.keys(APT5)) {
+      const row = rows.find((x) => x.key === key);
+      if (!row) continue;
+      try {
+        const r = await fetch(`https://api.synopticdata.com/v2/stations/timeseries?stid=${APT5[key].stids}` +
+          `&recent=720&vars=air_temp&units=temp|F&obtimezone=local&token=${env.SYNOPTIC_TOKEN}`);
+        if (!r.ok) continue;
         const j = await r.json();
-        const ny = rows.find((x) => x.key === 'ny_high');
-        if (ny) {
-          ny.apt5 = {};
-          // TODAY ONLY. The window reaches back twelve hours, and filtering by
-          // the hour alone let yesterday evening's readings count as "since
-          // 7 AM" -- all three airports showed the same 73.4 on the first tick.
-          const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
-            year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-          for (const st of (j.STATION || [])) {
-            const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
-            let mx = null, last = null, lastAt = null;
-            for (let i = 0; i < ts.length; i++) {
-              const v = vs[i]; if (typeof v !== 'number') continue;
-              const hh = Number(ts[i].slice(11, 13));
-              if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) mx = v;
-              last = v; lastAt = ts[i].slice(11, 16);
-            }
-            ny.apt5[st.STID] = { max7: mx, last, at: lastAt };
+        row.apt5 = {};
+        // TODAY ONLY, in the market's own zone. The window reaches back twelve
+        // hours, and filtering by the hour alone let yesterday evening's
+        // readings count as "since 7 AM".
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: APT5[key].tz,
+          year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        for (const st of (j.STATION || [])) {
+          const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
+          let mx = null, last = null, lastAt = null;
+          for (let i = 0; i < ts.length; i++) {
+            const v = vs[i]; if (typeof v !== 'number') continue;
+            const hh = Number(ts[i].slice(11, 13));
+            if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) mx = v;
+            last = v; lastAt = ts[i].slice(11, 16);
           }
+          row.apt5[st.STID] = { max7: mx, last, at: lastAt, n: ts.length };
         }
-      }
-    } catch (e) { /* the row stands without it */ }
+      } catch (e) { /* the row stands without it */ }
+    }
   }
   return { t, rows };
 }
@@ -491,7 +501,14 @@ async function logObs(env) {
 // State lives in KV under alert:state; a 30-minute cool-down per message key
 // stops a flapping market from paging you every five minutes.
 const ALERT_KEY = 'alert:state';
-const ALERT_SERIES = 'KXHIGHNY';
+const ALERT_SERIES = 'KXHIGHNY';   // kept for the status page
+// the markets the alerts watch: series prefix -> the settlement station TWC
+// reads (v3 current with the ICAO), its zone, and the name on the phone
+const ALERT_MARKETS = [
+  { series: 'KXHIGHNY',  icao: 'KNYC', tz: 'America/New_York',    name: 'Central Park' },
+  { series: 'KXHIGHTLV', icao: 'KLAS', tz: 'America/Los_Angeles', name: 'Las Vegas' },
+  { series: 'KXHIGHAUS', icao: 'KAUS', tz: 'America/Chicago',     name: 'Austin' }
+];
 const ALERT_COOLDOWN_MS = 30 * 60 * 1000;
 
 function rungBounds(m) {
@@ -563,25 +580,32 @@ async function alertTick(env) {
                                 '?count_filter=position&limit=200');
     held = (pos.market_positions || [])
       .map((m) => ({ ticker: m.ticker, n: Number(m.position_fp != null ? m.position_fp : m.position) }))
-      .filter((h) => h.n !== 0 && h.ticker.startsWith(ALERT_SERIES + '-'));
+      .map((h) => ({ ...h, am: ALERT_MARKETS.find((a) => h.ticker.startsWith(a.series + '-')) }))
+      .filter((h) => h.n !== 0 && h.am);
   } catch (e) { out.push('positions err'); }
   if (!held.length) {
-    state.mkt = {}; state.max7 = null;
+    state.mkt = {}; state.max7 = null; state.max7by = {};
     if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));
-    return out.concat(['no NY position']).join(', ');
+    return out.concat(['no watched position']).join(', ');
   }
-  // TWC's running max at Central Park (v3 current with the ICAO is the park)
-  let max7 = null;
-  try {
-    const j = await (await fetch(`https://api.weather.com/v3/wx/observations/current?icaoCode=KNYC` +
-      `&units=e&language=en-US&format=json&apiKey=${TWC_KEY}`)).json();
-    if (typeof j.temperatureMaxSince7Am === 'number') max7 = j.temperatureMaxSince7Am;
-  } catch (e) { /* no reading this tick */ }
-  const nyHour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
-    hour: 'numeric', hour12: false }).format(new Date()));
-  if (nyHour < 7) max7 = null;                  // before 7 AM the field is yesterday's
+  // TWC's running max at each held market's settlement station (v3 current
+  // with the ICAO is the station itself; before 7 AM local it is yesterday's)
+  const max7by = {};
+  for (const am of ALERT_MARKETS) {
+    if (!held.some((h) => h.am === am)) continue;
+    let v = null;
+    try {
+      const j = await (await fetch(`https://api.weather.com/v3/wx/observations/current?icaoCode=${am.icao}` +
+        `&units=e&language=en-US&format=json&apiKey=${TWC_KEY}`)).json();
+      if (typeof j.temperatureMaxSince7Am === 'number') v = j.temperatureMaxSince7Am;
+    } catch (e) { /* no reading this tick */ }
+    const lh = Number(new Intl.DateTimeFormat('en-US', { timeZone: am.tz, hour: 'numeric', hour12: false }).format(new Date()));
+    max7by[am.series] = (lh < 7) ? null : v;
+  }
   state.mkt = state.mkt || {};
+  state.max7by = state.max7by || {};
   for (const h of held) {
+    const max7 = max7by[h.am.series], prevMax7 = state.max7by[h.am.series];
     let m;
     try {
       m = (await (await fetch(`${KALSHI}/trade-api/v2/markets/${h.ticker}`,
@@ -610,27 +634,27 @@ async function alertTick(env) {
       }
     }
     // 2. TWC's running max crossed an edge of your rung
-    if (max7 != null && state.max7 != null && max7 !== state.max7) {
-      const wasIn = inRung(state.max7, b), nowIn = inRung(max7, b);
-      const wasAbove = b[1] != null && state.max7 > b[1] + 0.5, nowAbove = b[1] != null && max7 > b[1] + 0.5;
+    if (max7 != null && prevMax7 != null && max7 !== prevMax7) {
+      const wasIn = inRung(prevMax7, b), nowIn = inRung(max7, b);
+      const wasAbove = b[1] != null && prevMax7 > b[1] + 0.5, nowAbove = b[1] != null && max7 > b[1] + 0.5;
       if (wasIn !== nowIn || wasAbove !== nowAbove) {
         const bad = (side === 'YES') ? !nowIn : nowIn;
         await notify(env, state, `max7:${h.ticker}:${max7}`,
-          `Central Park running max ${max7}° (TWC)`,
-          `TWC's temperatureMaxSince7Am went ${state.max7}° → ${max7}°, ` +
+          `${h.am.name} running max ${max7}° (TWC)`,
+          `TWC's temperatureMaxSince7Am went ${prevMax7}° → ${max7}°, ` +
           (nowIn ? `inside ${label}` : nowAbove ? `above ${label}` : `below ${label}`) +
           `. You hold ${Math.abs(h.n)} ${side} on ${label}${bad ? ' -- this is against you' : ''}. ` +
           `max7 is a blended field and has read high before; the climate report decides.`,
           bad ? 'high' : 'default');
-        out.push(`max7 ${state.max7}->${max7}`);
+        out.push(`max7 ${h.am.series} ${prevMax7}->${max7}`);
       }
     }
   }
-  if (max7 != null) state.max7 = max7;
+  for (const k of Object.keys(max7by)) if (max7by[k] != null) state.max7by[k] = max7by[k];
   // KV allows 1,000 writes a day on this plan; a minute cadence is 1,020 ticks.
   // The state only changes when something happened, so only then is it written.
   if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));
-  return out.length ? out.join(', ') : `quiet (${held.length} NY position${held.length === 1 ? '' : 's'})`;
+  return out.length ? out.join(', ') : `quiet (${held.length} watched position${held.length === 1 ? '' : 's'})`;
 }
 
 export default {
