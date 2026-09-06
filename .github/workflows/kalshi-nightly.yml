@@ -1,0 +1,43 @@
+# THE NIGHTLY REFIT. The bake learns on its own every day -- bias windows, the
+# record, the published-forecast trail, the plan's graded bets, the minute
+# replay -- but the timing study (which hours pay, hold versus exit, the
+# calibration haircut) was a hand-run script until 2026-09-06 ("confirm that
+# the system will take notes from what happened in all 3 markets today").
+# This replays yesterday's real quotes into it once the day has settled, so
+# tomorrow's windows and verdicts include today.
+name: Kalshi nightly refit
+on:
+  schedule:
+    - cron: '20 8 * * *'          # 08:20Z = 4:20 AM ET, after the official climate reports
+  workflow_dispatch: {}
+concurrency:
+  group: kalshi-nightly
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  refit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install signing library
+        run: pip install --quiet cryptography
+      - name: Refit the timing, exit and calibration studies on the three cities
+        run: python3 -u _kalshi/price_study.py --city ny,las,aus
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- _kalshi/price_study.json; then echo "no change"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _kalshi/price_study.json
+          git commit -m "Kalshi nightly refit: hour windows, exit policy and calibration on the three cities"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main && git rebase origin/main || { git rebase --abort; git reset --hard origin/main; git add _kalshi/price_study.json; git commit -m "Kalshi nightly refit"; }
+          done
+          exit 1
