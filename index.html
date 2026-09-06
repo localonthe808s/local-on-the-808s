@@ -53148,7 +53148,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        letterbox meant scrolling a scroller inside a map. cwFeatPanel is left
        exactly as it is, because the outfalls, sensors and buried streams say a
        paragraph each and the small sheet suits them. */
-    function cwKalshiPanel(title, sub, html, meta){
+    function cwKalshiPanel(title, sub, html, meta, mid){
       var body = document.getElementById('cw-body');
       if (!body) return;
       mtaPanelClose(); cwFeatClose();
@@ -53225,6 +53225,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<div style="display:flex;align-items:center;gap:8px;">'
         + '<span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
         + mtaEsc(title).toUpperCase() + '</span>'
+        /* THE MIDDLE OF THE TITLE ROW: the live positions, centred between the
+           title and the clock (user, 2026-09-06: "good middle but move it to
+           the top"). Markup, not escaped; absent on a phone. */
+        + ((mid && !narrow) ? '<div style="flex:1 1 0;min-width:0;text-align:center;">' + mid + '</div>' : '')
         /* the subtitle left the title row: it is two lines of live numbers now,
            not a fixed label, and it needs the full width rather than whatever
            is left beside a title and two buttons. Passed as markup, so it is
@@ -53233,7 +53237,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            says, how old it is, when the next lands, and the button that
            fetches it early -- one cluster, and it stays on screen because the
            header is sticky. It shrinks before the buttons do. */
-        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;'
+        + ((meta && !narrow) ? '<div style="' + (mid ? '' : 'margin-left:auto;') + 'min-width:0;overflow:hidden;'
             + 'text-align:right;">' + meta + '</div>' : '')
         /* REFRESH, then close. Both share the X's geometry so the pair reads as
            one control cluster rather than a button bolted on. Refresh sits
@@ -56089,7 +56093,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var posTop = '';
       if (bookKnown && !PHONE){
         var bookPL = bookVal - bookCost;
-        posTop = '<div style="flex:0 0 auto;text-align:center;margin:0 12px;">'
+        posTop = '<div style="display:inline-block;text-align:center;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
           + bookRows.map(function(k){
               var h = posOn[k], up = (h.pl || 0) >= 0;
@@ -56121,10 +56125,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* IN THE MIDDLE OF THE TOP, not tucked under the clock: the date line on
          the left, the positions centred, an empty third column so the centre
          is the centre (user, 2026-09-06). */
-      var headSub = posTop
-        ? '<div style="display:flex;align-items:flex-start;"><div style="min-width:0;flex:1 1 0;">' + headSubL + '</div>'
-          + posTop + '<div style="flex:1 1 0;min-width:0;"></div></div>'
-        : headSubL;
+      var headSub = headSubL;   /* the positions ride in the title row now, see cwKalshiPanel(mid) */
 
       var freshTop = '<div style="font:700 7.5px system-ui,sans-serif;letter-spacing:.06em;'
         + 'color:#45b491;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
@@ -56361,7 +56362,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ' \u00B7 UPDATED '
         + mtaEsc(stamp12(K.updated)) + ' \u00B7 ' + ageTxt(fAge) + '</div>';
 
-      cwKalshiPanel('BELVEDERE CASTLE', headSub, body, freshTop);
+      cwKalshiPanel('BELVEDERE CASTLE', headSub, body, freshTop, posTop);
       if (!window._cwkTickId) window._cwkTickId = setInterval(cwkTick, 1000);
     }
     function cwGhostTap(ft){
