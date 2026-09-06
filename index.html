@@ -55811,8 +55811,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            read as a station clock more than once. A second line names them:
            the sheet's own clock, not the weather's. */
         + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
-        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">'
-        + 'NEW YORK BAKES EVERY 5 MINUTES \u00B7 ALL CITIES EVERY 15 | 8AM\u20131AM | EACH LANDS ~' + Math.round(cwkLatency / 60000) + ' MIN AFTER ITS SLOT</div>';
+        + 'text-align:right;line-height:1.5;margin-top:2px;">'
+        + 'NEW YORK BAKES EVERY 5 MIN \u00B7 ALL CITIES EVERY 15<br>'
+        + '8 AM \u2013 1 AM \u00B7 LANDS ~' + Math.round(cwkLatency / 60000) + ' MIN AFTER ITS SLOT</div>';
 
       /* IN THE INTRO, because it changes how everything below it should be
          read. A recommendation means one thing on an empty account and quite
