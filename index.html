@@ -55408,7 +55408,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (top && T.pred != null){
             var up = (top.hi == null) ? null : (top.hi + 0.5) - T.pred;
             var dn = (top.lo == null) ? null : T.pred - (top.lo - 0.5);
-            if (up != null && up >= 0 && (dn == null || up <= dn))
+            /* a forecast sitting ON the line is a coin flip, and "if it stalls
+               0.0° short" said so in the least readable way possible */
+            if (up != null && up < 0.05)
+              out.push('<b>On the line at ' + (top.hi + 0.5).toFixed(1) + '°</b> — a coin flip '
+                + 'between ' + deg(top.label) + ' and the range above.');
+            else if (dn != null && dn < 0.05)
+              out.push('<b>On the line at ' + (top.lo - 0.5).toFixed(1) + '°</b> — a coin flip '
+                + 'between ' + deg(top.label) + ' and the range below.');
+            else if (up != null && up >= 0 && (dn == null || up <= dn))
               out.push('<b>Watch ' + (top.hi + 0.5).toFixed(1) + '°</b> — another '
                 + up.toFixed(1) + '° and the range above takes over.');
             else if (dn != null && dn >= 0)
