@@ -53240,7 +53240,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* THE MIDDLE OF THE TITLE ROW: the live positions, centred between the
            title and the clock (user, 2026-09-06: "good middle but move it to
            the top"). Markup, not escaped; absent on a phone. */
-        + ((mid && !narrow) ? '<div style="flex:1 1 0;min-width:0;text-align:center;">' + mid + '</div>' : '')
+        + ''
         /* the subtitle left the title row: it is two lines of live numbers now,
            not a fixed label, and it needs the full width rather than whatever
            is left beside a title and two buttons. Passed as markup, so it is
@@ -53249,8 +53249,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            says, how old it is, when the next lands, and the button that
            fetches it early -- one cluster, and it stays on screen because the
            header is sticky. It shrinks before the buttons do. */
-        + ((meta && !narrow) ? '<div style="' + (mid ? '' : 'margin-left:auto;') + 'min-width:0;overflow:hidden;'
-            + 'text-align:right;">' + meta + '</div>' : '')
+        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;text-align:right;">' + meta
+            /* LIVE POSITIONS sit under the clock, against the right wall, with
+               their text left-aligned (user, 2026-09-06) */
+            + (mid ? '<div style="display:inline-block;text-align:left;margin-top:6px;">' + mid + '</div>' : '')
+            + '</div>' : '')
         /* REFRESH, then close. Both share the X's geometry so the pair reads as
            one control cluster rather than a button bolted on. Refresh sits
            first because it is the one you reach for repeatedly: this is a live
@@ -56435,7 +56438,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }).join('');
       if ((bookKnown || otherRows) && !PHONE){
         var bookPL = bookVal - bookCost;
-        posTop = '<div style="display:inline-block;text-align:center;">'
+        posTop = '<div style="display:block;text-align:left;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
           + bookRows.map(function(k){
               var h = posOn[k], up = (h.pl || 0) >= 0;
