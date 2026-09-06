@@ -69,13 +69,17 @@ jobs:
           KALSHI_PRIVATE_KEY: ${{ secrets.KALSHI_PRIVATE_KEY }}
         # -u so the log streams. Buffered, a five-minute run shows nothing at
         # all until it exits, which is indistinguishable from a hang.
-        run: python3 -u _kalshi/kalshi_daily.py
-
-      - name: Rain markets
-        # 22 binary city markets a day, own model, own file. Separate step so a
-        # failure here cannot cost the temperature markets their run.
-        continue-on-error: true
-        run: python3 -u _kalshi/kalshi_rain.py
+        # THE RAIN BOARD RUNS ALONGSIDE, not after. As two steps the job was
+        # five minutes of temperature then six of rain, and the file landed
+        # 10-15 minutes after each 15-minute dispatch. The two touch different
+        # files, so rain runs in the background and is waited for at the end;
+        # its failure still cannot cost the temperature markets their run.
+        run: |
+          python3 -u _kalshi/kalshi_rain.py > rain.log 2>&1 &
+          RAIN=$!
+          python3 -u _kalshi/kalshi_daily.py
+          wait $RAIN || echo "rain step failed (kept going)"
+          echo "----- rain -----"; cat rain.log
 
       - name: Commit if changed
         run: |

@@ -53425,11 +53425,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (left > 0){
         var t = Math.round(left / 1000);
         var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
-        put('next in ' + (h ? h + 'h ' : '') + m + ':' + (sec < 10 ? '0' : '') + sec);
+        put('next lands in ' + (h ? h + 'h ' : '') + m + ':' + (sec < 10 ? '0' : '') + sec);
         return;
       }
       put('new bake landing\u2026');
-      if (left > -75000 || cwkPulling || Date.now() < cwkRetryAt) return;
+      if (left > -20000 || cwkPulling || Date.now() < cwkRetryAt) return;
       cwkPulling = true;
       cwkRetryAt = Date.now() + 45000;
       var sc = p.scrollTop;
@@ -53871,6 +53871,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          Cloudflare does not publish a worker's triggers to anything that could
          read them. */
       var CWK_SLOTS = [5, 20, 35, 50];
+      /* THE SLOT IS WHEN THE JOB STARTS, NOT WHEN THE SHEET CHANGES. A run
+         takes minutes, so a countdown to the slot hit zero and then the
+         sheet sat on "landing..." for most of a quarter hour. The bake stamps
+         when it started and when it wrote, and the difference is how long the
+         last one took; the countdown adds that, so it counts to the landing. */
+      var cwkLatency = (function(){
+        var a = Date.parse(K.started_utc || ''), b = Date.parse(K.updated_utc || '');
+        if (isNaN(a) || isNaN(b) || b < a) return 6 * 60000;       /* a typical run, until measured */
+        return Math.min(Math.max(b - a, 60000), 20 * 60000);
+      })();
       var cwkDueIn = function(){
         var d = new Date(nowET);
         var hNow = d.getUTCHours(), mNow = d.getUTCMinutes(), sNow = d.getUTCSeconds();
@@ -53879,7 +53889,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var hh = (hNow + add) % 24;
           if (!cwkHours[hh]) continue;                    /* the overnight hole */
           for (var i = 0; i < CWK_SLOTS.length; i++){
-            var t = hourTop + add * 3600000 + CWK_SLOTS[i] * 60000;
+            var t = hourTop + add * 3600000 + CWK_SLOTS[i] * 60000 + cwkLatency;
             if (t > nowET) return t - nowET;
           }
         }
@@ -55760,13 +55770,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + mtaEsc(stamp12(K.updated)).toUpperCase().replace(/^\d{4}-\d{2}-\d{2}\s*/, '')
         + ' \u00B7 ' + ageTxt(fAge).toUpperCase()
         + ' \u00B7 <span class="cwk-next" data-due="' + (Date.now() + (cwkDueIn() || 0))
-        + '" style="color:#63dbb6;">NEXT IN ' + mmss(cwkDueIn()) + '</span></div>'
+        + '" style="color:#63dbb6;">NEXT LANDS IN ' + mmss(cwkDueIn()) + '</span></div>'
         /* WHAT THOSE THREE ARE. "9:20 AM ET · 15 MIN AGO · NEXT IN 13:21" was
            read as a station clock more than once. A second line names them:
            the sheet's own clock, not the weather's. */
         + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
         + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">'
-        + 'NEW BAKE EVERY 15 MINUTES | 8AM\u20131AM</div>';
+        + 'NEW BAKE EVERY 15 MINUTES | 8AM\u20131AM | EACH TAKES ~' + Math.round(cwkLatency / 60000) + ' MIN TO LAND</div>';
 
       /* IN THE INTRO, because it changes how everything below it should be
          read. A recommendation means one thing on an empty account and quite

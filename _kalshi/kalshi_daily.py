@@ -67,6 +67,7 @@ Kalshi prices live in the *_dollars fields.  The legacy integer-cent fields
 import json, math, os, statistics, sys, urllib.request, urllib.error
 import io, csv, re, base64, collections, datetime, time
 import threading, concurrent.futures as cf
+RUN_STARTED = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -1172,14 +1173,16 @@ def forecast_runs(cfg, past_days, model=None, today=None):
          '&temperature_unit=fahrenheit&timezone=%s'
          % (cfg['lat'], cfg['lon'], start.isoformat(),
             (today - datetime.timedelta(days=1)).isoformat(), tz) + mq)
-    absorb(get_json(u, timeout=180)['hourly'])
+    # 40 s, not 180: on the runner these sockets hang and then succeed at once on
+    # retry (13:35Z run: 183 s and 215 s on three cities). The timeout is the cost.
+    absorb(get_json(u, timeout=40)['hourly'])
     # today comes from the live run, which is fresher than anything archived
     # two days: today drives the live call, tomorrow drives the plan
     u2 = ('https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f'
           '&hourly=temperature_2m&forecast_days=2&temperature_unit=fahrenheit'
           '&timezone=%s' % (cfg['lat'], cfg['lon'], tz) + mq)
     try:
-        absorb(get_json(u2, timeout=120)['hourly'])
+        absorb(get_json(u2, timeout=40)['hourly'])
     except Exception as e:
         print('live run unavailable (%s); today falls back to archive' % e)
     return out
@@ -3193,6 +3196,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         # ...and an unambiguous one beside it, so nothing downstream has to
         # infer an offset from a two-letter suffix to work out an age.
         'updated_utc': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        # when the run STARTED, so the panel can measure dispatch-to-landing
+        'started_utc': RUN_STARTED,
         'today': {
             'date': tkey, 'event': event_ticker(cfg, today),
             'tz': cfg.get('tzlabel', 'ET'), 'market': cfg.get('label', ''),

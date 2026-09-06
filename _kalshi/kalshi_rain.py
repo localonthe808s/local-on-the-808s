@@ -148,7 +148,7 @@ def obs_precip(st, nw, start, end):
     import csv as _csv
     import io as _io
     out = {}
-    for r in _csv.DictReader(_io.StringIO(K.get(u, timeout=120).decode())):
+    for r in _csv.DictReader(_io.StringIO(K.get(u, timeout=40).decode())):
         v = r.get('precip_in')
         if v not in (None, '', 'M', 'None', 'T'):
             try:
@@ -180,13 +180,13 @@ def qpf(lat, lon, tz, start, end):
          '?latitude=%.4f&longitude=%.4f&start_date=%s&end_date=%s'
          '&daily=precipitation_sum&models=%s&precipitation_unit=inch&timezone=%s'
          % (lat, lon, start.isoformat(), end.isoformat(), mods, tzq))
-    absorb(K.get_json(u, timeout=180)['daily'])
+    absorb(K.get_json(u, timeout=40)['daily'])
     # today and tomorrow come from the live run, which is fresher than the archive
     u2 = ('https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f'
           '&daily=precipitation_sum&forecast_days=2&models=%s'
           '&precipitation_unit=inch&timezone=%s' % (lat, lon, mods, tzq))
     try:
-        absorb(K.get_json(u2, timeout=120)['daily'])
+        absorb(K.get_json(u2, timeout=40)['daily'])
     except Exception as e:
         print('  live run unavailable (%s); today falls back to the archive' % e)
     return {d: list(v.values()) for d, v in out.items()}
