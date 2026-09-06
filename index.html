@@ -56089,7 +56089,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var posTop = '';
       if (bookKnown && !PHONE){
         var bookPL = bookVal - bookCost;
-        posTop = '<div style="flex:0 0 auto;text-align:right;margin-left:12px;">'
+        posTop = '<div style="flex:0 0 auto;text-align:center;margin:0 12px;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
           + bookRows.map(function(k){
               var h = posOn[k], up = (h.pl || 0) >= 0;
@@ -56118,8 +56118,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW</div>'
           + '</div>';
       }
+      /* IN THE MIDDLE OF THE TOP, not tucked under the clock: the date line on
+         the left, the positions centred, an empty third column so the centre
+         is the centre (user, 2026-09-06). */
       var headSub = posTop
-        ? '<div style="display:flex;align-items:flex-start;"><div style="min-width:0;flex:1 1 auto;">' + headSubL + '</div>' + posTop + '</div>'
+        ? '<div style="display:flex;align-items:flex-start;"><div style="min-width:0;flex:1 1 0;">' + headSubL + '</div>'
+          + posTop + '<div style="flex:1 1 0;min-width:0;"></div></div>'
         : headSubL;
 
       var freshTop = '<div style="font:700 7.5px system-ui,sans-serif;letter-spacing:.06em;'
