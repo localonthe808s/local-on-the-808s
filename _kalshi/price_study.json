@@ -1,7 +1,363 @@
 {
- "built": "2026-09-06T08:58Z",
- "hour_rows": 1065,
+ "built": "2026-09-06T20:08Z",
+ "hour_rows": 3237,
  "by_market": {
+  "aus_high": [
+   {
+    "h": 7,
+    "days": 68,
+    "ours_brier": 0.078,
+    "mkt_brier": 0.084,
+    "bets": 67,
+    "edge": 0.1576,
+    "ret": 0.1434,
+    "winrate": 0.522,
+    "pool": 8994
+   },
+   {
+    "h": 8,
+    "days": 68,
+    "ours_brier": 0.078,
+    "mkt_brier": 0.0819,
+    "bets": 65,
+    "edge": 0.1646,
+    "ret": 0.2089,
+    "winrate": 0.508,
+    "pool": 10174
+   },
+   {
+    "h": 9,
+    "days": 68,
+    "ours_brier": 0.078,
+    "mkt_brier": 0.0756,
+    "bets": 65,
+    "edge": 0.1583,
+    "ret": 0.0024,
+    "winrate": 0.431,
+    "pool": 12186
+   },
+   {
+    "h": 10,
+    "days": 68,
+    "ours_brier": 0.0771,
+    "mkt_brier": 0.0748,
+    "bets": 66,
+    "edge": 0.1483,
+    "ret": 0.0117,
+    "winrate": 0.485,
+    "pool": 13673
+   },
+   {
+    "h": 11,
+    "days": 68,
+    "ours_brier": 0.0802,
+    "mkt_brier": 0.0747,
+    "bets": 65,
+    "edge": 0.1468,
+    "ret": -0.0363,
+    "winrate": 0.492,
+    "pool": 15468
+   },
+   {
+    "h": 12,
+    "days": 68,
+    "ours_brier": 0.0802,
+    "mkt_brier": 0.0766,
+    "bets": 67,
+    "edge": 0.1447,
+    "ret": 0.0767,
+    "winrate": 0.493,
+    "pool": 16543
+   },
+   {
+    "h": 13,
+    "days": 68,
+    "ours_brier": 0.0755,
+    "mkt_brier": 0.0797,
+    "bets": 63,
+    "edge": 0.1701,
+    "ret": 0.413,
+    "winrate": 0.476,
+    "pool": 17600
+   },
+   {
+    "h": 14,
+    "days": 68,
+    "ours_brier": 0.0702,
+    "mkt_brier": 0.079,
+    "bets": 66,
+    "edge": 0.1793,
+    "ret": 0.3206,
+    "winrate": 0.591,
+    "pool": 18933
+   },
+   {
+    "h": 15,
+    "days": 68,
+    "ours_brier": 0.0633,
+    "mkt_brier": 0.074,
+    "bets": 67,
+    "edge": 0.2263,
+    "ret": 0.5229,
+    "winrate": 0.612,
+    "pool": 21581
+   },
+   {
+    "h": 16,
+    "days": 68,
+    "ours_brier": 0.0417,
+    "mkt_brier": 0.0644,
+    "bets": 65,
+    "edge": 0.2614,
+    "ret": 0.5485,
+    "winrate": 0.677,
+    "pool": 23917
+   },
+   {
+    "h": 17,
+    "days": 68,
+    "ours_brier": 0.0339,
+    "mkt_brier": 0.0503,
+    "bets": 62,
+    "edge": 0.249,
+    "ret": 0.3296,
+    "winrate": 0.597,
+    "pool": 26532
+   },
+   {
+    "h": 18,
+    "days": 68,
+    "ours_brier": 0.0312,
+    "mkt_brier": 0.0204,
+    "bets": 64,
+    "edge": 0.1828,
+    "ret": -0.4909,
+    "winrate": 0.219,
+    "pool": 31976
+   },
+   {
+    "h": 19,
+    "days": 68,
+    "ours_brier": 0.0331,
+    "mkt_brier": 0.0031,
+    "bets": 64,
+    "edge": 0.2059,
+    "ret": -0.9353,
+    "winrate": 0.031,
+    "pool": 34292
+   },
+   {
+    "h": 20,
+    "days": 67,
+    "ours_brier": 0.0333,
+    "mkt_brier": 0.0012,
+    "bets": 66,
+    "edge": 0.2033,
+    "ret": -0.9652,
+    "winrate": 0.03,
+    "pool": 33494
+   },
+   {
+    "h": 21,
+    "days": 67,
+    "ours_brier": 0.0335,
+    "mkt_brier": 0.0001,
+    "bets": 65,
+    "edge": 0.2074,
+    "ret": -1.0,
+    "winrate": 0.0,
+    "pool": 33094
+   },
+   {
+    "h": 22,
+    "days": 67,
+    "ours_brier": 0.0333,
+    "mkt_brier": 0.0008,
+    "bets": 65,
+    "edge": 0.2046,
+    "ret": -1.0,
+    "winrate": 0.0,
+    "pool": 35684
+   }
+  ],
+  "las_high": [
+   {
+    "h": 7,
+    "days": 68,
+    "ours_brier": 0.058,
+    "mkt_brier": 0.081,
+    "bets": 66,
+    "edge": 0.2134,
+    "ret": 0.3807,
+    "winrate": 0.697,
+    "pool": 5002
+   },
+   {
+    "h": 8,
+    "days": 68,
+    "ours_brier": 0.058,
+    "mkt_brier": 0.0724,
+    "bets": 68,
+    "edge": 0.1944,
+    "ret": 0.3695,
+    "winrate": 0.676,
+    "pool": 5651
+   },
+   {
+    "h": 9,
+    "days": 68,
+    "ours_brier": 0.058,
+    "mkt_brier": 0.0708,
+    "bets": 67,
+    "edge": 0.1969,
+    "ret": 0.2831,
+    "winrate": 0.672,
+    "pool": 6480
+   },
+   {
+    "h": 10,
+    "days": 68,
+    "ours_brier": 0.058,
+    "mkt_brier": 0.0695,
+    "bets": 66,
+    "edge": 0.1927,
+    "ret": 0.3678,
+    "winrate": 0.697,
+    "pool": 7411
+   },
+   {
+    "h": 11,
+    "days": 68,
+    "ours_brier": 0.058,
+    "mkt_brier": 0.0686,
+    "bets": 66,
+    "edge": 0.1792,
+    "ret": 0.2562,
+    "winrate": 0.652,
+    "pool": 8840
+   },
+   {
+    "h": 12,
+    "days": 68,
+    "ours_brier": 0.0523,
+    "mkt_brier": 0.0658,
+    "bets": 66,
+    "edge": 0.1832,
+    "ret": 0.3306,
+    "winrate": 0.697,
+    "pool": 9692
+   },
+   {
+    "h": 13,
+    "days": 68,
+    "ours_brier": 0.0573,
+    "mkt_brier": 0.0611,
+    "bets": 65,
+    "edge": 0.2007,
+    "ret": 0.1604,
+    "winrate": 0.662,
+    "pool": 10635
+   },
+   {
+    "h": 14,
+    "days": 68,
+    "ours_brier": 0.056,
+    "mkt_brier": 0.059,
+    "bets": 65,
+    "edge": 0.2268,
+    "ret": 0.2182,
+    "winrate": 0.723,
+    "pool": 10840
+   },
+   {
+    "h": 15,
+    "days": 68,
+    "ours_brier": 0.0628,
+    "mkt_brier": 0.0564,
+    "bets": 67,
+    "edge": 0.2539,
+    "ret": 0.0836,
+    "winrate": 0.657,
+    "pool": 11715
+   },
+   {
+    "h": 16,
+    "days": 68,
+    "ours_brier": 0.0648,
+    "mkt_brier": 0.0535,
+    "bets": 68,
+    "edge": 0.2552,
+    "ret": 0.7098,
+    "winrate": 0.647,
+    "pool": 12965
+   },
+   {
+    "h": 17,
+    "days": 68,
+    "ours_brier": 0.0637,
+    "mkt_brier": 0.0594,
+    "bets": 67,
+    "edge": 0.2509,
+    "ret": 0.8341,
+    "winrate": 0.672,
+    "pool": 14232
+   },
+   {
+    "h": 18,
+    "days": 68,
+    "ours_brier": 0.0645,
+    "mkt_brier": 0.0519,
+    "bets": 64,
+    "edge": 0.2695,
+    "ret": 0.1786,
+    "winrate": 0.562,
+    "pool": 16615
+   },
+   {
+    "h": 19,
+    "days": 68,
+    "ours_brier": 0.0586,
+    "mkt_brier": 0.0381,
+    "bets": 55,
+    "edge": 0.3096,
+    "ret": 0.1109,
+    "winrate": 0.364,
+    "pool": 18765
+   },
+   {
+    "h": 20,
+    "days": 67,
+    "ours_brier": 0.0594,
+    "mkt_brier": 0.0017,
+    "bets": 55,
+    "edge": 0.3064,
+    "ret": -0.9365,
+    "winrate": 0.055,
+    "pool": 21609
+   },
+   {
+    "h": 21,
+    "days": 68,
+    "ours_brier": 0.0585,
+    "mkt_brier": 0.0008,
+    "bets": 62,
+    "edge": 0.2954,
+    "ret": -1.0,
+    "winrate": 0.0,
+    "pool": 21702
+   },
+   {
+    "h": 22,
+    "days": 68,
+    "ours_brier": 0.0585,
+    "mkt_brier": 0.0007,
+    "bets": 63,
+    "edge": 0.2937,
+    "ret": -1.0,
+    "winrate": 0.0,
+    "pool": 22025
+   }
+  ],
   "ny_high": [
    {
     "h": 7,
@@ -184,225 +540,311 @@
  "pooled": [
   {
    "h": 7,
-   "days": 67,
-   "ours_brier": 0.0767,
-   "mkt_brier": 0.0953,
-   "bets": 67,
-   "edge": 0.1844,
-   "ret": 0.3565,
-   "winrate": 0.657,
-   "pool": 22934
+   "days": 203,
+   "ours_brier": 0.0709,
+   "mkt_brier": 0.0868,
+   "bets": 200,
+   "edge": 0.185,
+   "ret": 0.2931,
+   "winrate": 0.625,
+   "pool": 9105
   },
   {
    "h": 8,
-   "days": 67,
-   "ours_brier": 0.0767,
-   "mkt_brier": 0.0955,
-   "bets": 66,
-   "edge": 0.177,
-   "ret": 0.4207,
-   "winrate": 0.697,
-   "pool": 26763
+   "days": 203,
+   "ours_brier": 0.0709,
+   "mkt_brier": 0.0832,
+   "bets": 199,
+   "edge": 0.1789,
+   "ret": 0.334,
+   "winrate": 0.628,
+   "pool": 10243
   },
   {
    "h": 9,
-   "days": 67,
-   "ours_brier": 0.0767,
-   "mkt_brier": 0.0947,
-   "bets": 65,
-   "edge": 0.1656,
-   "ret": 0.4052,
-   "winrate": 0.692,
-   "pool": 31204
+   "days": 203,
+   "ours_brier": 0.0709,
+   "mkt_brier": 0.0803,
+   "bets": 197,
+   "edge": 0.1738,
+   "ret": 0.2308,
+   "winrate": 0.599,
+   "pool": 12452
   },
   {
    "h": 10,
-   "days": 67,
-   "ours_brier": 0.074,
-   "mkt_brier": 0.093,
-   "bets": 66,
-   "edge": 0.1626,
-   "ret": 0.4766,
-   "winrate": 0.697,
-   "pool": 35524
+   "days": 203,
+   "ours_brier": 0.0697,
+   "mkt_brier": 0.079,
+   "bets": 198,
+   "edge": 0.1679,
+   "ret": 0.2853,
+   "winrate": 0.626,
+   "pool": 14750
   },
   {
    "h": 11,
-   "days": 67,
-   "ours_brier": 0.0711,
-   "mkt_brier": 0.0847,
-   "bets": 64,
-   "edge": 0.1672,
-   "ret": 0.5875,
-   "winrate": 0.688,
-   "pool": 40406
+   "days": 203,
+   "ours_brier": 0.0698,
+   "mkt_brier": 0.076,
+   "bets": 195,
+   "edge": 0.1645,
+   "ret": 0.2674,
+   "winrate": 0.61,
+   "pool": 16109
   },
   {
    "h": 12,
-   "days": 67,
-   "ours_brier": 0.0646,
-   "mkt_brier": 0.0741,
-   "bets": 62,
-   "edge": 0.1632,
-   "ret": 0.2598,
-   "winrate": 0.677,
-   "pool": 47011
+   "days": 203,
+   "ours_brier": 0.0657,
+   "mkt_brier": 0.0722,
+   "bets": 195,
+   "edge": 0.1636,
+   "ret": 0.2209,
+   "winrate": 0.621,
+   "pool": 17368
   },
   {
    "h": 13,
-   "days": 67,
-   "ours_brier": 0.0627,
-   "mkt_brier": 0.0652,
-   "bets": 62,
-   "edge": 0.1984,
-   "ret": 0.1308,
-   "winrate": 0.629,
-   "pool": 54672
+   "days": 203,
+   "ours_brier": 0.0652,
+   "mkt_brier": 0.0686,
+   "bets": 190,
+   "edge": 0.1898,
+   "ret": 0.2345,
+   "winrate": 0.589,
+   "pool": 18350
   },
   {
    "h": 14,
-   "days": 67,
-   "ours_brier": 0.0646,
-   "mkt_brier": 0.0496,
-   "bets": 60,
-   "edge": 0.1812,
-   "ret": -0.2473,
-   "winrate": 0.367,
-   "pool": 61536
+   "days": 203,
+   "ours_brier": 0.0636,
+   "mkt_brier": 0.0626,
+   "bets": 191,
+   "edge": 0.1961,
+   "ret": 0.1074,
+   "winrate": 0.565,
+   "pool": 20986
   },
   {
    "h": 15,
-   "days": 67,
-   "ours_brier": 0.0597,
-   "mkt_brier": 0.0408,
-   "bets": 59,
-   "edge": 0.2543,
-   "ret": 0.0898,
-   "winrate": 0.305,
-   "pool": 65388
+   "days": 203,
+   "ours_brier": 0.062,
+   "mkt_brier": 0.0572,
+   "bets": 193,
+   "edge": 0.2445,
+   "ret": 0.238,
+   "winrate": 0.534,
+   "pool": 23030
   },
   {
    "h": 16,
-   "days": 67,
-   "ours_brier": 0.0636,
-   "mkt_brier": 0.0359,
-   "bets": 56,
-   "edge": 0.2608,
-   "ret": -0.3131,
-   "winrate": 0.25,
-   "pool": 69526
+   "days": 203,
+   "ours_brier": 0.0566,
+   "mkt_brier": 0.0514,
+   "bets": 189,
+   "edge": 0.259,
+   "ret": 0.3513,
+   "winrate": 0.54,
+   "pool": 25180
   },
   {
    "h": 17,
-   "days": 67,
-   "ours_brier": 0.0595,
-   "mkt_brier": 0.0112,
-   "bets": 56,
-   "edge": 0.3236,
-   "ret": -0.7081,
-   "winrate": 0.071,
-   "pool": 77956
+   "days": 203,
+   "ours_brier": 0.0523,
+   "mkt_brier": 0.0406,
+   "bets": 185,
+   "edge": 0.2722,
+   "ret": 0.1982,
+   "winrate": 0.465,
+   "pool": 27868
   },
   {
    "h": 18,
-   "days": 67,
-   "ours_brier": 0.0494,
-   "mkt_brier": 0.0047,
-   "bets": 54,
-   "edge": 0.3123,
-   "ret": -0.7751,
-   "winrate": 0.037,
-   "pool": 83349
+   "days": 203,
+   "ours_brier": 0.0483,
+   "mkt_brier": 0.0261,
+   "bets": 182,
+   "edge": 0.2517,
+   "ret": -0.3398,
+   "winrate": 0.286,
+   "pool": 32632
   },
   {
    "h": 19,
-   "days": 66,
-   "ours_brier": 0.0471,
-   "mkt_brier": 0.0042,
-   "bets": 52,
-   "edge": 0.3047,
-   "ret": -0.8733,
-   "winrate": 0.038,
-   "pool": 85419
+   "days": 202,
+   "ours_brier": 0.0462,
+   "mkt_brier": 0.0156,
+   "bets": 171,
+   "edge": 0.2693,
+   "ret": -0.58,
+   "winrate": 0.14,
+   "pool": 34145
   },
   {
    "h": 20,
-   "days": 66,
-   "ours_brier": 0.0472,
-   "mkt_brier": 0.0001,
-   "bets": 51,
-   "edge": 0.3066,
-   "ret": -1.0,
-   "winrate": 0.0,
-   "pool": 83223
+   "days": 200,
+   "ours_brier": 0.0467,
+   "mkt_brier": 0.001,
+   "bets": 172,
+   "edge": 0.2669,
+   "ret": -0.9663,
+   "winrate": 0.029,
+   "pool": 35908
   },
   {
    "h": 21,
-   "days": 65,
-   "ours_brier": 0.0479,
-   "mkt_brier": 0.0001,
-   "bets": 51,
-   "edge": 0.3064,
+   "days": 200,
+   "ours_brier": 0.0467,
+   "mkt_brier": 0.0003,
+   "bets": 178,
+   "edge": 0.2664,
    "ret": -1.0,
    "winrate": 0.0,
-   "pool": 85260
+   "pool": 35822
   },
   {
    "h": 22,
-   "days": 64,
-   "ours_brier": 0.0484,
-   "mkt_brier": 0.0001,
-   "bets": 49,
-   "edge": 0.3127,
+   "days": 199,
+   "ours_brier": 0.0468,
+   "mkt_brier": 0.0005,
+   "bets": 177,
+   "edge": 0.2662,
    "ret": -1.0,
    "winrate": 0.0,
-   "pool": 86746
+   "pool": 36990
   }
  ],
  "exit": {
   "hold": {
-   "ret": 0.565,
-   "win": 0.707
+   "ret": 0.325,
+   "win": 0.696
   },
   "exit12": {
-   "ret": 0.091,
-   "win": 0.581
+   "ret": -0.039,
+   "win": 0.317
   },
   "exit13": {
-   "ret": 0.154,
-   "win": 0.623
+   "ret": -0.029,
+   "win": 0.396
   },
   "exit14": {
-   "ret": 0.297,
-   "win": 0.665
+   "ret": -0.006,
+   "win": 0.457
   },
   "exit15": {
-   "ret": 0.321,
-   "win": 0.688
+   "ret": 0.003,
+   "win": 0.513
   },
   "exit16": {
-   "ret": 0.422,
-   "win": 0.726
+   "ret": -0.003,
+   "win": 0.535
   },
   "exit17": {
-   "ret": 0.421,
-   "win": 0.688
+   "ret": 0.105,
+   "win": 0.604
   },
   "take_profit": {
-   "ret": 0.382,
-   "win": 0.744
+   "ret": 0.333,
+   "win": 0.713
   },
   "stop_loss": {
-   "ret": 0.433,
-   "win": 0.595
+   "ret": 0.275,
+   "win": 0.626
   },
-  "n": 215,
+  "n": 230,
   "up_at_15": [
-   0,
-   26
+   2,
+   8
   ]
  },
  "exit_by_market": {
+  "aus_high": {
+   "hold": {
+    "ret": 0.164,
+    "win": 0.488
+   },
+   "exit12": {
+    "ret": -0.065,
+    "win": 0.341
+   },
+   "exit13": {
+    "ret": -0.089,
+    "win": 0.341
+   },
+   "exit14": {
+    "ret": -0.043,
+    "win": 0.341
+   },
+   "exit15": {
+    "ret": -0.004,
+    "win": 0.405
+   },
+   "exit16": {
+    "ret": 0.032,
+    "win": 0.488
+   },
+   "exit17": {
+    "ret": 0.115,
+    "win": 0.527
+   },
+   "take_profit": {
+    "ret": 0.189,
+    "win": 0.522
+   },
+   "stop_loss": {
+    "ret": -0.068,
+    "win": 0.351
+   },
+   "n": 205,
+   "up_at_15": [
+    5,
+    10
+   ]
+  },
+  "las_high": {
+   "hold": {
+    "ret": 0.325,
+    "win": 0.696
+   },
+   "exit12": {
+    "ret": -0.039,
+    "win": 0.317
+   },
+   "exit13": {
+    "ret": -0.029,
+    "win": 0.396
+   },
+   "exit14": {
+    "ret": -0.006,
+    "win": 0.457
+   },
+   "exit15": {
+    "ret": 0.003,
+    "win": 0.513
+   },
+   "exit16": {
+    "ret": -0.003,
+    "win": 0.535
+   },
+   "exit17": {
+    "ret": 0.105,
+    "win": 0.604
+   },
+   "take_profit": {
+    "ret": 0.333,
+    "win": 0.713
+   },
+   "stop_loss": {
+    "ret": 0.275,
+    "win": 0.626
+   },
+   "n": 230,
+   "up_at_15": [
+    2,
+    8
+   ]
+  },
   "ny_high": {
    "hold": {
     "ret": 0.565,
@@ -449,67 +891,185 @@
  },
  "calib": {
   "0.0": {
-   "said": 0.009,
-   "happened": 0.01,
-   "n": 1812,
+   "said": 0.011,
+   "happened": 0.014,
+   "n": 5512,
    "haircut": 0.0
   },
   "0.3": {
-   "said": 0.348,
-   "happened": 0.385,
-   "n": 174,
-   "haircut": 0.0
+   "said": 0.345,
+   "happened": 0.285,
+   "n": 382,
+   "haircut": 0.06
   },
   "0.5": {
-   "said": 0.545,
-   "happened": 0.533,
-   "n": 169,
-   "haircut": 0.012
+   "said": 0.542,
+   "happened": 0.596,
+   "n": 493,
+   "haircut": 0.0
   },
   "0.1": {
-   "said": 0.14,
-   "happened": 0.158,
-   "n": 183,
-   "haircut": 0.0
+   "said": 0.144,
+   "happened": 0.091,
+   "n": 548,
+   "haircut": 0.052
   },
   "0.2": {
-   "said": 0.248,
-   "happened": 0.16,
-   "n": 119,
-   "haircut": 0.0
+   "said": 0.251,
+   "happened": 0.149,
+   "n": 404,
+   "haircut": 0.103
   },
   "0.6": {
-   "said": 0.646,
-   "happened": 0.806,
-   "n": 62,
+   "said": 0.648,
+   "happened": 0.794,
+   "n": 262,
    "haircut": 0.0
   },
   "0.7": {
-   "said": 0.765,
-   "happened": 0.821,
-   "n": 39,
-   "haircut": 0.0
+   "said": 0.758,
+   "happened": 0.719,
+   "n": 178,
+   "haircut": 0.039
   },
   "0.4": {
    "said": 0.454,
-   "happened": 0.409,
-   "n": 137,
+   "happened": 0.469,
+   "n": 431,
    "haircut": 0.0
   },
   "0.9": {
-   "said": 0.981,
+   "said": 0.984,
    "happened": 1.0,
-   "n": 81,
+   "n": 99,
    "haircut": 0.0
   },
   "0.8": {
-   "said": 0.858,
-   "happened": 0.684,
-   "n": 38,
+   "said": 0.849,
+   "happened": 0.889,
+   "n": 217,
    "haircut": 0.0
   }
  },
  "calib_by_market": {
+  "aus_high": {
+   "0.0": {
+    "said": 0.013,
+    "happened": 0.019,
+    "n": 1773,
+    "haircut": 0.0
+   },
+   "0.1": {
+    "said": 0.146,
+    "happened": 0.082,
+    "n": 183,
+    "haircut": 0.064
+   },
+   "0.5": {
+    "said": 0.536,
+    "happened": 0.62,
+    "n": 213,
+    "haircut": 0.0
+   },
+   "0.2": {
+    "said": 0.246,
+    "happened": 0.151,
+    "n": 159,
+    "haircut": 0.095
+   },
+   "0.6": {
+    "said": 0.656,
+    "happened": 0.867,
+    "n": 105,
+    "haircut": 0.0
+   },
+   "0.3": {
+    "said": 0.34,
+    "happened": 0.144,
+    "n": 146,
+    "haircut": 0.0
+   },
+   "0.4": {
+    "said": 0.453,
+    "happened": 0.521,
+    "n": 192,
+    "haircut": 0.0
+   },
+   "0.7": {
+    "said": 0.753,
+    "happened": 0.662,
+    "n": 74,
+    "haircut": 0.0
+   },
+   "0.9": {
+    "said": 0.995,
+    "happened": 1.0,
+    "n": 11,
+    "haircut": 0.0
+   }
+  },
+  "las_high": {
+   "0.0": {
+    "said": 0.01,
+    "happened": 0.013,
+    "n": 1927,
+    "haircut": 0.0
+   },
+   "0.8": {
+    "said": 0.848,
+    "happened": 0.933,
+    "n": 179,
+    "haircut": 0.0
+   },
+   "0.5": {
+    "said": 0.547,
+    "happened": 0.649,
+    "n": 111,
+    "haircut": 0.0
+   },
+   "0.4": {
+    "said": 0.456,
+    "happened": 0.451,
+    "n": 102,
+    "haircut": 0.0
+   },
+   "0.6": {
+    "said": 0.642,
+    "happened": 0.705,
+    "n": 95,
+    "haircut": 0.0
+   },
+   "0.3": {
+    "said": 0.35,
+    "happened": 0.339,
+    "n": 62,
+    "haircut": 0.0
+   },
+   "0.1": {
+    "said": 0.145,
+    "happened": 0.033,
+    "n": 182,
+    "haircut": 0.112
+   },
+   "0.7": {
+    "said": 0.759,
+    "happened": 0.723,
+    "n": 65,
+    "haircut": 0.0
+   },
+   "0.2": {
+    "said": 0.26,
+    "happened": 0.135,
+    "n": 126,
+    "haircut": 0.0
+   },
+   "0.9": {
+    "said": 0.999,
+    "happened": 1.0,
+    "n": 7,
+    "haircut": 0.0
+   }
+  },
   "ny_high": {
    "0.0": {
     "said": 0.009,
