@@ -378,6 +378,8 @@ def main():
                               for k in per},
            'calib': calibration_bands(all_rows),
            'calib_by_market': {k: calibration_bands([r for r in all_rows if r.get('city') == k])
+                               for k in per},
+           'blend_by_market': {k: blend_by_hour([r for r in all_rows if r.get('city') == k])
                                for k in per}}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
@@ -402,6 +404,37 @@ def main():
     return 0
 
 
+def blend_by_hour(rows):
+    """For each hour, the weight on OUR probabilities (the rest on the market's)
+    that minimises Brier over the rows. Measured 2026-09-06: New York goes to
+    the market by 2 PM, Las Vegas leans ~60/40 to the market from 3 PM, Austin
+    stays ~70/30 on ours until 5 PM. Used for the afternoon sell/hold verdict,
+    never for placing a bet (a blended edge is not an edge)."""
+    def ok(r):
+        return (r.get('mkt') and r.get('truth') and r.get('ours')
+                and all(x is not None for x in r['mkt']) and all(x is not None for x in r['ours']))
+    def brier(p, t):
+        return sum((pi - (1.0 if ti else 0.0)) ** 2 for pi, ti in zip(p, t))
+    byh = collections.defaultdict(list)
+    for r in rows:
+        if ok(r):
+            byh[r['hour']].append(r)
+    out = {}
+    for h, rs in byh.items():
+        if len(rs) < 20:
+            continue
+        best = None
+        for k in range(0, 21):
+            w = k / 20.0
+            b = sum(brier([w * o + (1 - w) * m for o, m in zip(r['ours'], r['mkt'])], r['truth']) for r in rs) / len(rs)
+            if best is None or b < best[1] - 1e-9:
+                best = (w, b)
+        bo = sum(brier(r['ours'], r['truth']) for r in rs) / len(rs)
+        bm = sum(brier(r['mkt'], r['truth']) for r in rs) / len(rs)
+        out[str(h)] = {'w': best[0], 'brier': round(best[1], 4), 'ours': round(bo, 4), 'mkt': round(bm, 4), 'n': len(rs)}
+    return out
+
+
 def refit_from_rows():
     """Rebuild price_study.json's exit block from the saved rows, no fetching."""
     with open(os.path.join(HERE, 'price_rows.json')) as f:
@@ -413,6 +446,7 @@ def refit_from_rows():
     doc['exit_by_market'] = {k: exit_policy([r for r in rows if r.get('city') == k]) for k in keys}
     doc['calib'] = calibration_bands(rows)
     doc['calib_by_market'] = {k: calibration_bands([r for r in rows if r.get('city') == k]) for k in keys}
+    doc['blend_by_market'] = {k: blend_by_hour([r for r in rows if r.get('city') == k]) for k in keys}
     with open(OUT, 'w') as f:
         json.dump(doc, f, indent=1)
     print('exit block rebuilt from %d rows: %s' % (len(rows), json.dumps(doc['exit'])))

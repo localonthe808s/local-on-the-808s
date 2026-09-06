@@ -303,6 +303,34 @@ const OBS_MARKETS = [
 // has no public 5-minute stream, so the three airports stand in for it. Las
 // Vegas settles on Harry Reid (KLAS) and Austin on Bergstrom (KAUS) -- FAA
 // airports, and their 5-minute observations ARE the settlement sensor's own.
+// ONE CALL FOR EVERY 5-MINUTE STATION, used by the minute tick, the obs log
+// and the public /sensors endpoint. {STID: {last, at, max7, n}} in each
+// market's own zone; the "at" is the reading's local HH:MM.
+async function readSensors(env, recentMin) {
+  const out = {};
+  if (!env || !env.SYNOPTIC_TOKEN) return out;
+  const stids = Object.values(APT5).map((a) => a.stids).join(',');
+  const r = await fetch(`https://api.synopticdata.com/v2/stations/timeseries?stid=${stids}` +
+    `&recent=${recentMin || 720}&vars=air_temp&units=temp|F&obtimezone=local&token=${env.SYNOPTIC_TOKEN}`);
+  if (!r.ok) return out;
+  const j = await r.json();
+  const tzOf = {};
+  for (const k of Object.keys(APT5)) for (const st of APT5[k].stids.split(',')) tzOf[st] = APT5[k].tz;
+  for (const st of (j.STATION || [])) {
+    const tz = tzOf[st.STID] || 'America/New_York';
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
+    let mx = null, mxAt = null, last = null, lastAt = null;
+    for (let i = 0; i < ts.length; i++) {
+      const v = vs[i]; if (typeof v !== 'number') continue;
+      const hh = Number(ts[i].slice(11, 13));
+      if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) { mx = v; mxAt = ts[i].slice(11, 16); }
+      last = v; lastAt = ts[i].slice(11, 16);
+    }
+    out[st.STID] = { max7: mx, maxAt: mxAt, last, at: lastAt, n: ts.length };
+  }
+  return out;
+}
 const APT5 = {
   ny_high:  { stids: 'KLGA,KJFK,KEWR', tz: 'America/New_York' },
   las_high: { stids: 'KLAS,KVGT',      tz: 'America/Los_Angeles' },
@@ -386,33 +414,15 @@ async function obsSnapshot(env) {
   // row, to be judged against TWC's field and the settlement: when the region
   // is peaking between the hourly reports, the park usually is too.
   if (env && env.SYNOPTIC_TOKEN) {
-    for (const key of Object.keys(APT5)) {
-      const row = rows.find((x) => x.key === key);
-      if (!row) continue;
-      try {
-        const r = await fetch(`https://api.synopticdata.com/v2/stations/timeseries?stid=${APT5[key].stids}` +
-          `&recent=720&vars=air_temp&units=temp|F&obtimezone=local&token=${env.SYNOPTIC_TOKEN}`);
-        if (!r.ok) continue;
-        const j = await r.json();
+    try {
+      const sens = await readSensors(env, 720);
+      for (const key of Object.keys(APT5)) {
+        const row = rows.find((x) => x.key === key);
+        if (!row) continue;
         row.apt5 = {};
-        // TODAY ONLY, in the market's own zone. The window reaches back twelve
-        // hours, and filtering by the hour alone let yesterday evening's
-        // readings count as "since 7 AM".
-        const today = new Intl.DateTimeFormat('en-CA', { timeZone: APT5[key].tz,
-          year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-        for (const st of (j.STATION || [])) {
-          const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
-          let mx = null, last = null, lastAt = null;
-          for (let i = 0; i < ts.length; i++) {
-            const v = vs[i]; if (typeof v !== 'number') continue;
-            const hh = Number(ts[i].slice(11, 13));
-            if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) mx = v;
-            last = v; lastAt = ts[i].slice(11, 16);
-          }
-          row.apt5[st.STID] = { max7: mx, last, at: lastAt, n: ts.length };
-        }
-      } catch (e) { /* the row stands without it */ }
-    }
+        for (const st of APT5[key].stids.split(',')) if (sens[st]) row.apt5[st] = sens[st];
+      }
+    } catch (e) { /* the rows stand without it */ }
   }
   return { t, rows };
 }
@@ -598,6 +608,17 @@ async function alertTick(env) {
     const lh = Number(new Intl.DateTimeFormat('en-US', { timeZone: am.tz, hour: 'numeric', hour12: false }).format(new Date()));
     max7by[am.series] = (lh < 7) ? null : v;
   }
+  // THE SETTLEMENT SENSOR'S OWN 5-MINUTE READINGS, every minute. This is the
+  // earliest public number there is for Las Vegas (KLAS) and Austin (KAUS):
+  // the sensor the climate report is computed from, sampled twelve times an
+  // hour. The market prices the hourly report; a reading here that crosses a
+  // held rung's edge is known up to 55 minutes before that (2026-09-06).
+  const OWN5 = { KXHIGHTLV: 'KLAS', KXHIGHAUS: 'KAUS' };
+  let sens = {};
+  if (held.some((h) => OWN5[h.am.series])) {
+    try { sens = await readSensors(env, 720); } catch (e) { out.push('sensors err'); }
+  }
+  state.own5 = state.own5 || {};
   state.mkt = state.mkt || {};
   state.max7by = state.max7by || {};
   for (const h of held) {
@@ -628,6 +649,32 @@ async function alertTick(env) {
       } else if (anchor == null) {
         state.mkt[h.ticker] = mid;
       }
+    }
+    // 1b. the settlement sensor itself crossed, or is about to cross, an edge
+    const ownSt = OWN5[h.am.series], own = ownSt && sens[ownSt];
+    if (own && own.max7 != null) {
+      const prevOwn = state.own5[ownSt];
+      const wasIn = prevOwn != null ? inRung(prevOwn, b) : null, nowIn = inRung(own.max7, b);
+      const wasAbove = prevOwn != null && b[1] != null && prevOwn > b[1] + 0.5;
+      const nowAbove = b[1] != null && own.max7 > b[1] + 0.5;
+      if (prevOwn != null && (wasIn !== nowIn || wasAbove !== nowAbove)) {
+        const bad = (side === 'YES') ? !nowIn : nowIn;
+        await notify(env, state, `own5:${h.ticker}:${Math.round(own.max7)}`,
+          `${h.am.name} sensor ${own.max7}° at ${own.maxAt} -- ${nowIn ? 'inside' : nowAbove ? 'above' : 'below'} ${label}`,
+          `${ownSt}'s own 5-minute reading set a new high of ${own.max7}° at ${own.maxAt} local. ` +
+          `You hold ${Math.abs(h.n)} ${side} on ${label}${bad ? ' -- this is against you' : ' -- in your favour'}. ` +
+          `This is the settlement sensor; the hourly report and the market see it up to 55 minutes later.`,
+          bad ? 'urgent' : 'high');
+        out.push(`own5 ${ownSt} ${prevOwn}->${own.max7}`);
+      } else if (b[1] != null && own.max7 <= b[1] + 0.5 && own.max7 >= b[1] - 0.4 && (prevOwn == null || prevOwn < b[1] - 0.4)) {
+        // within half a degree of the top edge: one warning, before it crosses
+        await notify(env, state, `own5near:${h.ticker}`,
+          `${h.am.name} sensor ${own.max7}°, near the top of ${label}`,
+          `${ownSt} read ${own.max7}° at ${own.maxAt}, within half a degree of ${label}'s top edge. ` +
+          `You hold ${Math.abs(h.n)} ${side}. One more tick decides it.`, 'high');
+        out.push(`own5 near ${ownSt} ${own.max7}`);
+      }
+      state.own5[ownSt] = own.max7;
     }
     // 2. TWC's running max crossed an edge of your rung
     if (max7 != null && prevMax7 != null && max7 !== prevMax7) {
@@ -684,7 +731,11 @@ export default {
     // on every other five-minute mark, so the New York sheet is never more
     // than a few minutes behind the newest report. Both merge into one file.
     if (minute % 5 !== 0) return;
-    const wf = [5, 20, 35, 50].includes(minute) ? WORKFLOW : WORKFLOW_FAST;
+    // ALL THREE CITIES EVERY FIVE MINUTES. With three markets the full bake is
+    // about a minute, so the New York-only fast lane is no longer needed and
+    // Las Vegas and Austin stop waiting fifteen minutes for a reading that
+    // the market prices in one (2026-09-06).
+    const wf = WORKFLOW;
     ctx.waitUntil((async () => {
       let r;
       try {
@@ -715,6 +766,16 @@ export default {
     if (url.pathname === '/positions') return positions(request, env);
     if (url.pathname === '/obs') return obsDump(request, env);
     if (url.pathname === '/obs/lead') return obsLead(request, env);
+    if (url.pathname === '/sensors') {
+      // PUBLIC, LIVE: the 5-minute stations' latest reading and high since 7 AM,
+      // read from Synoptic on each request (the token stays server-side). The
+      // panel polls this every minute while it is open (2026-09-06: "it's about
+      // seeing the latest information and knowing first when temp changes").
+      let sens = {};
+      try { sens = await readSensors(env, 720); } catch (e) { /* empty */ }
+      return new Response(JSON.stringify({ at: new Date().toISOString(), s: sens }), {
+        headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...cors(ALLOWED) } });
+    }
 
     // Status only. This deliberately cannot trigger a run: a public endpoint that
     // fires CI is an open invitation, and the cron is the point.

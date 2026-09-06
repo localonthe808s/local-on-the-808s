@@ -2266,6 +2266,18 @@ def q_sized(q, cfg=None):
     return max(0.0, q - (b.get('haircut') or 0.0))
 
 
+def measured_blend(cfg, hour):
+    """Weight on our probability against the market's for this hour (price_study
+    blend_by_market), or None before the study has it."""
+    if not _STUDY:
+        measured_hours(cfg)
+    d = _STUDY[0] if _STUDY else None
+    if not d:
+        return None
+    e = ((d.get('blend_by_market') or {}).get(cfg['key']) or {}).get(str(int(hour)))
+    return e.get('w') if e else None
+
+
 def measured_exit(cfg):
     """price_study.py's hold-versus-close measurement, this market's own if it
     has one, else the pool. The panel quotes it beside an open position."""
@@ -3311,6 +3323,9 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'six_max': _six, 'six_window': SIX_WINDOW.get(cfg['key']),
             'own5_max': _own5, 'own5_station': OWN5.get(cfg['key']),
             'model_resid': model_resid,
+            # the afternoon read: how much of the market's number to fold into
+            # the sell/hold verdict at this hour (1 = ours alone)
+            'blend_w': measured_blend(cfg, now.hour),
             # THE REPORT THE DAY IS ACTUALLY SETTLED ON. Verified against the
             # exchange's own expiration_value on 112 of 112 settled days. The
             # panel leads with this; everything else on screen is an estimate of
