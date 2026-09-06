@@ -127,7 +127,7 @@ def replay(cfg, dates):
     daily = K.daily_series(cfg, today - datetime.timedelta(days=span + 60), today)
     obh = K.obs_hourly_range(cfg, today - datetime.timedelta(days=span + 60),
                              today + datetime.timedelta(days=1))
-    bias_of = K.biases_factory(fcm, daily)
+    bias_of = K.biases_factory(fcm, daily, cfg.get('skill', True))
     h0_of = lambda k: K.climate_day_start(                                # noqa: E731
         cfg, datetime.date(*map(int, k.split('-'))))
     fc = fcm.get(K.MODELS[0]) or list(fcm.values())[0]

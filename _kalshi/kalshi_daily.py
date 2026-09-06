@@ -83,9 +83,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # The station is whatever the market's own rules name. Read them, do not guess:
 # Chicago settles on CLIMDW, which is MIDWAY, not O'Hare -- the two routinely
 # differ by a degree and O'Hare would have been wrong all season.
-def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None):
+def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None,
+         skill=True):
     return {'key': key, 'series': series, 'label': city + ' daily high',
-            'wfo': wfo,
+            'wfo': wfo, 'skill': skill,
             'station': station, 'network': net, 'lat': lat, 'lon': lon,
             'field': 'max_temp_f', 'tz': tz, 'tzlabel': tzl,
             'city': city, 'cli': cli,
@@ -94,8 +95,16 @@ def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None
 
 
 MARKETS = [
+    # NEW YORK KEEPS THE EQUAL-WEIGHT MEAN. The skill weights that lift the
+    # twenty-city pool (see biases_factory) lose here on every morning hour of
+    # the 67 settled days: 9 AM hit 72% equal against 64% weighted, MAE 1.05
+    # against 1.09, Brier .459 against .475, and the same order at noon and
+    # 2 PM. Sixty-seven days is a small court, but the equal mean is also the
+    # form the 607-day refit validated, so it is the conservative choice for
+    # the one market that matters most. Revisit with the live trail.
     _mkt('ny_high',  'KXHIGHNY',   'New York',     'NYC', 'NY_ASOS', 40.7789, -73.9692,
-         'America/New_York',    'ET', 'CLINYC', 'highest-temperature-in-nyc', 'OKX'),
+         'America/New_York',    'ET', 'CLINYC', 'highest-temperature-in-nyc', 'OKX',
+         skill=False),
     _mkt('chi_high', 'KXHIGHCHI',  'Chicago',      'MDW', 'IL_ASOS', 41.786,  -87.752,
          'America/Chicago',     'CT', 'CLIMDW', 'highest-temperature-in-chicago', 'LOT'),
     _mkt('mia_high', 'KXHIGHMIA',  'Miami',        'MIA', 'FL_ASOS', 25.791,  -80.316,
@@ -1117,16 +1126,17 @@ SKILL_POWER = 2
 SKILL_MAE_FLOOR = 0.3         # degF; below this a model's weight stops growing
 
 
-def biases_factory(fcm, daily):
+def biases_factory(fcm, daily, skill=True):
     """-> f(prior_days) giving each model's mean (peak - actual) over them,
-    plus its skill weight under '__w__' (see SKILL_POWER above)."""
+    plus its skill weight under '__w__' (see SKILL_POWER above). With
+    skill=False every weight is 1 -- the plain mean, which New York keeps."""
     def f(prior):
         out, w = {}, {}
         for m, fc in fcm.items():
             e = [max(fc[p].values()) - daily[p]
                  for p in prior if p in fc and p in daily and len(fc[p]) >= 20]
             out[m] = statistics.mean(e) if len(e) >= BIAS_MIN else None
-            if out[m] is not None:
+            if out[m] is not None and skill:
                 mae = statistics.mean(abs(x) for x in e)
                 w[m] = 1.0 / max(mae, SKILL_MAE_FLOOR) ** SKILL_POWER
         out['__w__'] = w
@@ -2196,7 +2206,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     if bias is None:
         print('not enough scored history for a bias (%d days)' % nb)
         return 0
-    bias_of = biases_factory(fcm, daily)
+    bias_of = biases_factory(fcm, daily, cfg.get('skill', True))
     h0_of = lambda k: climate_day_start(
         cfg, datetime.date(*map(int, k.split('-'))))
 
