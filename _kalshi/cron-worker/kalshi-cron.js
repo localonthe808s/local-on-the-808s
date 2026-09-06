@@ -293,15 +293,11 @@ async function positions(request, env) {
 // same day Chicago read 86 against IEM's 83 with the market 100% on 83-84, and it
 // had not retracted hours later) make it unusable, is what this decides.
 const OBS_MARKETS = [
-  // key,      ICAO,   IEM network, IEM station
+  // key,      ICAO,   IEM network, IEM station -- the three cities the sheet
+  // trades (2026-09-06); the other four were dropped with the rest
   ['ny_high',  'KNYC', 'NY_ASOS', 'NYC'],
-  ['chi_high', 'KMDW', 'IL_ASOS', 'MDW'],
-  ['mia_high', 'KMIA', 'FL_ASOS', 'MIA'],
-  ['aus_high', 'KAUS', 'TX_ASOS', 'AUS'],
-  ['den_high', 'KDEN', 'CO_ASOS', 'DEN'],
-  ['lax_high', 'KLAX', 'CA_ASOS', 'LAX'],
-  ['phl_high', 'KPHL', 'PA_ASOS', 'PHL'],
-  ['las_high', 'KLAS', 'NV_ASOS', 'LAS']      // the panel's second tab (2026-09-06)
+  ['las_high', 'KLAS', 'NV_ASOS', 'LAS'],
+  ['aus_high', 'KAUS', 'TX_ASOS', 'AUS']
 ];
 // THE 5-MINUTE FEEDS, per market. New York's settlement sensor (Central Park)
 // has no public 5-minute stream, so the three airports stand in for it. Las

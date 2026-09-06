@@ -55884,7 +55884,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             }).join('')
           + '</div>';
         var TK = K.take || {}, CR = K.correlation || {};
-        cities = hdr('ALL ' + MK.length + ' CITIES')
+        cities = hdr(MK.length <= 3 ? 'THE ' + ['', 'ONE CITY', 'TWO CITIES', 'THREE CITIES'][MK.length] : 'ALL ' + MK.length + ' CITIES')
           /* the EXPECTED TAKE box that sat here is gone (user, 2026-09-06): the
              columns below carry every number a reader acts on, and the day's
              expected dollars are still in the file (today.take) for the record. */
@@ -55960,7 +55960,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'right now. ' + (bets.length ? bets.length + ' cities look mispriced but the '
             + 'book behind them is too thin to take.' : '') + '</div>';
         }
-        rain = hdr('WILL IT RAIN \u00B7 22 CITIES')
+        rain = hdr('WILL IT RAIN \u00B7 ' + (((window._cwRain || {}).cities || []).length || 3) + ' CITIES')
           + box
           /* the four footnotes that sat here are gone: what the contract settles
              on, how the six models vote, the held-out Brier and the live

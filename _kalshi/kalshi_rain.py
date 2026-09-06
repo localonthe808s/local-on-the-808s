@@ -95,6 +95,10 @@ CITIES = [
     ('TTN',  'Trenton',       'TTN', 'NJ_ASOS', 40.2768,  -74.8159, 'America/New_York'),
 ]
 
+# the same three cities as the temperature sheet (2026-09-06); the rest of the
+# roster stays above for re-admission
+CITIES = [c for c in CITIES if c[0] in ('NYC', 'LV', 'AUS')]
+
 
 # ------------------------------------------------------------------ model ----
 def features(q):

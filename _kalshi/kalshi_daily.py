@@ -154,6 +154,13 @@ MARKETS = [
          'America/Chicago',     'CT', 'CLIMSY', 'new-orleans-max-temp-daily', 'LIX'),
 ]
 
+# THREE CITIES, MASTERED ONE DAY AT A TIME (user, 2026-09-06: "drop all the
+# cities except for the 3 we have now ... drop the rest of the baggage"). The
+# other seventeen configs stay above so any can be re-admitted by adding its
+# key here; their files stopped updating on 2026-09-06.
+ACTIVE = ('ny_high', 'las_high', 'aus_high')
+MARKETS = [m for m in MARKETS if m['key'] in ACTIVE]
+
 WORKERS = 4                               # markets in flight at once (see main)
 BIAS_K  = 30                              # days in the rolling bias window (21 -> 30 on 2026-09-06: Brier .499 -> .491 with the skill weights, 20 cities)
 BIAS_MIN = 7                              # need this many before trusting it
