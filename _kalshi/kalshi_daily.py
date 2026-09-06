@@ -66,6 +66,7 @@ Kalshi prices live in the *_dollars fields.  The legacy integer-cent fields
 
 import json, math, os, statistics, sys, urllib.request, urllib.error
 import io, csv, re, base64, collections, datetime, time
+import threading, concurrent.futures as cf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -107,8 +108,43 @@ MARKETS = [
          'America/Los_Angeles', 'PT', 'CLILAX', 'highest-temperature-in-los-angeles', 'LOX'),
     _mkt('phl_high', 'KXHIGHPHIL', 'Philadelphia', 'PHL', 'PA_ASOS', 39.873,  -75.227,
          'America/New_York',    'ET', 'CLIPHL', 'highest-temperature-in-philadelphia', 'PHI'),
+    # THIRTEEN MORE, ADDED 2026-09-06. Kalshi's newer KXHIGHT* family. Every one
+    # was checked the same way before going in: the station is the one the
+    # market's own rules_primary names; IEM's daily max for that station equals
+    # Kalshi's published expiration_value on 8 of 8 recent settled days in all
+    # thirteen; and TWC's history endpoint resolves to that station and not a
+    # neighbour (obs_name checked -- the KNYC=LaGuardia trap does not recur).
+    # Houston is HOBBY (CLIHOU), not Intercontinental. Dallas is DFW. Phoenix
+    # keeps standard time all year, hence its own zone.
+    _mkt('phx_high', 'KXHIGHTPHX',  'Phoenix',       'PHX', 'AZ_ASOS', 33.4343, -112.0116,
+         'America/Phoenix',     'MST', 'CLIPHX', 'phoenix-high-temperature-daily', 'PSR'),
+    _mkt('sfo_high', 'KXHIGHTSFO',  'San Francisco', 'SFO', 'CA_ASOS', 37.6190, -122.3749,
+         'America/Los_Angeles', 'PT', 'CLISFO', 'san-francisco-high-temperature-daily', 'MTR'),
+    _mkt('sea_high', 'KXHIGHTSEA',  'Seattle',       'SEA', 'WA_ASOS', 47.4447, -122.3144,
+         'America/Los_Angeles', 'PT', 'CLISEA', 'seattle-maximum-temperature-daily', 'SEW'),
+    _mkt('las_high', 'KXHIGHTLV',   'Las Vegas',     'LAS', 'NV_ASOS', 36.0719, -115.1634,
+         'America/Los_Angeles', 'PT', 'CLILAS', 'las-vegas-max-daily-temperature', 'VEF'),
+    _mkt('bos_high', 'KXHIGHTBOS',  'Boston',        'BOS', 'MA_ASOS', 42.3606,  -71.0097,
+         'America/New_York',    'ET', 'CLIBOS', 'boston-maximum-daily-temperature', 'BOX'),
+    _mkt('dfw_high', 'KXHIGHTDAL',  'Dallas',        'DFW', 'TX_ASOS', 32.8968,  -97.0380,
+         'America/Chicago',     'CT', 'CLIDFW', 'dallas-maximum-temperature', 'FWD'),
+    _mkt('msp_high', 'KXHIGHTMIN',  'Minneapolis',   'MSP', 'MN_ASOS', 44.8854,  -93.2313,
+         'America/Chicago',     'CT', 'CLIMSP', 'minneapolis-daily-high-temperature', 'MPX'),
+    _mkt('hou_high', 'KXHIGHTHOU',  'Houston',       'HOU', 'TX_ASOS', 29.6375,  -95.2824,
+         'America/Chicago',     'CT', 'CLIHOU', 'daily-high-temperature-houston', 'HGX'),
+    _mkt('sat_high', 'KXHIGHTSATX', 'San Antonio',   'SAT', 'TX_ASOS', 29.5300,  -98.4673,
+         'America/Chicago',     'CT', 'CLISAT', 'san-antonio-daily-maximum-temperature', 'EWX'),
+    _mkt('okc_high', 'KXHIGHTOKC',  'Oklahoma City', 'OKC', 'OK_ASOS', 35.3889,  -97.6006,
+         'America/Chicago',     'CT', 'CLIOKC', 'oklahoma-city-maximum-high-temperature', 'OUN'),
+    _mkt('atl_high', 'KXHIGHTATL',  'Atlanta',       'ATL', 'GA_ASOS', 33.6301,  -84.4418,
+         'America/New_York',    'ET', 'CLIATL', 'atlanta-max-temperature', 'FFC'),
+    _mkt('dca_high', 'KXHIGHTDC',   'Washington',    'DCA', 'VA_ASOS', 38.8472,  -77.0346,
+         'America/New_York',    'ET', 'CLIDCA', 'washington-dc-daily-max-temp', 'LWX'),
+    _mkt('msy_high', 'KXHIGHTNOLA', 'New Orleans',   'MSY', 'LA_ASOS', 29.9933,  -90.2511,
+         'America/Chicago',     'CT', 'CLIMSY', 'new-orleans-max-temp-daily', 'LIX'),
 ]
 
+WORKERS = 4                               # markets in flight at once (see main)
 BIAS_K  = 21                              # days in the rolling bias window
 BIAS_MIN = 7                              # need this many before trusting it
 LOCK_HOUR = 12                            # noon ET: morning obs in hand, peak ahead
@@ -164,10 +200,21 @@ SD_FALLBACK = {8:1.20, 9:1.20, 10:1.20, 11:1.17, 12:1.10, 13:1.01, 14:0.92,
 # 15-minute cap on a GitHub runner at the same work, so the bottleneck is one
 # upstream throttling that network and not the code. Guessing which would be
 # guessing; this measures it.
-TIMING = collections.defaultdict(lambda: [0.0, 0, 0])   # host -> [secs, calls, retries]
+# PER THREAD, since 2026-09-06: markets run concurrently (see main), and a
+# process-wide table would blend one city's Open-Meteo stall into another's
+# summary line. Each thread keeps its own; the report reads the caller's.
+_TL = threading.local()
+
+
+def _timing():
+    t = getattr(_TL, 'timing', None)
+    if t is None:
+        t = _TL.timing = collections.defaultdict(lambda: [0.0, 0, 0])
+    return t
 
 
 def timing_report(reset=True):
+    TIMING = _timing()
     if not TIMING:
         return ''
     parts = []
@@ -180,31 +227,85 @@ def timing_report(reset=True):
     return out
 
 
+# THE LOG, ONE MARKET AT A TIME. Twenty markets printing from four threads at
+# once would interleave into something no one could read back after a bad
+# day, and the per-city lines are how every bug so far has been found. So a
+# worker thread's print goes to its own buffer, and main writes each market's
+# block out whole the moment that market finishes. Shadowing the builtin at
+# module level covers every print in this file without touching them.
+_print = print
+
+
+def print(*a, **k):                                   # noqa: A001
+    buf = getattr(_TL, 'log', None)
+    if buf is None:
+        return _print(*a, **k)
+    buf.append(k.get('sep', ' ').join(str(x) for x in a))
+
+
+# PER-HOST CONCURRENCY. With four markets in flight the first thing each one
+# does is ask kalshi.com for its ladder, and four of those at once was enough:
+# Chicago's very first request answered 429 three times inside eleven seconds
+# and the whole market failed for the run (2026-09-06, first parallel bake).
+# Two in flight per host is well inside every limit met so far and costs
+# nothing measurable; the hosts not listed keep the pool's own width.
+_HOST_LIMIT = {'kalshi.com': 2, 'weather.com': 2}
+_HOST_SEM = {}
+_SEM_LOCK = threading.Lock()
+
+
+def _host_sem(host):
+    with _SEM_LOCK:
+        sem = _HOST_SEM.get(host)
+        if sem is None:
+            sem = _HOST_SEM[host] = threading.Semaphore(_HOST_LIMIT.get(host, WORKERS))
+        return sem
+
+
 def get(url, timeout=90, tries=3):
     """Fetch with backoff. These feeds are all third-party and all flaky at some
     point in a day; a bare retry loop hammers a struggling host instead of
-    letting it recover."""
+    letting it recover.
+
+    A 429 is a different failure from a timeout: the host is saying "not yet",
+    and answering it with the same 1.5 s pause that a dropped socket gets is
+    how a whole market disappears from a run. It gets longer waits, the host's
+    own Retry-After when it sends one, and up to six attempts."""
     host = urllib.parse.urlsplit(url).netloc.split('.')[-2:]
     host = '.'.join(host)
     t0 = time.time()
     last = None
-    for a in range(tries):
+    a = 0
+    while True:
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'bluishvoid/1.0'})
-            body = urllib.request.urlopen(req, timeout=timeout).read()
-            e = TIMING[host]
+            with _host_sem(host):
+                body = urllib.request.urlopen(req, timeout=timeout).read()
+            e = _timing()[host]
             e[0] += time.time() - t0
             e[1] += 1
             e[2] += a
             return body
         except Exception as e:
             last = e
-            if a < tries - 1:
+            code = getattr(e, 'code', None)
+            limit = 6 if code == 429 else tries
+            if a + 1 >= limit:
+                break
+            if code == 429:
+                wait = None
+                try:
+                    wait = float(e.headers.get('Retry-After'))
+                except Exception:
+                    pass
+                time.sleep(wait if wait else 3.0 * (2 ** a))
+            else:
                 time.sleep(1.5 * (2 ** a))
-    e = TIMING[host]
+            a += 1
+    e = _timing()[host]
     e[0] += time.time() - t0
     e[1] += 1
-    e[2] += tries - 1
+    e[2] += a
     raise last
 
 
@@ -585,6 +686,13 @@ def twc_today(cfg, day):
     hmax = max(hist) if hist else None
     m7 = cur.get('temperatureMaxSince7Am')
     m7 = float(m7) if isinstance(m7, (int, float)) else None
+    # BEFORE 7 AM THE FIELD IS YESTERDAY'S. "Since 7 AM" has not reset yet, so
+    # at 00:56 on 2026-09-06 New York read max7 79 -- the previous afternoon's
+    # peak -- with no history for the new day to check it against, and the
+    # panel printed 79 as today's TWC reading on a day forecast to reach 75.
+    # Nothing to corroborate it with means nothing to use it for.
+    if m7 is not None and local_now(cfg).hour < 7:
+        m7 = None
     now = cur.get('temperature')
     now = float(now) if isinstance(now, (int, float)) else None
 
@@ -723,6 +831,11 @@ def metar_six_max(cfg, day):
 # the shape of it -- prelim 83 at 2:59 PM, final 84 at 4:58 PM, settled 84. So a
 # preliminary is used ONLY as a floor for today, never to score a past day.
 CLI_CACHE = os.path.join(HERE, 'cli_cache.json')
+# Markets now run in parallel and each one rewrites this file. Without a lock,
+# two cities finishing together would each write the copy they loaded and one
+# station's reports would vanish until the next run refetched them. The save
+# re-reads the file under the lock and merges only its own station in.
+CLI_LOCK = threading.Lock()
 
 
 def _cli_parse(text):
@@ -837,8 +950,17 @@ def cli_read(cfg, deep=False):
             fresh += 1
     if fresh:
         try:
-            with open(CLI_CACHE, 'w') as fh:
-                json.dump(cache, fh, indent=0, sort_keys=True)
+            with CLI_LOCK:
+                try:
+                    with open(CLI_CACHE) as fh:
+                        disk = json.load(fh)
+                    if not isinstance(disk, dict):
+                        disk = {}
+                except Exception:
+                    disk = {}
+                disk[cfg['cli']] = mine
+                with open(CLI_CACHE, 'w') as fh:
+                    json.dump(disk, fh, indent=0, sort_keys=True)
         except Exception as e:
             print('cli cache not written (%s)' % e)
     return mine
@@ -1668,6 +1790,7 @@ def decode_ticker(tk, lookup):
 
 
 _FILLS_CACHE = []          # one page-through per process, shared by all markets
+_FILLS_LOCK = threading.Lock()
 
 
 def fetch_balance():
@@ -1697,6 +1820,11 @@ def _all_fills():
     """Every fill on the account, fetched ONCE. Called per market otherwise,
     which would page through the whole history seven times a run for no reason
     and for no thanks from the rate limiter."""
+    with _FILLS_LOCK:
+        return _all_fills_locked()
+
+
+def _all_fills_locked():
     if _FILLS_CACHE:
         return _FILLS_CACHE[0]
     sign = _signer()
@@ -2767,14 +2895,41 @@ def main():
         print('bankroll: $%.2f (no balance available, using the default)' % BANKROLL)
     bad = 0
     digests = []
-    for cfg in MARKETS:
+
+    # IN PARALLEL, since the roster went from seven markets to twenty. The work
+    # is all waiting on sockets, and Open-Meteo from a GitHub runner stalls for
+    # two or three minutes on a few cities every run (94s, 184s and 124s on the
+    # 04:56Z run of 2026-09-06, seven cities, 7.5 minutes). Serial, twenty
+    # cities would not fit the 15-minute cadence; four at a time they do.
+    # Four, not twenty: the same host is behind most of the wait, and a burst
+    # of sixty requests from one datacentre IP is how the stalls get longer.
+    def one(cfg):
+        _TL.log = []
+        t0 = time.time()
         try:
-            d = run_market(cfg)
-            if isinstance(d, dict):
-                digests.append(d)
+            return run_market(cfg), None, _TL.log, time.time() - t0
         except Exception as e:
+            return None, e, _TL.log, time.time() - t0
+        finally:
+            _TL.log = None
+
+    got = {}
+    with cf.ThreadPoolExecutor(max_workers=WORKERS) as ex:
+        futs = {ex.submit(one, cfg): cfg['key'] for cfg in MARKETS}
+        for f in cf.as_completed(futs):
+            key = futs[f]
+            d, err, lines, secs = f.result()
+            _print('\n'.join(lines))
+            if err is not None:
+                _print('%s FAILED: %s: %s' % (key, type(err).__name__, err))
+            _print('%s done in %.0fs' % (key, secs), flush=True)
+            got[key] = (d, err)
+    for cfg in MARKETS:
+        d, err = got.get(cfg['key'], (None, RuntimeError('never ran')))
+        if err is not None:
             bad += 1
-            print('%s FAILED: %s: %s' % (cfg['key'], type(e).__name__, e))
+        elif isinstance(d, dict):
+            digests.append(d)
     # HOW INDEPENDENT ARE SEVEN CITIES, REALLY?
     # They share a model family and one bias method, so a bad synoptic day can
     # miss in several at once. Seven bets are only worth seven if their errors

@@ -53812,8 +53812,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       };
       var nowET = etWall(new Date());
       var etH = new Date(nowET).getUTCHours();
-      /* the overnight hole is deliberate: no cron covers 1-8 AM ET */
-      var qcNight = (etH >= 1 && etH < 8);
+      /* THE SCHEDULE IS WRITTEN IN UTC, so it is kept in UTC here and converted
+         with today's offset. It used to be three separate ET literals -- the
+         RUNS row expected 1-4 AM, the countdown skipped 1-7 AM, the night flag
+         was 1-8 AM -- and the worker's cron (12-23 and 0-4 UTC, see
+         _kalshi/cron-worker/wrangler.toml) covers none of 1-4 AM in summer,
+         so RUNS went red every morning over four hours that were never
+         scheduled. One list, one conversion, and it survives the clock change
+         (in winter the covered hours become 7 PM-11 PM and 7 AM-6 PM). */
+      var CWK_UTC_HOURS = [12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4];
+      var etOff = Math.round((nowET - Date.now()) / 36e5);
+      var cwkHours = {};
+      CWK_UTC_HOURS.forEach(function(hu){ cwkHours[((hu + etOff) % 24 + 24) % 24] = 1; });
+      /* the overnight hole is deliberate: no cron covers it */
+      var qcNight = !cwkHours[etH];
       var ageOf = function(stamp, utc){
         /* prefer the UTC stamp when the bake carries one -- exact, and immune
            to the suffix being wrong, which it was for four of seven cities */
@@ -53843,7 +53855,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var hourTop = nowET - (mNow * 60000 + sNow * 1000);
         for (var add = 0; add < 36; add++){
           var hh = (hNow + add) % 24;
-          if (!(hh === 0 || hh >= 8)) continue;          /* the 1-7 AM hole */
+          if (!cwkHours[hh]) continue;                    /* the overnight hole */
           for (var i = 0; i < CWK_SLOTS.length; i++){
             var t = hourTop + add * 3600000 + CWK_SLOTS[i] * 60000;
             if (t > nowET) return t - nowET;
@@ -54000,7 +54012,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             not a snapshot: one entry per hourly run that actually landed. A
             missing hour is a run that died, and it stays missing all day. */
       var schedH = [];
-      for (var qi = 0; qi <= 23; qi++) if (qi <= 4 || qi >= 8) schedH.push(qi);
+      for (var qi = 0; qi <= 23; qi++) if (cwkHours[qi]) schedH.push(qi);
       var dueH = schedH.filter(function(x){ return x < etH; });
       var todayH = (H.filter(function(h){ return h.date === T.date; })[0] || {}).trail || [];
       var haveH = {};
@@ -54065,7 +54077,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* 4c. and the blended feed, kept honestly labelled. It is logged and
             watched, not trusted -- see _kalshi/obs_log.py. */
       qcL.push(T.twc_max == null
-        ? qcRow(QCN, 'TWC', 'NO READING', 'not a settlement source for daily')
+        ? qcRow(QCN, 'TWC', 'NO READING', etH < 7
+            ? 'its since-7 AM field still holds yesterday until 7 AM'
+            : 'not a settlement source for daily')
         : qcRow(QCN, 'TWC', T1(T.twc_max) + '\u00B0 BLENDED'
             + (T.twc_gap == null ? ''
                : ' \u00B7 STATION ' + (T.twc_gap > 0 ? '\u2212' : '+')
@@ -54937,8 +54951,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            but the table's job is comparison, and a row of six cities with the
            seventh missing is the one comparison it cannot make. Its own row is
            marked so it does not read as a seventh opportunity. */
-        var MK = (K.markets || []);
+        var MK = (K.markets || []).slice();
         if (!MK.length) return;
+        /* TWENTY CITIES NOW, not seven. In listing order the eye had to scan
+           the whole row to find the tallest bar; sorted, the board reads
+           left to right from best to nothing. New York stays first because
+           the rest of this sheet is about it, then live bets by edge, then
+           the finished and unlisted days at the end where they belong. */
+        var mkRank = function(m){
+          if (m.key === 'ny_high') return 0;
+          if (m.bet && m.bet.ev > 0) return 1;
+          var st = (m.state || {}).status;
+          return (st === 'open' && !m.day_over) ? 2 : 3;
+        };
+        MK.sort(function(a, b){
+          var ra = mkRank(a), rb = mkRank(b);
+          if (ra !== rb) return ra - rb;
+          if (ra === 1) return (b.bet.ev - a.bet.ev);
+          return String(a.city).localeCompare(String(b.city));
+        });
         var live = MK.filter(function(m){ return m.bet && m.bet.ev > 0; });
         /* SEVEN COLUMNS, not seven rows. The same shape as the ladder charts
            above: a bar for the edge, then the facts stacked under it. Read
@@ -54951,8 +54982,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            mispriced", and a missing column would hide both. */
         var maxEv = 0;
         MK.forEach(function(m){ if (m.bet && m.bet.ev > 0) maxEv = Math.max(maxEv, m.bet.ev); });
-        var rows2 = '<div style="display:grid;grid-template-columns:repeat(' + MK.length
-          + ',1fr);gap:4px;margin-top:8px;">'
+        /* WRAPS. Seven columns fitted one row; twenty at 1fr each would be
+           55px wide on a laptop and unreadable on a phone. Columns keep a
+           floor width and the grid takes as many rows as that needs. */
+        var rows2 = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax('
+          + (PHONE ? 78 : 96) + 'px,1fr));gap:4px;margin-top:8px;">'
           + MK.map(function(m){
               var b = m.bet, ok = b && b.ev > 0;
               var st = (m.state || {}).status;
@@ -55012,7 +55046,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             }).join('')
           + '</div>';
         var TK = K.take || {}, CR = K.correlation || {};
-        cities = hdr('ALL SEVEN CITIES')
+        cities = hdr('ALL ' + MK.length + ' CITIES')
           /* the number the whole exercise is trying to maximise: not accuracy,
              not edge, but dollars that can actually be bought today */
           + (TK.n
