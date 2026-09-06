@@ -54810,8 +54810,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var fmark = label(xf, FCC, T1(T.pred) + '° FORECAST' + fcTime, fcLabelTop);
         /* the official forecasts and the station's own hard numbers, under the axis */
         var under = [];
-        if (T.twc_fc != null) under.push(['TWC ' + T1(T.twc_fc) + '°', T.twc_fc, MKC]);
-        if (T.nws_fc != null) under.push(['NWS ' + T1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
+        if (T.twc_fc != null) under.push(['TWC ' + D1(T.twc_fc) + '°', T.twc_fc, MKC]);
+        if (T.nws_fc != null) under.push(['NWS ' + D1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
         /* only the afternoon groups earn a place on the axis: the 8 AM-2 PM
            group at 1:51 PM and the 2-8 PM group at 7:51 PM are hard numbers
            the settlement cannot go below; the overnight groups repeat the
@@ -54825,7 +54825,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           under.push(['6-HR MAX ' + T1(T.six_max) + '°' + swTxt, T.six_max, '#2fbfa8']);
         }
         if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
-          under.push(['TWC MAX ' + T1(T.twc_max) + '°', T.twc_max, '#f2833f']);
+          under.push(['TWC MAX ' + D1(T.twc_max) + '°', T.twc_max, '#f2833f']);
         var lastX = -99, row = 0;
         under.sort(function(a, b){ return a[1] - b[1]; }).forEach(function(u){
           var x = xp(u[1]);
@@ -55399,9 +55399,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + kvLine('LEAN', 'Our number is <b style="color:' + FCC + ';">' + T1(TM.pred) + '\u00B0</b>, likely ' + T1(TM.pred - tsd) + '\u2013' + T1(TM.pred + tsd) + '\u00B0.'
                 + (spread != null ? ' The voices span ' + T1(spread) + '\u00B0' + (spread >= 3 ? ' \u2014 a wide day.' : '.') : ''))
             + ((TM.twc_fc != null || TM.nws_fc != null)
-                ? kvLine('OFFICIAL', (TM.twc_fc != null ? 'TWC, which settles it, says <b style="color:' + MKC + ';">' + T1(TM.twc_fc) + '\u00B0</b>' : '')
+                ? kvLine('OFFICIAL', (TM.twc_fc != null ? 'TWC, which settles it, says <b style="color:' + MKC + ';">' + D1(TM.twc_fc) + '\u00B0</b>' : '')
                     + (TM.twc_fc != null && TM.nws_fc != null ? '; ' : '')
-                    + (TM.nws_fc != null ? 'the NWS says <b>' + T1(TM.nws_fc) + '\u00B0</b>' : '') + '.'
+                    + (TM.nws_fc != null ? 'the NWS says <b>' + D1(TM.nws_fc) + '\u00B0</b>' : '') + '.'
                     + (TM.twc_fc != null && Math.abs(TM.twc_fc - TM.pred) >= 1.5 ? ' <span style="color:#f2833f;">That is a real gap; the morning runs decide it.</span>' : ''))
                 : '')
             + (ph != null ? kvLine('PEAK', 'Near ' + (ph % 12 || 12) + (ph < 12 ? ' AM' : ' PM') + (ph >= 16 ? ' \u2014 late enough to miss the 4 PM report; the afternoon readings will run under the final.' : '.')) : '')
@@ -55997,7 +55997,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var bits = [];
             if (T.twc_fc != null){
               var tr = rowOf(T.twc_fc), gap = (T.pred == null) ? null : T.twc_fc - T.pred;
-              bits.push('<b>TWC\u2019s own forecast is ' + T1(T.twc_fc) + '\u00B0</b>'
+              bits.push('<b>TWC\u2019s own forecast is ' + D1(T.twc_fc) + '\u00B0</b>'
                 + (gap != null && Math.abs(gap) >= 0.95
                     ? ', ' + Math.abs(gap).toFixed(1) + '\u00B0 ' + (gap < 0 ? 'under' : 'over') + ' ours'
                     : gap != null ? ', in line with ours' : '')
