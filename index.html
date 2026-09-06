@@ -54758,38 +54758,49 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* NOTHING FOR SALE IS NOT A SIZE. The ask can stand with no contracts
            behind it; "buy 7" beside "0 are for sale" was a contradiction on
            the one line that tells someone what to type. */
+        /* DOLLARS, NOT CONTRACTS. "Buy 16 contracts at 26c" made the reader do
+           the multiplication to learn what was at risk; the amount of money is
+           the instruction, and Kalshi's ticket takes a dollar figure. The
+           contract count survives only inside the copied order, because a
+           limit order still needs one. Without the private pot the dollars are
+           unknowable, so that case falls back to the count. */
+        var $ = function(x){ return '$' + x.toFixed(2); };
+        var cnt = function(m){ return m + ' contract' + (m === 1 ? '' : 's'); };
         if (have != null && have <= 0){
           return kvLine('STAKE', '<b style="color:#f2833f;">Nothing for sale at ' + cents(price)
-            + ' right now.</b> The right size would be ' + Math.max(1, n) + ' contract' + (n === 1 ? '' : 's')
-            + '. Place a limit at ' + cents(price) + ' for that many and let it wait for a seller, or skip.');
+            + ' right now.</b> The right size would be ' + (potKnown ? $(Math.max(1, n) * k.cost) : cnt(Math.max(1, n)))
+            + '. Place a limit at ' + cents(price) + ' for that much and let it wait for a seller, or skip.');
         }
         if (n < 1){
           /* PLAIN WORDS. "Quarter Kelly wants 0.8 contracts" was arithmetic at
              the reader. Say what to do and why in one breath. */
-          return kvLine('STAKE', '<b style="color:#f2833f;">Skip this one, or buy exactly one contract.</b> '
+          return kvLine('STAKE', '<b style="color:#f2833f;">Skip this one, or risk ' + cents(k.cost) + ' at most.</b> '
             + (potKnown
-                ? 'Your pot is $' + pot.toFixed(2) + '. The right amount to risk on a ' + pct(q)
-                  + ' bet like this is about $' + (pot * k.quarter).toFixed(2)
-                  + ', and one contract costs ' + cents(k.cost) + ' \u2014 more than that. '
-                : 'The right amount to risk on a ' + pct(q) + ' bet is less than one contract costs. ')
-            + 'One is the most you should hold. Not two.');
+                ? 'Your pot is ' + $(pot) + '. The right amount to risk on a ' + pct(q)
+                  + ' bet like this is about ' + $(pot * k.quarter)
+                  + ', and the smallest possible bet here is ' + cents(k.cost) + ' — more than that. '
+                : 'The right amount to risk on a ' + pct(q) + ' bet is less than the smallest possible bet, ' + cents(k.cost) + '. ')
+            + 'That is the most you should hold. Not double.');
         }
         /* THE SIZE IS THE FIRST THING IN THE PLAN, and the loss at that size
            sits beside it. On 2026-09-05 the plan said one contract and the
            fill was thirty-three, the whole account, on a 52% bet. The edge
            does not scale with the size; the loss does. */
-        return kvLine('STAKE', '<b style="font-size:13px;color:#fff;">Buy ' + n + ' contract'
-          + (n === 1 ? '' : 's') + ' at ' + cents(price) + '.</b>'
-          + (potKnown ? ' That is $' + (n * k.cost).toFixed(2) + ' of your $' + pot.toFixed(2) + '.' : '')
-          + ' <b style="color:' + NOC + ';">If it loses you lose $' + (k.cost * n).toFixed(2)
-          + '</b>; if it wins you make $' + ((1 - k.cost) * n).toFixed(2) + '. '
+        var risk = n * k.cost, win = (1 - k.cost) * n;
+        var forSale = (have != null) ? Math.floor(have) * k.cost : null;
+        return kvLine('STAKE', '<b style="font-size:13px;color:#fff;">'
+          + (potKnown ? 'Put ' + $(risk) + ' on it at ' + cents(price) + '.' : 'Buy ' + cnt(n) + ' at ' + cents(price) + '.')
+          + '</b>'
+          + (potKnown ? ' That is ' + (100 * risk / pot).toFixed(0) + '% of your ' + $(pot) + '.' : '')
+          + ' <b style="color:' + NOC + ';">If it loses you lose ' + $(risk)
+          + '</b>; if it wins you make ' + $(win) + '. '
           + '<span style="color:#9fd9c4;">That is the right size for a ' + pct(q) + ' bet: about '
           + (100 * k.quarter).toFixed(0) + '% of your money, so a losing streak cannot take you out'
-          + (capped ? ' \u2014 <span style="color:#f2833f;">and only ' + Math.floor(have)
-                      + ' are for sale anyway</span>'
-             : have != null ? ' (' + Math.floor(have) + ' are for sale)' : '') + '.</span> '
-          + '<span style="color:#f2833f;">Buying ' + (10 * n) + ' instead does not make it a better bet; '
-          + 'it makes the same loss $' + (10 * k.cost * n).toFixed(2) + '.</span>'
+          + (capped ? ' — <span style="color:#f2833f;">and only ' + $(forSale)
+                      + ' is for sale at this price anyway</span>'
+             : forSale != null ? ' (' + $(forSale) + ' is for sale at this price)' : '') + '.</span> '
+          + '<span style="color:#f2833f;">Putting ' + $(10 * risk) + ' on it instead does not make it a better bet; '
+          + 'it makes the same loss ten times bigger.</span>'
           + (k.haircut > 0.005
               ? ' <span style="color:#9fd9c4;">Sized as if it were ' + pct(q - k.haircut)
                 + ', because bets we have called ' + pct(q) + ' have won a little less often than that.</span>' : ''))
@@ -54798,12 +54809,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              order in the exchange's own words, one tap to the clipboard. */
           + '<button type="button" class="cwk-btn2" data-copy="'
           + mtaEsc((dir === 'against' ? 'NO' : 'YES') + ' on ' + String(r.label).replace(/°/g, '')
-              + ' - ' + n + ' contract' + (n === 1 ? '' : 's') + ' - limit ' + Math.round(100 * price) + 'c')
-          + '" data-done="COPIED \u2014 THE ORDER, IN KALSHI\u2019S WORDS" style="display:inline-flex;'
+              + ' - ' + $(risk) + ' - limit ' + Math.round(100 * price) + 'c (' + cnt(n) + ')')
+          + '" data-done="COPIED — THE ORDER, IN KALSHI’S WORDS" style="display:inline-flex;'
           + 'align-items:center;margin:4px 0 2px 69px;padding:5px 10px;border-radius:7px;background:transparent;'
           + 'border:1px dashed rgba(74,163,224,.45);color:#4aa3e0;font:800 9px system-ui,sans-serif;'
-          + 'letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;">COPY ORDER \u00B7 '
-          + (dir === 'against' ? 'NO' : 'YES') + ' ' + deg(r.label) + ' \u00B7 ' + n + ' \u00D7 ' + cents(price)
+          + 'letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;">COPY ORDER · '
+          + (dir === 'against' ? 'NO' : 'YES') + ' ' + deg(r.label) + ' · ' + $(risk) + ' AT ' + cents(price)
           + '</button>';
       };
 
@@ -55598,11 +55609,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + ';font:600 8.5px system-ui,sans-serif;letter-spacing:.02em;line-height:1.5;'
             + 'color:' + (same ? '#63dbb6' : '#f2833f') + ';">'
             + (same
-                ? 'YOU ALREADY HOLD THIS \u2014 ' + (+mine.n).toFixed(mine.n % 1 ? 2 : 0)
-                  + ' contracts of ' + mine.side.toUpperCase() + ' on ' + deg(vbest.r.label)
+                ? 'YOU ALREADY HOLD THIS \u2014 ' + (mine.cost != null ? '$' + (+mine.cost).toFixed(2) + ' of ' : '')
+                  + mine.side.toUpperCase() + ' on ' + deg(vbest.r.label)
                   + '. Adding here doubles a position, it does not open one.'
                 : 'THIS REVERSES YOUR POSITION \u2014 you hold '
-                  + (+mine.n).toFixed(mine.n % 1 ? 2 : 0) + ' contracts of '
+                  + (mine.cost != null ? '$' + (+mine.cost).toFixed(2) + ' of ' : '')
                   + mine.side.toUpperCase() + ' on ' + deg(vbest.r.label)
                   + '. Buying the other side closes or flips it. That may be right; '
                   + 'it is not a new bet.')
@@ -55946,7 +55957,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'margin-top:3px;">'
                 + '<b style="color:' + (yes ? YESC : NOC) + ';">'
                 + h.side.toUpperCase() + '</b> on ' + deg(k) + ' \u00B7 '
-                + (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contracts'
+                + (h.cost != null ? '<b>$' + (+h.cost).toFixed(2) + '</b> in' : (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contracts')
                 + (h.value == null ? ''
                     : ' \u00B7 worth <b>$' + h.value.toFixed(2) + '</b> now'
                       + ' <span style="color:' + ((h.pl || 0) >= 0 ? YESC : NOC) + ';">('
