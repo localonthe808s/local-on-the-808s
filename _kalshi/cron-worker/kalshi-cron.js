@@ -311,7 +311,7 @@ const OBS_MARKETS = [
 // outage rather than a malformed request.
 const TWC_KEY = 'e1f10a1e78da46f5b10a1e78da96f525';
 
-async function obsSnapshot() {
+async function obsSnapshot(env) {
   const t = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const rows = [];
   // One batched METAR call for all seven, rather than seven -- subrequests are
@@ -372,6 +372,36 @@ async function obsSnapshot() {
     } catch (e) { row.err_iem = String(e).slice(0, 60); }
     rows.push(row);
   }));
+  // THE AIRPORTS' 5-MINUTE READINGS, as a regional early warning for New York.
+  // Central Park's own 5-minute stream is not public (Synoptic carries it for
+  // LaGuardia, JFK and Newark, hourly only for the park -- checked 2026-09-06).
+  // So the three airports' 5-minute maxima since 7 AM ride on the New York
+  // row, to be judged against TWC's field and the settlement: when the region
+  // is peaking between the hourly reports, the park usually is too.
+  if (env && env.SYNOPTIC_TOKEN) {
+    try {
+      const r = await fetch('https://api.synopticdata.com/v2/stations/timeseries?stid=KLGA,KJFK,KEWR' +
+        `&recent=720&vars=air_temp&units=temp|F&obtimezone=local&token=${env.SYNOPTIC_TOKEN}`);
+      if (r.ok) {
+        const j = await r.json();
+        const ny = rows.find((x) => x.key === 'ny_high');
+        if (ny) {
+          ny.apt5 = {};
+          for (const st of (j.STATION || [])) {
+            const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
+            let mx = null, last = null, lastAt = null;
+            for (let i = 0; i < ts.length; i++) {
+              const v = vs[i]; if (typeof v !== 'number') continue;
+              const hh = Number(ts[i].slice(11, 13));
+              if (hh >= 7 && (mx == null || v > mx)) mx = v;
+              last = v; lastAt = ts[i].slice(11, 16);
+            }
+            ny.apt5[st.STID] = { max7: mx, last, at: lastAt };
+          }
+        }
+      }
+    } catch (e) { /* the row stands without it */ }
+  }
   return { t, rows };
 }
 
@@ -419,7 +449,7 @@ function foldLead(sum, snap) {
 
 async function logObs(env) {
   if (!env.OBS) return 'no KV binding';
-  const snap = await obsSnapshot();
+  const snap = await obsSnapshot(env);
   try {
     const prev = await env.OBS.get(LEAD_KEY, { type: 'json' });
     await env.OBS.put(LEAD_KEY, JSON.stringify(foldLead(prev, snap)));
