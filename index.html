@@ -54466,7 +54466,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           .then(function(r){ return r.ok ? r.json() : null; })
           .then(function(M0){
             /* per city since 2026-09-06; the New York block also sits at the top level */
-            var M = (M0 && M0.cities && M0.cities[CITY.key]) || (isNY ? M0 : null);
+            var M = (M0 && M0.cities && M0.cities[CITY.key + '_high']) || (isNY ? M0 : null);
             if (!M || !M.days || !M.days.length) return;
             var S = M.summary || {};
             var done = M.days.filter(function(d){ return d.complete && d.cli_max != null; });
