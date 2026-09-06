@@ -56511,7 +56511,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                        AFTER that reading prints, not before, so the bail has to
                        key on the earliest readings on the sheet. */
                     var bail = '';
-                    if (!yes && r.lo != null) bail = 'any reading reaches <b>' + T1(r.lo) + '\u00B0</b>';
+                    var hiNow = T.obs_so_far;
+                    /* a NO whose range the day has ALREADY reached is losing now; the
+                       bail is the afternoon failing to climb out the top, not a
+                       reading arriving (Las Vegas NO 84-85 at 84.8, 2026-09-06) */
+                    if (!yes && r.lo != null && hiNow != null && hiNow >= r.lo - 0.5)
+                      bail = (r.hi != null ? 'the high is still under <b>' + T1(r.hi + 1) + '\u00B0</b>' : 'the high is still inside ' + deg(k))
+                        + ' with the peak hours gone \u2014 it is inside the range now and only a climb past ' + (r.hi != null ? T1(r.hi) + '\u00B0' : 'it') + ' saves it';
+                    else if (!yes && r.lo != null) bail = 'any reading reaches <b>' + T1(r.lo) + '\u00B0</b>';
                     else if (!yes && r.hi != null) bail = 'the high is still under <b>' + T1(r.hi + 1) + '\u00B0</b> at 3 PM';
                     else if (yes && r.hi != null) bail = 'any reading reaches <b>' + T1(r.hi + 1) + '\u00B0</b>';
                     else if (yes && r.lo != null) bail = 'the high is still under <b>' + T1(r.lo) + '\u00B0</b> at 3 PM';
