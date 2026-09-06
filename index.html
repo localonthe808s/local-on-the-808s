@@ -56031,7 +56031,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          in the most valuable line on the sheet. It now says where the day
          actually is: the date, the high so far, where the forecast has it
          going, and what that leans to. */
-      var headSub = '<div style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;'
+      var headSubL = '<div style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;'
         + 'color:#63dbb6;">'
         + (dayName(T.date) || 'TODAY').toUpperCase() + ', ' + T.date.slice(5).replace('-', '/')
         + '<span style="color:#22604e;"> | </span>'
@@ -56055,6 +56055,40 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + ' <span style="color:#2c7f66;">\u2014 THAT GAP IS THE WHOLE BET</span>')
               + '</div>'
             : '');
+
+      /* THE LIVE POSITIONS, TOP RIGHT. The space beside the date line sat empty
+         on a desktop and the first question on opening the sheet was "what am
+         I in, and is it up or down" (user, 2026-09-06). Each position on
+         today's market with its cost and the profit at the BID -- the number
+         you would keep closing now. The YOU HOLD box further down keeps the
+         reasoning; this is the glance. */
+      var posTop = '';
+      if (bookKnown && !PHONE){
+        var bookPL = bookVal - bookCost;
+        posTop = '<div style="flex:0 0 auto;text-align:right;margin-left:12px;">'
+          + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
+          + bookRows.map(function(k){
+              var h = posOn[k], up = (h.pl || 0) >= 0;
+              return '<div style="font:700 9px system-ui,sans-serif;color:#fff;margin-top:2px;white-space:nowrap;">'
+                + '<b style="color:' + (h.side === 'yes' ? YESC : NOC) + ';">' + h.side.toUpperCase() + '</b> '
+                + deg(k)
+                + (h.cost != null ? ' <span style="color:#9fd9c4;">\u00B7 $' + (+h.cost).toFixed(2) + ' in</span>' : '')
+                + (h.pl != null
+                    ? ' <b style="color:' + (up ? YESC : NOC) + ';">' + (up ? '+' : '\u2212') + '$' + Math.abs(h.pl).toFixed(2) + '</b>'
+                    : ' <span style="color:#7b8496;">no bid</span>')
+                + '</div>';
+            }).join('')
+          + (bookRows.length > 1
+              ? '<div style="font:800 8px system-ui,sans-serif;margin-top:3px;color:' + (bookPL >= 0 ? YESC : NOC) + ';">'
+                + 'BOOK ' + (bookPL >= 0 ? '+' : '\u2212') + '$' + Math.abs(bookPL).toFixed(2) + '</div>'
+              : '')
+          + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
+          + 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW</div>'
+          + '</div>';
+      }
+      var headSub = posTop
+        ? '<div style="display:flex;align-items:flex-start;"><div style="min-width:0;flex:1 1 auto;">' + headSubL + '</div>' + posTop + '</div>'
+        : headSubL;
 
       var freshTop = '<div style="font:700 7.5px system-ui,sans-serif;letter-spacing:.06em;'
         + 'color:#45b491;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
