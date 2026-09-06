@@ -54462,10 +54462,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           return;
         }
         bvMinuteReplay._n = 0;
-        if (String(T.event || '').indexOf('KXHIGHNY') !== 0) return;
         fetch('kalshi_minutes.json?v=' + Math.floor(Date.now() / 6e5), { cache: 'no-store' })
           .then(function(r){ return r.ok ? r.json() : null; })
-          .then(function(M){
+          .then(function(M0){
+            /* per city since 2026-09-06; the New York block also sits at the top level */
+            var M = (M0 && M0.cities && M0.cities[CITY.key]) || (isNY ? M0 : null);
             if (!M || !M.days || !M.days.length) return;
             var S = M.summary || {};
             var done = M.days.filter(function(d){ return d.complete && d.cli_max != null; });
@@ -54483,7 +54484,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               min = Math.abs(min);
               return min >= 60 ? Math.floor(min / 60) + ' h ' + (min % 60 ? (min % 60) + ' min' : '') : min + ' min';
             };
-            var names = { LGA: 'LaGuardia', EWR: 'Newark', JFK: 'JFK' };
+            var names = { LGA: 'LaGuardia', EWR: 'Newark', JFK: 'JFK', VGT: 'North Las Vegas', ATT: 'Camp Mabry' };
+            var parkName = isNY ? 'the park' : CITY.station;
             var html = '', chart = '', sent = '';
             /* the newest replayed day: the curve sits directly under today's
                axis so the two drawings read as one; the words come after */
@@ -54509,7 +54511,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 bits.push(names[k] + ' reached its own high (' + T1(a.max) + '°) '
                   + (a.lead_min > 0 ? '<b style="color:#63dbb6;">' + dur(a.lead_min) + ' before</b>'
                      : a.lead_min < 0 ? dur(a.lead_min) + ' after' : 'the same minute as')
-                  + ' the park');
+                  + ' ' + mtaEsc(parkName));
               });
               sent = '<div style="margin-top:3px;font:600 9.5px system-ui,sans-serif;color:#fff;line-height:1.55;">'
                 + '<b style="color:#63dbb6;">' + dayLabel(last.date) + '</b> · ' + bits.join(' · ') + '</div>';
@@ -54648,7 +54650,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'gap:8px 12px;margin-top:8px;">' + tl.join('') + '</div>';
             }
             html += '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:6px;">'
-              + 'CENTRAL PARK’S ONE-MINUTE RECORD, NCEI VIA IEM · WHOLE DEGREES · '
+              + mtaEsc(CITY.station).toUpperCase() + '’S ONE-MINUTE RECORD, NCEI VIA IEM · WHOLE DEGREES · '
               + (M.lag_days != null ? 'RUNS ' + M.lag_days + ' DAY' + (M.lag_days === 1 ? '' : 'S') + ' BEHIND · ' : '')
               + S.n + ' SETTLED DAY' + (S.n === 1 ? '' : 'S') + ' REPLAYED'
               + (S.archive_off_by ? ' · THE ARCHIVE DISAGREED WITH THE CLIMATE REPORT BY A DEGREE ON ' + S.archive_off_by : '')
@@ -55410,8 +55412,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            2026-09-06: "just add the line graph to the WINDOW"). The overlay is
            filled by bvMinuteReplay; data-h0/data-n tell it the column geometry. */
         var hourChart = '<div style="position:relative;margin-top:6px;">'
-          + (isNY ? '<div id="bv-replay-overlay" data-h0="' + bh[0].h + '" data-n="' + bh.length
-              + '" style="position:absolute;left:0;right:0;top:2px;height:46px;pointer-events:none;z-index:1;"></div>' : '')
+          + '<div id="bv-replay-overlay" data-h0="' + bh[0].h + '" data-n="' + bh.length
+              + '" style="position:absolute;left:0;right:0;top:2px;height:46px;pointer-events:none;z-index:1;"></div>'
           + '<div style="display:grid;grid-template-columns:repeat('
           + bh.length + ',1fr);gap:2px;">'
           + bh.map(function(x){
@@ -55446,7 +55448,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + '<div style="position:relative;">'
                 /* a clear strip for the replay curve: nothing else is drawn here,
                    so the line never crosses a bar or a number */
-                + (isNY ? '<div style="height:46px;"></div>' : '')
+                + '<div style="height:46px;"></div>'
                 /* the money, diverging from a zero line */
                 + '<div style="height:56px;display:flex;flex-direction:column;">'
                 + '<div style="flex:1;display:flex;align-items:flex-end;justify-content:center;">'

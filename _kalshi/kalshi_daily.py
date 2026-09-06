@@ -878,6 +878,34 @@ def portal_day(cfg, day):
 
 SIX_WINDOW = {}          # per market: [start hour, end hour] of the group that holds six_max
 
+# THE SETTLEMENT SENSOR'S OWN 5-MINUTE FEED. Central Park has none in public,
+# but Las Vegas settles on Harry Reid (KLAS) and Austin on Bergstrom (KAUS):
+# FAA airports whose 5-minute observations are on Synoptic, logged by the
+# cron worker every five minutes into its public summary. The running maximum
+# of those readings since 7 AM is an exact floor on the day's high -- the same
+# sensor the climate report is computed from, sampled every five minutes
+# instead of every hour (2026-09-06).
+OWN5 = {'las_high': 'KLAS', 'aus_high': 'KAUS'}
+LEAD_URL = 'https://bluish-void-kalshi-cron.junkyjunkjunkjunkjunk.workers.dev/obs/lead'
+_LEAD = []
+
+
+def own5_max(cfg, day):
+    st = OWN5.get(cfg['key'])
+    if not st:
+        return None
+    if not _LEAD:
+        try:
+            _LEAD.append(get_json(LEAD_URL, timeout=20))
+        except Exception as e:
+            print('own5: worker summary unavailable (%s)' % e)
+            _LEAD.append(None)
+    d = _LEAD[0] or {}
+    row = (d.get('days') or {}).get('%s|%s' % (cfg['key'], day.isoformat())) or {}
+    a = ((row.get('apt5') or {}).get('s') or {}).get(st) or {}
+    v = a.get('max7')
+    return float(v) if isinstance(v, (int, float)) else None
+
 
 def metar_six_max(cfg, day):
     """The day's max from the ASOS six-hourly groups, or None.
@@ -2443,6 +2471,9 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     _six = metar_six_max(cfg, today)
     if _six is not None:
         print('%s six-hourly: %.1f degF from the ASOS max groups' % (cfg['key'], _six))
+    _own5 = own5_max(cfg, today)
+    if _own5 is not None:
+        print('%s own 5-minute feed: %.1f degF since 7 AM at %s' % (cfg['key'], _own5, OWN5[cfg['key']]))
     # the two published forecasts, for the trail (see twc_forecast)
     _twcf = twc_forecast(cfg, today)
     _nwsf = nws_forecast(cfg, today)
@@ -2555,6 +2586,10 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # earned it on 322 days instead of being assumed.
     if _six is not None:
         live = _six if live is None else max(live, _six)
+    # the settlement sensor's own 5-minute maximum: exact, and fresher than
+    # the hourly report by up to 55 minutes
+    if _own5 is not None:
+        live = _own5 if live is None else max(live, _own5)
     cands_fl = [x for x in (est, live) if x is not None]
     obs_far = max(cands_fl) if cands_fl else None
     obs_hr = max(obh.get(tkey) or {0: 0}) if obh.get(tkey) else None
@@ -3234,6 +3269,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # and it is not small: Chicago ran +4.0 the day this was wired in,
             # New York +2.0 on the afternoon that made the case for it.
             'six_max': _six, 'six_window': SIX_WINDOW.get(cfg['key']),
+            'own5_max': _own5, 'own5_station': OWN5.get(cfg['key']),
             # THE REPORT THE DAY IS ACTUALLY SETTLED ON. Verified against the
             # exchange's own expiration_value on 112 of 112 settled days. The
             # panel leads with this; everything else on screen is an estimate of

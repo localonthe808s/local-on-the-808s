@@ -34,9 +34,14 @@ OUT = os.path.join(ROOT, 'kalshi_minutes.json')
 CLI = os.path.join(HERE, 'cli_cache.json')
 
 IEM = 'https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py'
-PARK = 'NYC'
-AIRPORTS = ['LGA', 'EWR', 'JFK']          # JFK has been empty in the archive; asked anyway
-NAMES = {'LGA': 'LaGuardia', 'EWR': 'Newark', 'JFK': 'JFK'}
+# one entry per panel tab: the settlement station in IEM's 1-minute archive,
+# the nearby stations to compare against, the climate product, the zone
+CITIES = {
+    'ny_high':  {'park': 'NYC', 'apts': ['LGA', 'EWR', 'JFK'], 'cli': 'CLINYC', 'tz': 'America/New_York',    'utc_off': -4},
+    'las_high': {'park': 'LAS', 'apts': ['VGT'],               'cli': 'CLILAS', 'tz': 'America/Los_Angeles', 'utc_off': -7},
+    'aus_high': {'park': 'AUS', 'apts': ['ATT'],               'cli': 'CLIAUS', 'tz': 'America/Chicago',     'utc_off': -5},
+}
+NAMES = {'LGA': 'LaGuardia', 'EWR': 'Newark', 'JFK': 'JFK', 'VGT': 'North Las Vegas', 'ATT': 'Camp Mabry'}
 WINDOW_DAYS = 45                          # how far back the replay reaches
 REFRESH_HOURS = 6                         # the archive moves ~daily; do not hammer IEM
 COMPLETE = 0.90                           # share of minutes present for a day to count
@@ -46,10 +51,10 @@ FORCE = '--force' in sys.argv
 def log(*a):
     print('[minutes]', *a, flush=True)
 
-def fetch(station, sts, ets):
+def fetch(station, sts, ets, tz='America/New_York'):
     q = urllib.parse.urlencode({
         'station': station, 'vars': 'tmpf', 'sts': sts, 'ets': ets,
-        'sample': '1min', 'what': 'view', 'tz': 'America/New_York'})
+        'sample': '1min', 'what': 'view', 'tz': tz})
     req = urllib.request.Request(IEM + '?' + q, headers={'User-Agent': 'bluishvoid.com kalshi post-mortem'})
     for attempt in range(3):
         try:
@@ -98,26 +103,27 @@ def cli_at_mins(s):
 def first_reach(m, val):
     return min((t for t, v in m.items() if v >= val), key=mins)
 
-def settlements():
-    """cli_cache carries max + time from 2026-08-17; before that the head
-    file's graded history knows the settled value (no time)."""
+def settlements(key, cli_key):
+    """cli_cache carries max + time; before that the city file's graded
+    history knows the settled value (no time)."""
     out = {}
     try:
-        h = json.load(open(os.path.join(ROOT, 'kalshi_ny.json'))).get('history') or []
+        fn = 'kalshi_%s.json' % key.split('_')[0]
+        h = json.load(open(os.path.join(ROOT, fn))).get('history') or []
         for r in h:
-            if r.get('event') == 'KXHIGHNY' and r.get('actual') is not None and r.get('date'):
+            if r.get('actual') is not None and r.get('date') and not r.get('backtest_only'):
                 out[r['date']] = {'max': r['actual']}
     except Exception as e:
         log('no history:', e)
     try:
-        for d, c in (json.load(open(CLI)).get('CLINYC') or {}).items():
+        for d, c in (json.load(open(CLI)).get(cli_key) or {}).items():
             if c.get('max') is not None:
                 out[d] = {'max': c['max'], 'at': c.get('at')}
     except Exception as e:
         log('no cli cache:', e)
     return out
 
-def replay_day(d, park, apts, cli):
+def replay_day(d, park, apts, cli, airports):
     m = park.get(d) or {}
     cov = len(m) / 1440.0
     row = {'date': d, 'coverage': round(cov, 3), 'complete': cov >= COMPLETE}
@@ -148,7 +154,7 @@ def replay_day(d, park, apts, cli):
     if ref is None:
         ref = mins(at)
     A = {}
-    for s in AIRPORTS:
+    for s in airports:
         am = (apts.get(s) or {}).get(d) or {}
         if len(am) < 600:
             continue
@@ -168,7 +174,7 @@ def curve(m):
             out.append([k, m[t]])
     return out
 
-def summarize(rows):
+def summarize(rows, airports):
     done = [r for r in rows if r.get('complete') and r.get('cli_max') is not None]
     S = {'n': len(done)}
     if not done:
@@ -189,7 +195,7 @@ def summarize(rows):
     if six:
         S['six_missed_n'] = sum(1 for g in six if g >= 1)
         S['six_n'] = len(six)
-    for s in AIRPORTS:
+    for s in airports:
         leads = [r['airports'][s]['lead_min'] for r in done
                  if r.get('airports', {}).get(s) and r['airports'][s].get('lead_min') is not None]
         if leads:
@@ -200,6 +206,29 @@ def summarize(rows):
             }
     S['archive_off_by'] = sum(1 for r in done if abs(r['archive_max'] - r['cli_max']) >= 1)
     return S
+
+def replay_city(key, c, now, today_by_tz):
+    airports = c['apts']
+    cli = settlements(key, c['cli'])
+    start = (now - timedelta(days=WINDOW_DAYS)).strftime('%Y-%m-%dT04:00Z')
+    end = (now + timedelta(days=1)).strftime('%Y-%m-%dT04:00Z')
+    park = fetch(c['park'], start, end, c['tz'])
+    log(key, 'park days in archive:', len(park), '| settled days known:', len(cli))
+    apts = {st: fetch(st, start, end, c['tz']) for st in airports}
+    today = now.astimezone(timezone(timedelta(hours=c['utc_off']))).strftime('%Y-%m-%d')
+    rows = [replay_day(d, park, apts, cli, airports) for d in sorted(park) if d < today]
+    complete = [r for r in rows if r.get('complete')]
+    for r in complete[-KEEP_CURVES:]:
+        m = park[r['date']]
+        r['curve'] = curve(m)
+        r['hourly'] = [[mins(t), v] for t, v in sorted(m.items()) if t.endswith(':51') or t.endswith(':56')]
+    newest = complete[-1]['date'] if complete else None
+    lag = None
+    if newest:
+        lag = (datetime.strptime(today, '%Y-%m-%d') - datetime.strptime(newest, '%Y-%m-%d')).days
+    return {'station': 'K' + c['park'], 'newest_complete': newest, 'lag_days': lag,
+            'days': rows, 'summary': summarize(rows, airports)}
+
 
 def main():
     prev = {}
@@ -218,37 +247,23 @@ def main():
                 return
         except ValueError:
             pass
-    cli = settlements()
-    log('settled days known:', len(cli))
-
-    # ask in local time; the archive is LST-stamped upstream and IEM converts
-    start = (now - timedelta(days=WINDOW_DAYS)).strftime('%Y-%m-%dT04:00Z')
-    end = (now + timedelta(days=1)).strftime('%Y-%m-%dT04:00Z')
-    park = fetch(PARK, start, end)
-    log('park days in archive:', len(park))
-    apts = {s: fetch(s, start, end) for s in AIRPORTS}
-    for s in AIRPORTS:
-        log(s, 'days:', len(apts[s]))
-
-    today = now.astimezone(timezone(timedelta(hours=-4))).strftime('%Y-%m-%d')
-    rows = [replay_day(d, park, apts, cli) for d in sorted(park) if d < today]
-    complete = [r for r in rows if r.get('complete')]
-    for r in complete[-KEEP_CURVES:]:
-        m = park[r['date']]
-        r['curve'] = curve(m)
-        r['hourly'] = [[mins(t), v] for t, v in sorted(m.items()) if t.endswith(':51')]
-    newest = complete[-1]['date'] if complete else None
-    lag = None
-    if newest:
-        lag = (datetime.strptime(today, '%Y-%m-%d') - datetime.strptime(newest, '%Y-%m-%d')).days
-    out = {
-        'checked_utc': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
-        'station': 'KNYC', 'source': 'NCEI TD-6405 one-minute ASOS via IEM',
-        'newest_complete': newest, 'lag_days': lag,
-        'days': rows, 'summary': summarize(rows),
-    }
+    cities = {}
+    for key, c in CITIES.items():
+        try:
+            cities[key] = replay_city(key, c, now, None)
+        except Exception as e:
+            log(key, 'FAILED:', e)
+    out = {'checked_utc': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
+           'source': 'NCEI TD-6405 one-minute ASOS via IEM',
+           'cities': cities}
+    # the New York block also sits at the top level, the shape the panel first read
+    if 'ny_high' in cities:
+        out.update(cities['ny_high'])
     json.dump(out, open(OUT, 'w'), separators=(',', ':'))
-    log('wrote', OUT, '--', len(rows), 'days,', len(complete), 'complete, newest', newest, 'lag', lag)
+    for k, v in cities.items():
+        log('%s: %d days, newest %s, lag %s' % (k, len(v['days']), v['newest_complete'], v['lag_days']))
+    log('wrote', OUT)
+
 
 if __name__ == '__main__':
     main()
