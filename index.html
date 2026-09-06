@@ -53979,7 +53979,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var out = (h.side === 'yes') ? r.bid : r.nbid;   /* exit price */
           var val = (out == null) ? null : out * h.contracts;
           posOn[r.label] = { side: h.side, n: h.contracts, cost: h.cost || h.traded,
-                             value: val, pl: (val == null) ? null : val - (h.traded || 0) };
+                             value: val, pl: (val == null) ? null : val - (h.traded || 0),
+                             r: r };
         });
       });
       var bookRows = Object.keys(posOn);
@@ -55555,9 +55556,47 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + 'color:#5b8f7d;">YOU HOLD</div>'
           + bookRows.map(function(k){
               var h = posOn[k];
+              /* WHAT SETTLES IT, AND THE ONE NUMBER THAT CAN STILL BEAT IT.
+                 On 2026-09-05 a NO on 79-80 sat at 84c at 4 PM with the hourly
+                 readings on 77, and lost at 4:25 PM to a 79 set at 2:33 PM
+                 between two reports. The position line now says, in the
+                 station's own units, what the reading has to do for this to
+                 lose -- and that the reported maximum runs above the hourly
+                 readings by a measured amount (the station offset), two
+                 degrees on about one day in ten. */
+              var r = h.r || {}, yes = (h.side === 'yes');
+              var pWin = (r.ours == null) ? null : (yes ? r.ours : 1 - r.ours);
+              var mWin = (r.market == null) ? null : (yes ? r.market : 1 - r.market);
+              var off = (R.measured && R.measured.offset != null) ? R.measured.offset : 0.7;
+              var hi0 = T.obs_so_far;            /* running high, offset included */
+              var threat = '';
+              if (!dayDone && hi0 != null){
+                if (!yes){
+                  /* a NO loses if the day settles INSIDE the range */
+                  if (r.lo != null && hi0 < r.lo - 0.5)
+                    threat = 'It loses if the high reaches <b>' + T1(r.lo) + '\u00B0</b> \u2014 '
+                      + T1(r.lo - hi0) + '\u00B0 above the high so far.';
+                  else if (r.hi != null && hi0 <= r.hi + 0.5)
+                    threat = 'The high so far already sits inside this range; it wins only if the day climbs past <b>'
+                      + T1(r.hi + 1) + '\u00B0</b>.';
+                  else threat = 'The high so far is already past this range.';
+                } else {
+                  if (r.lo != null && hi0 < r.lo - 0.5)
+                    threat = 'It needs the high to reach <b>' + T1(r.lo) + '\u00B0</b>, '
+                      + T1(r.lo - hi0) + '\u00B0 above the high so far'
+                      + (r.hi != null ? ', and to stop at ' + T1(r.hi) + '\u00B0.' : '.');
+                  else if (r.hi != null && hi0 <= r.hi + 0.5)
+                    threat = 'The high so far is inside the range; it loses if the day climbs past <b>'
+                      + T1(r.hi) + '\u00B0</b>' + (r.hi != null ? ' (' + T1(r.hi + 1 - hi0) + '\u00B0 more).' : '.');
+                  else threat = 'The day has already climbed past this range.';
+                }
+                threat += ' The reported maximum runs about ' + off.toFixed(1)
+                  + '\u00B0 above the hourly readings, and 2\u00B0 above them roughly one day in ten \u2014 '
+                  + 'a peak between two reports is invisible until the climate report.';
+              }
               return '<div style="font:600 10px system-ui,sans-serif;color:#fff;'
                 + 'margin-top:3px;">'
-                + '<b style="color:' + (h.side === 'yes' ? YESC : NOC) + ';">'
+                + '<b style="color:' + (yes ? YESC : NOC) + ';">'
                 + h.side.toUpperCase() + '</b> on ' + deg(k) + ' \u00B7 '
                 + (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contracts'
                 + (h.value == null ? ''
@@ -55565,8 +55604,40 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       + ' <span style="color:' + ((h.pl || 0) >= 0 ? YESC : NOC) + ';">('
                       + ((h.pl || 0) >= 0 ? '+' : '\u2212') + '$'
                       + Math.abs(h.pl || 0).toFixed(2) + ')</span>')
-                + '</div>';
+                + '</div>'
+                + '<div style="font:500 9px system-ui,sans-serif;color:#9fd9c4;margin:2px 0 4px;line-height:1.45;">'
+                + 'Wins if the high settles ' + (yes ? 'inside' : 'outside') + ' ' + deg(k)
+                + (pWin != null ? ' \u2014 Bluish <b>' + pct(pWin) + '</b>' : '')
+                + (mWin != null ? ', the market <b style="color:' + MKC + ';">' + pct(mWin) + '</b>' : '') + '. '
+                + threat + '</div>';
             }).join('')
+          /* HOLD, AND WHY. The plan is to hold to settlement, and the reason is
+             measured, not asserted: every morning bet in the price replay,
+             valued at each later hour's real quotes. Every early exit returned
+             less than holding, both take-profit and stop-loss included. The
+             numbers are the bake's own (today.exit) so they move with the
+             study. */
+          + (function(){
+              var EX = T.exit;
+              if (!EX || !EX.hold || dayDone) return '';
+              var up = (bookVal - bookCost) > 0.005;
+              return '<div style="margin-top:7px;padding:6px 8px;border-radius:6px;background:rgba(0,210,152,.10);'
+                + 'font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
+                + '<b style="color:' + YESC + ';">HOLD TO SETTLEMENT'
+                + (up ? ' \u2014 EVEN THOUGH IT IS UP' : '') + '.</b> '
+                + 'Measured on ' + EX.n + ' morning bets at real quotes: holding returned <b>'
+                + (EX.hold.ret >= 0 ? '+' : '') + EX.hold.ret.toFixed(2) + '</b> per $1'
+                + (EX.exit13 ? ', closing at 1 PM ' + (EX.exit13.ret >= 0 ? '+' : '') + EX.exit13.ret.toFixed(2) : '')
+                + (EX.exit16 ? ', at 4 PM ' + (EX.exit16.ret >= 0 ? '+' : '') + EX.exit16.ret.toFixed(2) : '')
+                + (EX.take_profit ? ', taking profit ' + (EX.take_profit.ret >= 0 ? '+' : '') + EX.take_profit.ret.toFixed(2) : '')
+                + (EX.stop_loss ? ', a stop-loss ' + (EX.stop_loss.ret >= 0 ? '+' : '') + EX.stop_loss.ret.toFixed(2) : '')
+                + '. '
+                + (EX.up_at_15 && EX.up_at_15[1]
+                    ? 'Of ' + EX.up_at_15[1] + ' bets that were up at 3 PM, ' + EX.up_at_15[0]
+                      + ' lost at settlement. '
+                    : '')
+                + 'The afternoon market prices the hourly readings, not the peak.</div>';
+            })()
           + '<div style="font:600 8px system-ui,sans-serif;color:#45b491;margin-top:5px;">'
           + 'AT THE BID, WHAT YOU WOULD KEEP CLOSING NOW \u00B7 '
           + '<span style="color:' + plc + ';">$' + bookVal.toFixed(2) + ' ON $'

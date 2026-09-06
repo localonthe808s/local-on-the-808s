@@ -209,14 +209,19 @@ def study(cfg):
                     if best is None or e > best['ev']:
                         cost = price + K.fee_of(price)
                         best = {'ev': e, 'price': price, 'side': side, 'wins': wins,
-                                'ret': ((1 - cost) / cost) if wins else -1.0}
+                                'ret': ((1 - cost) / cost) if wins else -1.0,
+                                'i': lad.index(r)}
             pool = sum((q[2] if q and len(q) > 2 and q[2] else 0) for q in quote)
             rows.append({
+                'city': cfg['key'],
                 'date': day, 'hour': h, 'pool': round(pool, 1),
                 'ours': [round(x, 4) for x in ps],
                 'mkt': [None if x is None else round(x / tot, 4) for x in mids],
                 'truth': [bool(r['won']) for r in lad],
                 'best': best,
+                # the raw quote per rung at this hour, so a bet struck earlier
+                # can be valued here: (yes bid, yes ask)
+                'q': [[None, None] if not q else [q[0], q[1]] for q in quote],
             })
         if (i + 1) % 15 == 0:
             print('  %d/%d days, %d hour-rows' % (i + 1, len(ev), len(rows)))
@@ -260,6 +265,59 @@ def summarise(rows):
     return out
 
 
+def exit_policy(rows, entries=(8, 9, 10, 11), exits=(12, 13, 14, 15, 16, 17)):
+    """Hold to settlement, or close early? Every morning bet at its real quote,
+    valued at each later hour's real bid/ask. Answers the question a losing
+    afternoon asks -- "should I have got out?" -- with the whole history
+    rather than one day. Needs rows carrying 'q' and best['i']."""
+    by = collections.defaultdict(dict)
+    for r in rows:
+        by[r['date']][r['hour']] = r
+
+    def value(b, r):
+        i = b['i']; bid, ask = r['q'][i]
+        cost = b['price'] + K.fee_of(b['price'])
+        out = bid if b['side'] == 'yes' else (None if ask is None else 1 - ask)
+        if out is None:
+            return None
+        out -= K.fee_of(out) if 0 < out < 1 else 0
+        return (out - cost) / cost
+
+    res = collections.defaultdict(list)
+    up_n = up_lost = 0
+    for d, hrs in by.items():
+        for e in entries:
+            r0 = hrs.get(e)
+            b = r0.get('best') if r0 else None
+            if not b or b.get('ev', 0) <= 0.03 or 'i' not in b or 'q' not in r0:
+                continue
+            if not (K.MIN_PRICE <= b['price'] <= 1 - K.MIN_PRICE):
+                continue
+            hold = b['ret']
+            res['hold'].append(hold)
+            vals = {}
+            for x in exits:
+                rx = hrs.get(x)
+                v = value(b, rx) if rx and 'q' in rx else None
+                vals[x] = v
+                res['exit%d' % x].append(v if v is not None else hold)
+            gain = (1 - (b['price'] + K.fee_of(b['price']))) / (b['price'] + K.fee_of(b['price']))
+            tp = next((v for x in exits if (v := vals.get(x)) is not None and v >= 0.5 * gain), hold)
+            sl = next((v for x in exits if (v := vals.get(x)) is not None and v <= -0.4), hold)
+            res['take_profit'].append(tp)
+            res['stop_loss'].append(sl)
+            if e == 9 and vals.get(15) is not None and vals[15] > 0.3:
+                up_n += 1
+                up_lost += 1 if hold < 0 else 0
+    if not res['hold']:
+        return None
+    out = {k: {'ret': round(statistics.mean(v), 3),
+               'win': round(sum(1 for x in v if x > 0) / len(v), 3)} for k, v in res.items()}
+    out['n'] = len(res['hold'])
+    out['up_at_15'] = [up_lost, up_n]
+    return out
+
+
 def main():
     only = None
     if '--city' in sys.argv:
@@ -279,13 +337,21 @@ def main():
         print('  -> %d hour-rows | %s' % (len(r), K.timing_report()))
     doc = {'built': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ'),
            'hour_rows': len(all_rows), 'by_market': per,
-           'pooled': summarise(all_rows)}
+           'pooled': summarise(all_rows),
+           'exit': exit_policy(all_rows),
+           'exit_by_market': {k: exit_policy([r for r in all_rows if r.get('city') == k])
+                              for k in per}}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
     print('kept %d raw rows for later analysis' % len(all_rows))
     with open(OUT, 'w') as f:
         json.dump(doc, f, indent=1)
     print('\nwrote %s' % OUT)
+    if doc.get('exit'):
+        ex = doc['exit']
+        print('\n exit policy on %d morning bets: hold %+.3f | close 1pm %+.3f | 4pm %+.3f | take-profit %+.3f | stop-loss %+.3f | up at 3pm then lost %d/%d'
+              % (ex['n'], ex['hold']['ret'], ex['exit13']['ret'], ex['exit16']['ret'],
+                 ex['take_profit']['ret'], ex['stop_loss']['ret'], ex['up_at_15'][0], ex['up_at_15'][1]))
     print('\n hour  days   ours   market    bets   edge   return   win%')
     for e in doc['pooled']:
         print('  %2d   %4d  %.4f  %s   %4d  %s  %s  %s' % (
@@ -298,5 +364,20 @@ def main():
     return 0
 
 
+def refit_from_rows():
+    """Rebuild price_study.json's exit block from the saved rows, no fetching."""
+    with open(os.path.join(HERE, 'price_rows.json')) as f:
+        rows = json.load(f)
+    with open(OUT) as f:
+        doc = json.load(f)
+    doc['exit'] = exit_policy(rows)
+    keys = sorted(set(r.get('city') for r in rows if r.get('city')))
+    doc['exit_by_market'] = {k: exit_policy([r for r in rows if r.get('city') == k]) for k in keys}
+    with open(OUT, 'w') as f:
+        json.dump(doc, f, indent=1)
+    print('exit block rebuilt from %d rows: %s' % (len(rows), json.dumps(doc['exit'])))
+    return 0
+
+
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(refit_from_rows() if '--exit-only' in sys.argv else main())

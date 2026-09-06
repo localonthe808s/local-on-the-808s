@@ -2147,6 +2147,16 @@ TICKER_CACHE = {}
 _STUDY = []
 
 
+def measured_exit(cfg):
+    """price_study.py's hold-versus-close measurement, this market's own if it
+    has one, else the pool. The panel quotes it beside an open position."""
+    measured_hours(cfg)                     # loads the study file once
+    d = _STUDY[0] if _STUDY else None
+    if not d:
+        return None
+    return (d.get('exit_by_market') or {}).get(cfg['key']) or d.get('exit')
+
+
 def measured_hours(cfg):
     """The hourly curve from price_study.py, this market's own if it has one.
 
@@ -3124,6 +3134,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # MEASURED, when price_study.py has been run: what a bet placed at
             # each hour actually returned, against the market's own quotes on
             # settled days. Falls back to the assumed accuracy curve otherwise.
+            'exit': measured_exit(cfg),
             'by_hour': measured_hours(cfg) or [
                 {'h': h, 'acc': HOUR_ACC[h], 'sd': SD_FALLBACK.get(h)}
                 for h in sorted(HOUR_ACC)],
