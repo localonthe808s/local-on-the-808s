@@ -53175,6 +53175,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'background:rgba(74,163,224,.20);}#cw-kalshi-panel #cw-kalshi-x:active{'
             + 'background:rgba(0,210,152,.28);}'
             + '#cw-kalshi-panel{-webkit-user-select:text;user-select:text;}'
+            /* the sheet scrolls, but the bar saying so was the one thing on it
+               that looked like the browser rather than the page (user, 2026-09-06) */
+            + '#cw-kalshi-panel{scrollbar-width:none;-ms-overflow-style:none;}'
+            + '#cw-kalshi-panel::-webkit-scrollbar{display:none;width:0;height:0;}'
             + '#cw-kalshi-panel a{-webkit-touch-callout:default !important;'
             + '-webkit-user-select:text !important;user-select:text !important;}'
             + '@keyframes cwkSpin{to{transform:rotate(360deg);}}'
@@ -55723,7 +55727,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + mtaEsc(stamp12(K.updated)).toUpperCase().replace(/^\d{4}-\d{2}-\d{2}\s*/, '')
         + ' \u00B7 ' + ageTxt(fAge).toUpperCase()
         + ' \u00B7 <span class="cwk-next" data-due="' + (Date.now() + (cwkDueIn() || 0))
-        + '" style="color:#63dbb6;">NEXT IN ' + mmss(cwkDueIn()) + '</span></div>';
+        + '" style="color:#63dbb6;">NEXT IN ' + mmss(cwkDueIn()) + '</span></div>'
+        /* WHAT THOSE THREE ARE. "9:20 AM ET · 15 MIN AGO · NEXT IN 13:21" was
+           read as a station clock more than once. A second line names them:
+           the sheet's own clock, not the weather's. */
+        + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
+        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">'
+        + 'WHEN THIS SHEET WAS BAKED \u00B7 HOW OLD IT IS \u00B7 THE NEXT BAKE \u2014 every 15 min, 8 AM\u20131 AM</div>';
 
       /* IN THE INTRO, because it changes how everything below it should be
          read. A recommendation means one thing on an empty account and quite
