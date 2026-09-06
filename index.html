@@ -55374,28 +55374,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
            What survives is what the chart cannot say: how many days measured,
            which hour was best, and the one-line verdict on right now. */
+        /* the clock verdict moved to the briefing; the explainer paragraph is
+           gone so the axis and the hour chart touch (user, 2026-09-06). The
+           tooltips on the columns still carry the numbers. */
         timing = ''
           + (measured
-              ? '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;'
-                /* the window is drawn on the chart itself now. What stays is the
-                   one thing the drawing cannot show: where the clock is
-                   relative to it. */
-                + 'color:' + winCol + ';margin-top:10px;font-size:8.5px;">' + win + '</div>'
+              ? ''
               : '<div style="font:600 8px system-ui,sans-serif;color:#2c7f66;margin-top:9px;">'
                 + 'TIMING IS STILL ASSUMED RATHER THAN MEASURED \u2014 RUN price_study.py</div>')
           + (measured
-              ? '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;'
-                + 'color:#2c7f66;margin-top:10px;line-height:1.7;">'
-                + 'ABOVE THE LINE, WHAT A BET PLACED THAT HOUR RETURNED PER $1'
-                + '<br>BELOW IT, WHO WAS CLOSER TO THE TRUTH \u2014 '
-                + '<span style="color:' + FCC + ';">BLUISH</span> / '
-                + '<span style="color:' + MKC + ';">KALSHI</span>, SHORTER IS BETTER, '
-                + 'SHADED WHERE THE FORECAST WINS'
-                + (poolMax ? '<br><span style="color:#4aa3e0;">THE BLUE FLOOR IS THE POOL</span>'
-                    + ' \u2014 MEDIAN MONEY ON THE MARKET AT THAT HOUR, RISING ALL DAY WHILE THE '
-                    + 'RETURNS FALL' : '')
-                + '</div>'
-                + hourChart
+              ? hourChart
                 + winBand
                 + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;'
                 + 'color:#2c7f66;margin-top:7px;">MEASURED OVER ' + days + ' SETTLED DAYS</div>'
@@ -56105,6 +56093,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            paragraph does -- how is today going -- and answering it twice, in
            two places, made the reader hunt for the half they had not seen. */
         if (verdict) out.push(verdict.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, ''));
+        /* THE CLOCK VERDICT, FIRST. "This is the window" / "past the window" is
+           measured (price_study, every settled day) and it decides whether
+           anything below is worth acting on; it led the hour chart, a screen
+           down (user, 2026-09-06: "move a line like that to the top summary"). */
+        if (!settledNow && win && typeof measured !== 'undefined' && measured)
+          out.unshift('<b style="color:' + (winCol || '#2fbfa8') + ';">' + win + '</b>');
         if (out.length) brief = '<div style="font:.66rem system-ui,sans-serif;color:#00D298;'
           /* BULLETS, NOT A PARAGRAPH. Six independent facts -- where the day has
              got to, what we lean, what the market leans, the temperature that
@@ -56399,7 +56393,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            how the last settled day actually unfolded minute by minute, then
            the clock. The replay fills in asynchronously from kalshi_minutes.json. */
         + hdr('WHERE THE DAY STANDS')
-        + (dayDone ? '' : scale + scaleLegend + timing)
+        + (dayDone ? '' : scale + timing)
         + '<div id="bv-minute-replay"></div>'
         + (dayDone ? '' : (typeof track === 'string' ? track : '') + verdict)
 
