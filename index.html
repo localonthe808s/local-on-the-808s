@@ -54211,22 +54211,31 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          against our 48%: it lost. One strip showed the first and looked like
          a lie about the second. The second row is the plan's bets. */
       var betRows = scored.filter(function(h){ return !h.backtest && h.bet_result; });
+      /* every bet the plan named that day, graded -- the book when the lock
+         recorded one, else the headline alone (older days) */
+      var betsOf = function(h){
+        if (h.book_results && h.book_results.length) return h.book_results;
+        var b = h.lock && h.lock.bet;
+        return h.bet_result ? [{ won: h.bet_result.won, dir: b && b.dir, label: b && b.label, price: b && b.price }] : [];
+      };
+      var allBets = [];
+      betRows.forEach(function(h){ betsOf(h).forEach(function(b){ allBets.push({ date: h.date, provisional: h.provisional, b: b }); }); });
       var betStrip = '';
-      if (betRows.length){
-        var bw = betRows.filter(function(h){ return h.bet_result.won; }).length;
+      if (allBets.length){
+        var bw = allBets.filter(function(x){ return x.b.won; }).length;
         betStrip = '<div style="margin-top:6px;line-height:0;display:flex;align-items:center;flex-wrap:wrap;">'
           + '<span style="font:700 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
           + 'line-height:11px;margin-right:6px;">THE PLAN\u2019S BETS</span>'
-          + betRows.slice(-45).map(function(h){
-              var b = h.lock && h.lock.bet;
-              return '<span title="' + mtaEsc(h.date) + ' \u2014 '
-                + (b ? (b.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(b.label) + ' at ' + cents(b.price) : 'bet')
-                + ' \u2014 ' + (h.bet_result.won ? 'WON' : 'LOST') + (h.provisional ? ' (provisional)' : '') + '"'
+          + allBets.slice(-45).map(function(x){
+              var b = x.b;
+              return '<span title="' + mtaEsc(x.date) + ' \u2014 '
+                + (b.label ? (b.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(b.label) + ' at ' + cents(b.price) : 'bet')
+                + ' \u2014 ' + (b.won ? 'WON' : 'LOST') + (x.provisional ? ' (provisional)' : '') + '"'
                 + ' style="display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 2px 2px 0;'
-                + 'background:' + (h.bet_result.won ? YESC : NOC) + ';"></span>';
+                + 'background:' + (b.won ? YESC : NOC) + ';"></span>';
             }).join('')
           + '<span style="font:700 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;'
-          + 'line-height:11px;margin-left:6px;">' + bw + '\u2013' + (betRows.length - bw)
+          + 'line-height:11px;margin-left:6px;">' + bw + '\u2013' + (allBets.length - bw)
           + ' \u00B7 THE TOP ROW IS THE FORECAST\u2019S PICK; A RIGHT PICK CAN STILL BE A LOSING BET WHEN THE MARKET AGREED FIRST</span>'
           + '</div>';
       }
@@ -54367,10 +54376,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         ? tile('FORECAST, LIVE', wlDash(lv), 'top range right, ' + lv.n
             + (lv.n === 1 ? ' day' : ' days'))
         : tile('FORECAST, LIVE', '\u2014', 'no results yet'));
-      if (betRows.length){
-        var bwin = betRows.filter(function(h){ return h.bet_result.won; }).length;
-        tiles.push(tile('THE PLAN\u2019S BETS', bwin + '\u2013' + (betRows.length - bwin),
-          'won\u2013lost, ' + betRows.length + (betRows.length === 1 ? ' bet' : ' bets')));
+      if (allBets.length){
+        var bwin = allBets.filter(function(x){ return x.b.won; }).length;
+        tiles.push(tile('THE PLAN\u2019S BETS', bwin + '\u2013' + (allBets.length - bwin),
+          'won\u2013lost, ' + allBets.length + (allBets.length === 1 ? ' bet' : ' bets')));
       }
       if (bt.n) tiles.push(tile('PAST DAYS', wlDash(bt), pctOf(bt) + ' of ' + bt.n));
       if (bt.interior_n){
@@ -54656,7 +54665,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
          MAX_DISAGREE: past half the board, our Brier against the market's is
          0.56 to 0.11. That far out we are not finding an edge, we are broken. */
-      var KMIN_PRICE = 0.10, KMAX_DISAGREE = 0.50;
+      var KMIN_PRICE = 0.10, KMAX_DISAGREE = 0.50, KMIN_EDGE = 0.04;   /* mirrors MIN_EDGE in the bake */
       var kTradable = function(r, dir, px, q){
         if (px == null || px < KMIN_PRICE || px >= 1) return false;
         var mp = r.market;
@@ -54699,7 +54708,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var px = o[1], q = o[2];
             if (!kTradable(r, o[0], px, q)) return;
             var ev = q - px - feeOf(px);
-            if (ev <= 0.005) return;              // below a cent is noise
+            if (ev < KMIN_EDGE) return;           // under four cents is not a bet
             var k = stakeOf(q, px);
             if (!k) return;
             book.push({ r: r, dir: o[0], ask: px, q: q, ev: ev,
@@ -55084,7 +55093,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var tmax = tv ? breakeven(tq) : null;
         var line = kvLine;
         var steps = '';
-        if (tv && tv.ev > 0){
+        if (tv && tv.ev >= KMIN_EDGE){
           var sideC = (tv.dir === 'against') ? NOC : YESC;
           /* THE CAVEAT GOES ABOVE THE BET, not seven rows under it. "This is
              close to a coin flip between two ranges" is not a footnote to a
@@ -55382,7 +55391,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
       var play = '';
       if (vbest){
-        var pg = vbest.ev > 0;
+        var pg = vbest.ev >= KMIN_EDGE;
         var pq = (vbest.dir === 'against') ? 1 - (vbest.r.ours || 0) : (vbest.r.ours || 0);
         var pmax = pg ? breakeven(pq) : null;
         var sideC = (vbest.dir === 'against') ? NOC : YESC;

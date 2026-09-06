@@ -1725,6 +1725,11 @@ MAX_DISAGREE = 0.50
 # The floor is a dime, not a quarter, deliberately: 10-25c is the single best
 # band in the record at +0.67 per $1, and a quarter would throw it away.
 MIN_PRICE = 0.10
+# NO BET UNDER FOUR CENTS OF EDGE. The plan used to list anything above half
+# a cent after the fee, so a 2c headline and a 1c "also" sat in the plan box
+# looking like instructions. A cent is the tick; two cents is inside the
+# noise of a quote; four is the floor below which nothing is worth typing.
+MIN_EDGE = 0.04
 
 
 def _wild(q, market_p):
@@ -1751,6 +1756,8 @@ def best_bet(rows, ps):
             if _wild(q, mp):
                 continue
             ev = q - price - fee_of(price)
+            if ev < MIN_EDGE:
+                continue
             if best is None or ev > best['ev']:
                 cost = price + fee_of(price)
                 best = {'dir': side, 'label': r['label'], 'price': round(price, 4),
@@ -1761,6 +1768,32 @@ def best_bet(rows, ps):
                                  if cost < 1 else 0.0,
                         'size': r.get('nsize') if side == 'against' else r.get('ysize')}
     return best
+
+
+def lock_book(rows, ps):
+    """Every bet the plan names at lock -- the headline and the ALSOs -- so the
+    record can grade the whole plan, not just its first line. 2026-09-05's plan
+    was NO 79-80 and YES 78-or-below; both lost; only the first was scored."""
+    out = []
+    for r, p in zip(rows, ps):
+        for side, price, q in (('for', r.get('ask'), p), ('against', r.get('nask'), 1.0 - p)):
+            if price is None or not (MIN_PRICE <= price < 1):
+                continue
+            mp = r.get('market')
+            if mp is not None and side == 'against':
+                mp = 1.0 - mp
+            if _wild(q, mp):
+                continue
+            ev = q - price - fee_of(price)
+            cost = price + fee_of(price)
+            if ev < MIN_EDGE or cost >= 1:
+                continue
+            out.append({'dir': side, 'label': r['label'], 'price': round(price, 4),
+                        'q': round(q, 4), 'ev': round(ev, 4), 'fee': round(fee_of(price), 4),
+                        'kelly': round(max(0.0, (q_sized(q, getattr(_TL, 'cfg', None)) - cost)
+                                           / (1 - cost)) / KELLY_DIV, 4)})
+    out.sort(key=lambda b: -b['ev'])
+    return out
 
 
 def book_value(rows, ps, bankroll=None):
@@ -1788,7 +1821,7 @@ def book_value(rows, ps, bankroll=None):
             if _wild(q, mp):
                 continue
             e = q - price - fee_of(price)
-            if e <= 0.005:
+            if e < MIN_EDGE:
                 continue
             cost = price + fee_of(price)
             if cost >= 1:
@@ -2739,6 +2772,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # at this moment. Only counted later if those prices were live -- see
             # priced_on_time().
             'bet': best_bet(rows, ps),
+            'book': lock_book(rows, ps),
         }
 
     # INTRADAY PRICE TRAIL.  Kalshi's candlestick endpoint 404s, so there is no
@@ -2899,6 +2933,13 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         g = grade_bet(h['lock'].get('bet'), truth)
         if g:
             h['bet_result'] = g
+        if h['lock'].get('book'):
+            h['book_results'] = []
+            for b in h['lock']['book']:
+                gb = grade_bet(b, truth)
+                if gb:
+                    h['book_results'].append(dict(gb, dir=b['dir'], label=b['label'],
+                                                  price=b['price'], ev=b['ev']))
             print('  bet %s %s at %.0fc -> %s, %+.2f on $%d'
                   % (h['lock']['bet']['dir'], h['lock']['bet']['label'],
                      100 * h['lock']['bet']['price'],
