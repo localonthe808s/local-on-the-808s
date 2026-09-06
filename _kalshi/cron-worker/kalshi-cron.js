@@ -618,6 +618,27 @@ async function alertTick(env) {
   if (held.some((h) => OWN5[h.am.series])) {
     try { sens = await readSensors(env, 720); } catch (e) { out.push('sensors err'); }
   }
+  // THE HOURLY REPORT, THE MINUTE IT PRINTS. The market prices the hourly
+  // METAR and little else (minute anatomy of 2026-09-06: 0 -> 94c on 8,500
+  // contracts three minutes after the 3:51 PM report read 75). The report is
+  // public about a minute after the observation; this tick reads it every
+  // minute and pushes the reading against the held rung before the move.
+  const rep = {};
+  const icaos = [...new Set(held.map((h) => h.am.icao))];
+  if (icaos.length) {
+    try {
+      const r = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icaos.join(',')}&format=json&hours=2`,
+        { headers: { 'User-Agent': 'bluishvoid-alerts' } });
+      if (r.ok) {
+        for (const m of await r.json()) {
+          if (!m || m.temp == null || !m.icaoId) continue;
+          const cur = rep[m.icaoId];
+          if (!cur || m.reportTime > cur.at) rep[m.icaoId] = { at: m.reportTime, f: Math.round((m.temp * 9 / 5 + 32) * 10) / 10, raw: (m.rawOb || '').slice(0, 5) };
+        }
+      }
+    } catch (e) { out.push('metar err'); }
+  }
+  state.metar = state.metar || {};
   state.own5 = state.own5 || {};
   state.mkt = state.mkt || {};
   state.max7by = state.max7by || {};
@@ -649,6 +670,20 @@ async function alertTick(env) {
       } else if (anchor == null) {
         state.mkt[h.ticker] = mid;
       }
+    }
+    // 1a. a new hourly (or special) report from the settlement station
+    const rp = rep[h.am.icao];
+    if (rp && state.metar[h.am.icao] !== rp.at) {
+      const inNow = inRung(rp.f, b), above = b[1] != null && rp.f > b[1] + 0.5, below = b[0] != null && rp.f < b[0] - 0.5;
+      const bad = (side === 'YES') ? (above) : (inNow);
+      const local = new Date(rp.at).toLocaleTimeString('en-US', { timeZone: h.am.tz, hour: 'numeric', minute: '2-digit' });
+      await notify(env, state, `metar:${h.ticker}:${rp.at}`,
+        `${h.am.name} ${local} report: ${rp.f}° -- ${inNow ? 'inside' : above ? 'above' : 'below'} ${label}`,
+        `The ${rp.raw.trim() === 'SPECI' ? 'special' : 'hourly'} report from ${h.am.icao} reads ${rp.f}°. ` +
+        `You hold ${Math.abs(h.n)} ${side} on ${label}${bad ? ' -- this reading is against you' : ''}. ` +
+        `The market prices this report within about two minutes; a reading between reports is invisible until the climate report.`,
+        bad ? 'urgent' : 'default');
+      out.push(`metar ${h.am.icao} ${rp.f}`);
     }
     // 1b. the settlement sensor itself crossed, or is about to cross, an edge
     const ownSt = OWN5[h.am.series], own = ownSt && sens[ownSt];
@@ -694,6 +729,7 @@ async function alertTick(env) {
     }
   }
   for (const k of Object.keys(max7by)) if (max7by[k] != null) state.max7by[k] = max7by[k];
+  for (const k of Object.keys(rep)) state.metar[k] = rep[k].at;
   // KV allows 1,000 writes a day on this plan; a minute cadence is 1,020 ticks.
   // The state only changes when something happened, so only then is it written.
   if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));

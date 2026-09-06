@@ -947,6 +947,27 @@ def own5_row(cfg, day):
     return a if isinstance(a.get('max7'), (int, float)) else None
 
 
+def apt_max(cfg, day):
+    """The highest 'since 7 AM' reading across the market's 5-minute stations
+    that are NOT the settlement sensor (New York's three airports)."""
+    if not _LEAD:
+        try:
+            _LEAD.append(get_json(LEAD_URL, timeout=20))
+        except Exception as e:
+            print('apt: worker summary unavailable (%s)' % e)
+            _LEAD.append(None)
+    d = _LEAD[0] or {}
+    row = (d.get('days') or {}).get('%s|%s' % (cfg['key'], day.isoformat())) or {}
+    best = None
+    for st, a in (((row.get('apt5') or {}).get('s') or {}).items()):
+        if st == OWN5.get(cfg['key']):
+            continue
+        v = (a or {}).get('max7')
+        if isinstance(v, (int, float)) and (best is None or v > best):
+            best = float(v)
+    return best
+
+
 def own5_max(cfg, day):
     st = OWN5.get(cfg['key'])
     if not st:
@@ -2672,6 +2693,18 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # the hourly report by up to 55 minutes
     if _own5 is not None:
         live = _own5 if live is None else max(live, _own5)
+    # TWC'S RUNNING MAXIMUM, CORROBORATED. Alone it is a warning (Chicago read
+    # 86 against a settled 83 on 2026-09-05). But on 2026-09-06 it printed 75
+    # for Central Park at 3:05 PM with LaGuardia's 5-minute feed already at
+    # 75.2 since 2:30, and the 3:51 report read 75: two independent sources
+    # agreeing is a different thing from one blended field. When an airport's
+    # own maximum has reached TWC's figure, the figure goes into the floor.
+    _twcmax = (_twc or {}).get('max') if isinstance(_twc, dict) else None
+    _aptmax = apt_max(cfg, today) if OWN5.get(cfg['key']) is None else None
+    _twc_corr = (_twcmax is not None and _aptmax is not None and _aptmax >= _twcmax - 1e-9)
+    if _twc_corr:
+        live = _twcmax if live is None else max(live, _twcmax)
+        print('%s TWC running max %.0f corroborated by an airport at %.1f: counted as a floor' % (cfg['key'], _twcmax, _aptmax))
     cands_fl = [x for x in (est, live) if x is not None]
     obs_far = max(cands_fl) if cands_fl else None
     obs_hr = max(obh.get(tkey) or {0: 0}) if obh.get(tkey) else None
@@ -3116,11 +3149,18 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             h['bet_result'] = g
         if h['lock'].get('book'):
             h['book_results'] = []
+            _num = _den = 0.0
             for b in h['lock']['book']:
                 gb = grade_bet(b, truth)
                 if gb:
                     h['book_results'].append(dict(gb, dir=b['dir'], label=b['label'],
                                                   price=b['price'], ev=b['ev']))
+                    # what a dollar on this line, held to settlement, returned
+                    w = float(b.get('kelly') or 0) or 1.0
+                    _num += w * (((1.0 - b['price']) / b['price']) if gb.get('won') else -1.0)
+                    _den += w
+            if _den:
+                h['plan_ret'] = round(_num / _den, 3)
             print('  bet %s %s at %.0fc -> %s, %+.2f on $%d'
                   % (h['lock']['bet']['dir'], h['lock']['bet']['label'],
                      100 * h['lock']['bet']['price'],
@@ -3301,6 +3341,29 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         }
         print('real trades: %d scored, %+.2f on $%.2f staked (%d still open)'
               % (len(tr_done), pl, staked, len(tr_open)))
+    # DISCIPLINE: the noon plan held to settlement against what was actually
+    # done. Both weekend losses (2026-09-05/06) came from acting against the
+    # sheet's number, not from the number; this makes that a daily figure.
+    try:
+        _fills_by_day = {}
+        for t in (tr_done if (tr_done or tr_open) else []):
+            f = _fills_by_day.setdefault(t['date'], {'pl': 0.0, 'staked': 0.0})
+            f['pl'] += t['pl']; f['staked'] += t['contracts'] * t['cost']
+        _plan_days = sorted(k for k, h in hist.items() if h.get('plan_ret') is not None)
+        if _plan_days or _fills_by_day:
+            _by = []
+            for k in sorted(set(_plan_days) | set(_fills_by_day))[-10:]:
+                _by.append({'date': k, 'plan_ret': hist.get(k, {}).get('plan_ret'),
+                            'fills_pl': round(_fills_by_day.get(k, {}).get('pl', 0.0), 2) if k in _fills_by_day else None,
+                            'fills_staked': round(_fills_by_day.get(k, {}).get('staked', 0.0), 2) if k in _fills_by_day else None})
+            record['discipline'] = {
+                'days': len(_plan_days),
+                'plan_ret': round(sum(hist[k]['plan_ret'] for k in _plan_days) / len(_plan_days), 3) if _plan_days else None,
+                'plan_wins': sum(1 for k in _plan_days if hist[k]['plan_ret'] > 0),
+                'by_day': _by,
+            }
+    except Exception as e:
+        print('discipline: skipped (%s)' % e)
     # These were hardcoded from a refit and went stale the moment the model
     # improved: the file advertised 40/68 and MAE 1.44 long after the fresh-run
     # switch had taken it to 48/66 and 1.04, understating itself by 14 points.
@@ -3395,6 +3458,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # New York +2.0 on the afternoon that made the case for it.
             'six_max': _six, 'six_window': SIX_WINDOW.get(cfg['key']),
             'own5_max': _own5, 'own5_station': OWN5.get(cfg['key']),
+            'apt_max': _aptmax, 'twc_corroborated': _twc_corr,
             'model_resid': model_resid,
             # the afternoon read: how much of the market's number to fold into
             # the sell/hold verdict at this hour (1 = ours alone)

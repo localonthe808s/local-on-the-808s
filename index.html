@@ -54897,7 +54897,30 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + (mn.roi == null ? '' : ' \u00B7 ' + (mn.roi > 0 ? '+' : '') + mn.roi + '% on money risked')
             : '<span style="font-weight:600;">not started \u2014 a hit rate is not a return, and no '
               + 'settled day has a recoverable entry price. Scoring begins with the first live bet.</span>')
-        + '</div>';
+        + '</div>'
+        /* DISCIPLINE: the noon plan held to settlement, per $1, beside the real
+           fills. Both weekend losses came from acting against the sheet's
+           number; this keeps that a daily figure (user, 2026-09-06). */
+        + (function(){
+            var D = R.discipline;
+            if (!D || !(D.days || (D.by_day || []).length)) return '';
+            var c = (D.plan_ret == null) ? '#45b491' : (D.plan_ret > 0 ? YESC : NOC);
+            var last = (D.by_day || []).slice(-3).map(function(d){
+              return mtaEsc(String(d.date).slice(5).replace('-', '/')) + ' plan '
+                + (d.plan_ret == null ? '\u2014' : (d.plan_ret >= 0 ? '+' : '\u2212') + '$' + Math.abs(d.plan_ret).toFixed(2))
+                + (d.fills_pl != null ? ' \u00B7 fills ' + (d.fills_pl >= 0 ? '+' : '\u2212') + '$' + Math.abs(d.fills_pl).toFixed(2) : '');
+            }).join(' \u00B7 ');
+            return '<div style="font:700 9px system-ui,sans-serif;letter-spacing:.02em;margin-top:4px;color:' + c + ';">'
+              + 'DISCIPLINE '
+              + (D.plan_ret != null
+                  ? '<b>' + (D.plan_ret >= 0 ? '+' : '\u2212') + '$' + Math.abs(D.plan_ret).toFixed(2) + ' per $1</b> is what the noon plan returned held to settlement, '
+                    + D.plan_wins + '/' + D.days + ' days'
+                  : 'no graded plan yet')
+              + (mn.n ? ' \u00B7 your fills: <b>' + (mn.pl >= 0 ? '+' : '\u2212') + '$' + Math.abs(mn.pl).toFixed(2) + '</b> on $' + (mn.staked || 0).toFixed(2) : '')
+              + '</div>'
+              + (last ? '<div style="font:600 8px system-ui,sans-serif;color:#45b491;margin-top:2px;">' + last
+                + ' \u2014 the plan is the noon book at its printed sizes; the fills are what was actually done.</div>' : '');
+          })();
       /* THE FORWARD STUDY, PRINTED. TWC's own forecast and the NWS's are logged
          at the first morning bake and scored against the settlement by the
          bake itself. This line is how the answer arrives without anyone
@@ -56685,6 +56708,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + (T.twc_now != null ? D1(T.twc_now) + '\u00B0 now' : '')
               + (T.twc_max != null ? (T.twc_now != null ? ' \u00B7 ' : '') + 'high since 7 AM <b>' + D1(T.twc_max) + '\u00B0</b>' : '')
               + (T.twc_gap != null ? ' <span style="color:#9fd9c4;">\u00B7 station ' + (T.twc_gap > 0 ? '\u2212' : '+') + D1(Math.abs(T.twc_gap)) + '\u00B0</span>' : '')
+              + (T.twc_corroborated ? ' <b style="color:#2fbfa8;">\u00B7 corroborated by an airport at ' + D1(T.apt_max) + '\u00B0 \u2014 counted as a floor</b>'
+                 : (T.apt_max != null && T.twc_max != null ? ' <span style="color:#f2833f;">\u00B7 no airport has reached it (best ' + D1(T.apt_max) + '\u00B0) \u2014 a warning only</span>' : ''))
               + ' <span style="color:#45b491;">as of ' + mtaEsc(stamp12(K.updated).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')) + '</span>'
               + '</div>'
               + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
