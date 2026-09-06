@@ -1,0 +1,60 @@
+name: Kalshi New York fast lane
+
+# CENTRAL PARK ALONE, EVERY FIVE MINUTES. The 20-city bake lands about five
+# minutes after each 15-minute slot, so the New York sheet was 0-15 minutes
+# behind the newest report. This lane bakes one market (~40 s of work) on the
+# five-minute marks the full job does not use, and merges its digest into the
+# same file. The Cloudflare worker (_kalshi/cron-worker/) dispatches it.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kalshi-nyc-fast
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install signing library
+        run: pip install --quiet cryptography
+
+      - name: Bake New York only
+        env:
+          KALSHI_API_KEY_ID: ${{ secrets.KALSHI_API_KEY_ID }}
+          KALSHI_PRIVATE_KEY: ${{ secrets.KALSHI_PRIVATE_KEY }}
+        run: python3 -u _kalshi/kalshi_daily.py --only ny_high
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- kalshi_ny.json; then
+            echo "no change"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kalshi_ny.json
+          git commit -m "Kalshi New York: fast-lane refresh"
+          tmp="$(mktemp -d)"
+          cp kalshi_ny.json "$tmp"/
+          for i in 1 2 3; do
+            git push && exit 0
+            echo "push rejected, replaying onto origin/main (attempt $i)"
+            git fetch origin main
+            git reset --hard origin/main
+            git show origin/main:kalshi_ny.json > "$tmp"/origin_ny.json
+            python3 _kalshi/merge_head.py "$tmp"/origin_ny.json "$tmp"/kalshi_ny.json kalshi_ny.json
+            if git diff --quiet -- kalshi_ny.json; then
+              echo "origin already has this data"; exit 0
+            fi
+            git add kalshi_ny.json
+            git commit -m "Kalshi New York: fast-lane refresh"
+          done
+          echo "could not push after 3 attempts"; exit 1

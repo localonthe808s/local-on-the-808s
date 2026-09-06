@@ -111,6 +111,10 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             cp "$tmp"/kalshi_*.json .
+            # the head file is written by two lanes now; merge it per market
+            # rather than laying ours over whatever the other lane just pushed
+            git show origin/main:kalshi_ny.json > "$tmp"/origin_ny.json 2>/dev/null \
+              && python3 _kalshi/merge_head.py "$tmp"/origin_ny.json "$tmp"/kalshi_ny.json kalshi_ny.json || true
             if git diff --quiet -- kalshi_*.json; then
               echo "origin already has this data"; exit 0
             fi

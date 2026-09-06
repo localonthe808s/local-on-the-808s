@@ -53482,8 +53482,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 var st0 = Date.parse(j.started_utc || '');
                 if (!isNaN(st0)){
                   var mins = new Date(st0).getUTCMinutes();
-                  var slotMin = [50, 35, 20, 5].filter(function(m){ return m <= mins; })[0];
-                  var slot = (slotMin == null) ? st0 - ((mins + 10) * 60000) : st0 - ((mins - slotMin) * 60000) - new Date(st0).getUTCSeconds() * 1000;
+                  var slotMin = mins - (mins % 5);
+                  var slot = st0 - ((mins - slotMin) * 60000) - new Date(st0).getUTCSeconds() * 1000;
                   var lat = Date.now() - slot;
                   if (lat > 30000 && lat < 30 * 60000){
                     var arr = JSON.parse(localStorage.getItem('bv_kalshi_lat') || '[]');
@@ -53887,7 +53887,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          Hand-maintained against that cron, like the worker's own status page:
          Cloudflare does not publish a worker's triggers to anything that could
          read them. */
-      var CWK_SLOTS = [5, 20, 35, 50];
+      var CWK_SLOTS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];   /* New York bakes every five minutes; all cities every fifteen */
       /* THE SLOT IS WHEN THE JOB STARTS, NOT WHEN THE SHEET CHANGES. A run
          takes minutes, so a countdown to the slot hit zero and then the
          sheet sat on "landing..." for most of a quarter hour. The bake stamps
@@ -55804,7 +55804,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            the sheet's own clock, not the weather's. */
         + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
         + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">'
-        + 'NEW BAKE EVERY 15 MINUTES | 8AM\u20131AM | EACH TAKES ~' + Math.round(cwkLatency / 60000) + ' MIN TO LAND</div>';
+        + 'NEW YORK BAKES EVERY 5 MINUTES \u00B7 ALL CITIES EVERY 15 | 8AM\u20131AM | EACH LANDS ~' + Math.round(cwkLatency / 60000) + ' MIN AFTER ITS SLOT</div>';
 
       /* IN THE INTRO, because it changes how everything below it should be
          read. A recommendation means one thing on an empty account and quite

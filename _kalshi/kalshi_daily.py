@@ -3302,6 +3302,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     bb = best_bet(rows, ps) if tradable else None
     take = book_value(rows, ps) if tradable else {'ev': 0.0, 'stake': 0.0, 'n': 0}
     return {'key': cfg['key'], 'city': cfg.get('city', cfg['key']),
+            'baked': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'tzlabel': cfg.get('tzlabel'), 'link': t.get('link'),
             'date': t.get('date'), 'state': t.get('state'),
             'pred': t.get('pred'), 'sd': t.get('sd'),
@@ -3313,6 +3314,16 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'pool': round(sum((r.get('oi') or 0) for r in rows), 0),
             'vol': round(sum((r.get('vol') or 0) for r in rows), 0),
             'bet': bb, 'take': take, 'file': cfg['out']}
+
+
+def only_markets():
+    """`--only ny_high[,chi_high]` runs a subset: the New York fast lane bakes
+    Central Park alone every five minutes between the full 15-minute runs.
+    Its digest is merged into the head file's list; the others are kept."""
+    if '--only' not in sys.argv:
+        return None
+    keys = sys.argv[sys.argv.index('--only') + 1].split(',')
+    return [c for c in MARKETS if c['key'] in keys]
 
 
 def main():
@@ -3331,6 +3342,18 @@ def main():
         print('bankroll: $%.2f (no balance available, using the default)' % BANKROLL)
     bad = 0
     digests = []
+    RUN = only_markets() or MARKETS
+    prev_markets = []
+    if RUN is not MARKETS:
+        print('fast lane: %s only' % ', '.join(c['key'] for c in RUN))
+        # run_market rewrites the head file WITHOUT its markets list (main folds
+        # that in afterwards), so the other cities' digests have to be read
+        # before anything runs, or the fast lane folds in New York alone
+        try:
+            with open(os.path.join(HERE, '..', MARKETS[0]['out'])) as f:
+                prev_markets = json.load(f).get('markets') or []
+        except Exception:
+            prev_markets = []
 
     # IN PARALLEL, since the roster went from seven markets to twenty. The work
     # is all waiting on sockets, and Open-Meteo from a GitHub runner stalls for
@@ -3351,7 +3374,7 @@ def main():
 
     got = {}
     with cf.ThreadPoolExecutor(max_workers=WORKERS) as ex:
-        futs = {ex.submit(one, cfg): cfg['key'] for cfg in MARKETS}
+        futs = {ex.submit(one, cfg): cfg['key'] for cfg in RUN}
         for f in cf.as_completed(futs):
             key = futs[f]
             d, err, lines, secs = f.result()
@@ -3360,7 +3383,7 @@ def main():
                 _print('%s FAILED: %s: %s' % (key, type(err).__name__, err))
             _print('%s done in %.0fs' % (key, secs), flush=True)
             got[key] = (d, err)
-    for cfg in MARKETS:
+    for cfg in RUN:
         d, err = got.get(cfg['key'], (None, RuntimeError('never ran')))
         if err is not None:
             bad += 1
@@ -3414,6 +3437,12 @@ def main():
         try:
             with open(head) as f:
                 doc = json.load(f)
+            if RUN is not MARKETS:
+                # a subset ran: keep every other market's digest as it stood
+                had = {m.get('key'): m for m in prev_markets}
+                for d in digests:
+                    had[d['key']] = d
+                digests = [had[c['key']] for c in MARKETS if c['key'] in had]
             doc['markets'] = digests
             if corr:
                 doc['correlation'] = corr
@@ -3450,7 +3479,7 @@ def main():
             print('folded %d market digests into %s' % (len(digests), MARKETS[0]['out']))
         except Exception as e:
             print('digest fold failed: %s' % e)
-    return 1 if bad == len(MARKETS) else 0
+    return 1 if bad == len(RUN) else 0
 
 
 if __name__ == '__main__':

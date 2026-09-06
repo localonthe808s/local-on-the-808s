@@ -28,14 +28,15 @@
 const OWNER = 'localonthe808s';
 const REPO = 'bluish-void';
 const WORKFLOW = 'kalshi-nyc.yml';
+const WORKFLOW_FAST = 'kalshi-nyc-fast.yml';   // Central Park alone, on the other five-minute marks
 const REF = 'main';
 
-async function dispatch(env) {
+async function dispatch(env, workflow) {
   if (!env.GH_TOKEN) {
     return { ok: false, status: 0, detail: 'GH_TOKEN secret is not set' };
   }
   const url = `https://api.github.com/repos/${OWNER}/${REPO}` +
-              `/actions/workflows/${WORKFLOW}/dispatches`;
+              `/actions/workflows/${workflow || WORKFLOW}/dispatches`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -659,11 +660,15 @@ export default {
         }
       })());
     }
-    if (![5, 20, 35, 50].includes(minute)) return;
+    // TWO LANES. The full 20-city bake on :05/:20/:35/:50; Central Park alone
+    // on every other five-minute mark, so the New York sheet is never more
+    // than a few minutes behind the newest report. Both merge into one file.
+    if (minute % 5 !== 0) return;
+    const wf = [5, 20, 35, 50].includes(minute) ? WORKFLOW : WORKFLOW_FAST;
     ctx.waitUntil((async () => {
       let r;
       try {
-        r = await dispatch(env);
+        r = await dispatch(env, wf);
       } catch (e) {
         r = { ok: false, status: 0, detail: String(e) };
       }
@@ -672,12 +677,12 @@ export default {
       if (!r.ok && r.status >= 500) {
         await new Promise((s) => setTimeout(s, 4000));
         try {
-          r = await dispatch(env);
+          r = await dispatch(env, wf);
         } catch (e) {
           r = { ok: false, status: 0, detail: String(e) };
         }
       }
-      console.log(`[kalshi-cron] ${event.cron} -> ${r.ok ? 'dispatched' : 'FAILED'} ` +
+      console.log(`[kalshi-cron] ${event.cron} ${wf} -> ${r.ok ? 'dispatched' : 'FAILED'} ` +
                   `(http ${r.status}) ${r.detail}`);
     })());
   },
@@ -730,6 +735,7 @@ export default {
       // this has to be kept in step with [triggers] in wrangler.toml by hand.
       schedule_utc: ['* 12-23 * * *', '* 0-4 * * *'],
       dispatch_minutes: [5, 20, 35, 50],
+      fast_lane_minutes: [0, 10, 15, 25, 30, 40, 45, 55],
       obs_log: env.OBS ? 'KV bound' : 'NO KV BINDING - not logging',
       alerts: env.NTFY_TOPIC ? 'ntfy topic set; New York positions watched every 5 min' : 'off (no NTFY_TOPIC)',
       now_utc: new Date().toISOString(),
