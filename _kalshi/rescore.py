@@ -59,9 +59,10 @@ def replay(cfg):
 def line(tag, t):
     if not t or not t.get('n'):
         return '  %-9s --' % tag
-    return ('  %-9s %3d days  %3d hit  %5.1f%%   mae %s'
+    return ('  %-9s %3d days  %3d hit  %5.1f%%   mae %s   brier %s'
             % (tag, t['n'], t['hits'], 100.0 * t['hits'] / t['n'],
-               ('%.2f' % t['mae']) if t.get('mae') is not None else ' -  '))
+               ('%.2f' % t['mae']) if t.get('mae') is not None else ' -  ',
+               ('%.3f' % t['brier']) if t.get('brier') is not None else '  -  '))
 
 
 def compare(cfg):
@@ -80,11 +81,19 @@ def compare(cfg):
     if not both:
         print('  no overlapping scored days'); return None
 
+    def brier(h):
+        lad = ((h.get('lock') or {}).get('ladder')) or []
+        ab = h.get('actual_bracket')
+        if not lad or ab is None:
+            return None
+        return sum((float(r.get('ours') or 0) - (1.0 if r.get('label') == ab else 0.0)) ** 2 for r in lad)
     def tal(src, keys):
         rows = [src[k] for k in keys]
         e = [h['err'] for h in rows if h.get('err') is not None]
+        b = [x for x in (brier(h) for h in rows) if x is not None]
         return {'n': len(rows), 'hits': sum(1 for h in rows if h.get('hit')),
-                'mae': (sum(abs(x) for x in e) / len(e)) if e else None}
+                'mae': (sum(abs(x) for x in e) / len(e)) if e else None,
+                'brier': (sum(b) / len(b)) if b else None}
 
     print('  on the %d days both versions scored:' % len(both))
     print(line('STORED', tal(fh, both)))

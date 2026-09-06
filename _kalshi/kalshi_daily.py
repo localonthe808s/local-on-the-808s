@@ -85,9 +85,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Chicago settles on CLIMDW, which is MIDWAY, not O'Hare -- the two routinely
 # differ by a degree and O'Hare would have been wrong all season.
 def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None,
-         skill=True, twc_geocode=False, bias_hl=None):
+         skill=True, twc_geocode=False, bias_hl=None, sd_mult=1.0):
     return {'key': key, 'series': series, 'label': city + ' daily high',
             'wfo': wfo, 'skill': skill, 'twc_geocode': twc_geocode, 'bias_hl': bias_hl,
+            'sd_mult': sd_mult,
             'station': station, 'network': net, 'lat': lat, 'lon': lon,
             'field': 'max_temp_f', 'tz': tz, 'tzlabel': tzl,
             'city': city, 'cli': cli,
@@ -110,8 +111,12 @@ MARKETS = [
          'America/Chicago',     'CT', 'CLIMDW', 'highest-temperature-in-chicago', 'LOT'),
     _mkt('mia_high', 'KXHIGHMIA',  'Miami',        'MIA', 'FL_ASOS', 25.791,  -80.316,
          'America/New_York',    'ET', 'CLIMIA', 'highest-temperature-in-miami', 'MFL'),
+    # AUSTIN KEEPS THE EQUAL-WEIGHT MEAN, like New York: on 67 replayed days
+    # the skill weights scored Brier .495 / MAE .79 against .470 / .70 with
+    # every model weighted 1 (2026-09-06).
     _mkt('aus_high', 'KXHIGHAUS',  'Austin',       'AUS', 'TX_ASOS', 30.183,  -97.680,
-         'America/Chicago',     'CT', 'CLIAUS', 'highest-temperature-in-austin', 'EWX'),
+         'America/Chicago',     'CT', 'CLIAUS', 'highest-temperature-in-austin', 'EWX',
+         skill=False),
     _mkt('den_high', 'KXHIGHDEN',  'Denver',       'DEN', 'CO_ASOS', 39.847, -104.656,
          'America/Denver',      'MT', 'CLIDEN', 'highest-temperature-in-denver', 'BOU'),
     _mkt('lax_high', 'KXHIGHLAX',  'Los Angeles',  'LAX', 'CA_ASOS', 33.938, -118.389,
@@ -132,8 +137,15 @@ MARKETS = [
          'America/Los_Angeles', 'PT', 'CLISFO', 'san-francisco-high-temperature-daily', 'MTR'),
     _mkt('sea_high', 'KXHIGHTSEA',  'Seattle',       'SEA', 'WA_ASOS', 47.4447, -122.3144,
          'America/Los_Angeles', 'PT', 'CLISEA', 'seattle-maximum-temperature-daily', 'SEW'),
+    # LAS VEGAS IS UNDERCONFIDENT: on 66 replayed days the Brier score falls
+    # monotonically as the residual spread is tightened (x1.0 .333, x0.85
+    # .314, x0.7 .301) with the hit rate unchanged; the calibration bands said
+    # the same (a 55% call came true 65% of the time). 0.75, not the best
+    # tested, because the test is in-sample and a rain day punishes
+    # overconfidence (2026-09-06).
     _mkt('las_high', 'KXHIGHTLV',   'Las Vegas',     'LAS', 'NV_ASOS', 36.0719, -115.1634,
-         'America/Los_Angeles', 'PT', 'CLILAS', 'las-vegas-max-daily-temperature', 'VEF'),
+         'America/Los_Angeles', 'PT', 'CLILAS', 'las-vegas-max-daily-temperature', 'VEF',
+         sd_mult=0.75),
     _mkt('bos_high', 'KXHIGHTBOS',  'Boston',        'BOS', 'MA_ASOS', 42.3606,  -71.0097,
          'America/New_York',    'ET', 'CLIBOS', 'boston-maximum-daily-temperature', 'BOX'),
     _mkt('dfw_high', 'KXHIGHTDAL',  'Dallas',        'DFW', 'TX_ASOS', 32.8968,  -97.0380,
@@ -162,7 +174,7 @@ ACTIVE = ('ny_high', 'las_high', 'aus_high')
 MARKETS = [m for m in MARKETS if m['key'] in ACTIVE]
 
 WORKERS = 4                               # markets in flight at once (see main)
-BIAS_K  = 30                              # days in the rolling bias window (21 -> 30 on 2026-09-06: Brier .499 -> .491 with the skill weights, 20 cities)
+BIAS_K  = int(os.environ.get('BV_BIAS_K', '30') or 30)   # days in the rolling bias window (BV_BIAS_K for backlog tests) (21 -> 30 on 2026-09-06: Brier .499 -> .491 with the skill weights, 20 cities)
 BIAS_MIN = 7                              # need this many before trusting it
 LOCK_HOUR = 12                            # noon ET: morning obs in hand, peak ahead
 FINAL_HOUR = 18                           # the actionable call, still 6 h before close
@@ -194,6 +206,9 @@ TOMORROW_SD = 2.19
 SWING_DAMP = 0.05         # see point_forecast(): models overdo warm-ups
 RESID_M = 45              # days of recent residuals behind the spread estimate
 SD_FLOOR = 0.25
+# a multiplier on the residual spread, for calibration studies (BV_SD_MULT);
+# 1.0 in production until a backlog test says otherwise
+SD_MULT = float(os.environ.get('BV_SD_MULT', '1.0') or 1.0)
 # Fallback only, for the first runs before enough residuals accumulate. These
 # came from a 173-day fit; the live model prefers its own rolling estimate
 # because the spread is strongly seasonal (SD 3.8 in March, 2.1 in August), so
@@ -1440,8 +1455,8 @@ def spread(res, hour, binding=None):
             pool = same
     v = [r[1] for r in pool[-RESID_M:]]
     if len(v) < 20:
-        return SD_FALLBACK.get(hour, 3.06 if hour < 8 else 0.89), len(v)
-    return max(statistics.stdev(v), SD_FLOOR), len(v)
+        return SD_FALLBACK.get(hour, 3.06 if hour < 8 else 0.89) * SD_MULT, len(v)
+    return max(statistics.stdev(v) * SD_MULT, SD_FLOOR), len(v)
 
 
 # ---------------------------------------------------------- probability ----
@@ -2503,8 +2518,10 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # calculation -- the floor, the residuals, the backfill -- and threading it
     # through all of them would be a large refactor for no behavioural gain.
     # Markets run sequentially, so each sets its own before computing anything.
-    global HOURLY_PEAK_OFFSET, OFFSET_SD
+    global HOURLY_PEAK_OFFSET, OFFSET_SD, SD_MULT
     HOURLY_PEAK_OFFSET, OFFSET_SD = OFFSET_DEFAULT, OFFSET_SD_DEFAULT
+    # the market's own spread multiplier (an env override wins, for backlog tests)
+    SD_MULT = float(os.environ.get('BV_SD_MULT') or cfg.get('sd_mult', 1.0) or 1.0)
     off_n = 0
     _m = measure_offset(cfg, obh, daily, h0_of)
     if _m:
