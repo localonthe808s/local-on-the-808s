@@ -53222,6 +53222,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       p.innerHTML = '<div style="position:sticky;top:' + (narrow ? '-8px' : '-10px')
         + ';background:#0d1117;padding:' + (narrow ? '6px 0 8px' : '2px 0 8px')
         + ';margin:-2px 0 0;z-index:2;">'
+        + '<div style="position:relative;">'
         /* THE CITY TABS, at the very top: the same sheet for each market, like
            the view tabs on the other widgets (user, 2026-09-06). */
         + '<div style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 7px;">'
@@ -53249,11 +53250,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            says, how old it is, when the next lands, and the button that
            fetches it early -- one cluster, and it stays on screen because the
            header is sticky. It shrinks before the buttons do. */
-        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;text-align:right;">' + meta
-            /* LIVE POSITIONS sit under the clock, against the right wall, with
-               their text left-aligned (user, 2026-09-06) */
-            + (mid ? '<div style="display:inline-block;text-align:left;margin-top:6px;">' + mid + '</div>' : '')
-            + '</div>' : '')
+        + ((meta && !narrow) ? '<div style="margin-left:auto;min-width:0;overflow:hidden;text-align:right;">' + meta + '</div>' : '')
         /* REFRESH, then close. Both share the X's geometry so the pair reads as
            one control cluster rather than a button bolted on. Refresh sits
            first because it is the one you reach for repeatedly: this is a live
@@ -53263,9 +53260,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ((meta && !narrow) ? '' : 'margin-left:auto;') + cwkBtnCss + '">\u21BB</button>'
         + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + '">'
         + '&#10005;</button></div>'
+        /* LIVE POSITIONS under the clock, against the right wall (past the two
+           buttons), text left-aligned -- positioned absolutely so the title row
+           and its buttons stay exactly where they were (user, 2026-09-06) */
+        + ((mid && !narrow) ? '<div style="position:absolute;right:92px;top:50px;text-align:left;max-width:46%;">' + mid + '</div>' : '')
         + (sub ? '<div style="margin-top:4px;">' + sub + '</div>' : '')
         + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta + '</div>' : '')
-        + '</div>'
+        + '</div></div>'
         + html;
       [].slice.call(p.querySelectorAll('.cwk-city')).forEach(function(b){
         b.addEventListener('click', function(e){
