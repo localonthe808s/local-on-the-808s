@@ -53453,7 +53453,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        was opened, so a visit with ?kt= that never opened the panel stored
        nothing (2026-09-06). Now any page load with the parameter stores it. */
     try { cwkToken(); } catch (e){}
-    var cwkPosAt = 0;
+    var cwkPosAt = 0, cwkPosInflight = null;
     function cwkPositions(force, done){
       var tk = cwkToken();
       /* THE FEED KEEPS A STATUS the SYSTEM block can print. "My holdings aren't
@@ -53462,9 +53462,17 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          positions -- and the sheet showed the same nothing for all three. */
       if (!tk) { window._cwPotStatus = { state: 'no_token' }; if (done) done(); return; }
       var now = Date.now();
-      if (!force && now - cwkPosAt < 6e4) { if (done) done(); return; }
+      /* A THROTTLED CALLER WAITS FOR THE REQUEST IN FLIGHT. The boot fetch
+         and the first open of the castle ask within the same second; the
+         second asker used to get "done" at once with no positions yet, and
+         nothing redrew when they landed (2026-09-06). */
+      if (!force && now - cwkPosAt < 6e4) {
+        if (cwkPosInflight) cwkPosInflight.then(function(){ if (done) done(); });
+        else if (done) done();
+        return;
+      }
       cwkPosAt = now;
-      fetch(CWK_POS_URL + '?cb=' + now, { headers: { 'Authorization': 'Bearer ' + tk } })
+      cwkPosInflight = fetch(CWK_POS_URL + '?cb=' + now, { headers: { 'Authorization': 'Bearer ' + tk } })
         .then(function(r){
           if (r.status === 401){ window._cwPotStatus = { state: 'bad_token' }; return null; }
           if (!r.ok){ window._cwPotStatus = { state: 'error', why: 'HTTP ' + r.status }; return null; }
@@ -53477,9 +53485,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           } else if (j && j.error){
             window._cwPotStatus = { state: 'error', why: String(j.error).slice(0, 80) };
           }
-          if (done) done();
         })
-        .catch(function(e){ window._cwPotStatus = { state: 'error', why: String(e && e.message || e).slice(0, 80) }; if (done) done(); });
+        .catch(function(e){ window._cwPotStatus = { state: 'error', why: String(e && e.message || e).slice(0, 80) }; })
+        .then(function(){ cwkPosInflight = null; if (done) done(); });
     }
 
     var cwKalshiPullAt = 0;
@@ -54231,6 +54239,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          yes. So: what the bid pays after the closing fee, against what the
          position is worth at settlement by our number, and a verdict. The
          breakeven is the bid at which the two match. */
+      var moneyDiff = function(x){ return x >= 1 ? '$' + x.toFixed(2) : Math.round(100 * x) + '\u00A2'; };
       var sellHold = function(h){
         var r = h.r || {}, yes = (h.side === 'yes');
         var pWin = (r.ours == null) ? null : (yes ? r.ours : 1 - r.ours);
@@ -56515,8 +56524,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       + 'Sell now: <b>$' + sh.sell.toFixed(2) + '</b> at the ' + cents(sh.out) + ' bid, after the fee. '
                       + 'Hold: worth <b>$' + sh.hold.toFixed(2) + '</b> at settlement by our ' + pct(sh.pWin) + '. '
                       + (sh.verdict === 'SELL'
-                          ? 'The market pays <b style="color:#f2833f;">' + Math.round(100 * sh.diff) + '\u00A2 more</b> than we think it is worth; selling here is a sale at a premium, not a stop-loss.'
-                          : 'Holding is worth <b>' + Math.round(-100 * sh.diff) + '\u00A2 more</b>. Sell only if the bid reaches <b>' + cents(sh.be) + '</b>.')
+                          ? 'The market pays <b style="color:#f2833f;">' + moneyDiff(sh.diff) + ' more</b> than we think it is worth; selling here is a sale at a premium, not a stop-loss.'
+                          : 'Holding is worth <b>' + moneyDiff(-sh.diff) + ' more</b>. Sell only if the bid reaches <b>' + cents(sh.be) + '</b>.')
                       + (bail ? '<div style="margin-top:3px;"><b style="color:#f2833f;">BAIL IF</b> ' + bail
                           + ' before the climate report \u2014 on an airport\u2019s 5-minute feed, TWC\u2019s running maximum, or the 1:51 PM six-hour group. '
                           + 'The market reprices the minute that reading prints; get out at whatever bid is left.</div>' : '')
