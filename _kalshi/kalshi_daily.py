@@ -912,6 +912,41 @@ LEAD_URL = 'https://bluish-void-kalshi-cron.junkyjunkjunkjunkjunk.workers.dev/ob
 _LEAD = []
 
 
+# PEAK BEHIND US, measured (peak_stats.py, from the one-minute archive): per
+# city and local hour, how often the day's high had already happened, plain
+# and given the reading had fallen a degree off the running max. Plus the
+# mean gap between the true one-minute peak and the best 5-minute sample,
+# which is the allowance the settlement sensor's own feed still needs.
+_PEAK = []
+
+
+def peak_stats(cfg):
+    if not _PEAK:
+        try:
+            _PEAK.append(json.load(open(os.path.join(HERE, 'peak_stats.json'))))
+        except Exception:
+            _PEAK.append(None)
+    d = _PEAK[0] or {}
+    return (d.get('cities') or {}).get(cfg['key']) or {}
+
+
+def own5_row(cfg, day):
+    """{max7, last, at} from the worker's summary for the settlement sensor."""
+    st = OWN5.get(cfg['key'])
+    if not st:
+        return None
+    if not _LEAD:
+        try:
+            _LEAD.append(get_json(LEAD_URL, timeout=20))
+        except Exception as e:
+            print('own5: worker summary unavailable (%s)' % e)
+            _LEAD.append(None)
+    d = _LEAD[0] or {}
+    row = (d.get('days') or {}).get('%s|%s' % (cfg['key'], day.isoformat())) or {}
+    a = ((row.get('apt5') or {}).get('s') or {}).get(st) or {}
+    return a if isinstance(a.get('max7'), (int, float)) else None
+
+
 def own5_max(cfg, day):
     st = OWN5.get(cfg['key'])
     if not st:
@@ -2556,6 +2591,17 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     h0 = climate_day_start(cfg, today)
     rmax = running_max(obh, tkey, now.hour, h0)
     est = (rmax + HOURLY_PEAK_OFFSET) if rmax is not None else None
+    # THE SETTLEMENT SENSOR'S OWN 5-MINUTE MAXIMUM, plus the measured gap to the
+    # true one-minute peak (0.2-0.4 degF), is a better estimate of where the
+    # day already stands than the hourly report plus its 0.8 allowance. The
+    # hourly stream hides 1.1-1.3 degF on an average day; the 5-minute feed
+    # hides a third of that (one-minute archive, 2026-09-06).
+    _pk = peak_stats(cfg)
+    _gap5 = _pk.get('gap5_mean') if _pk.get('gap5_mean') is not None else 0.3
+    _gap5_sd = _pk.get('gap5_sd') if _pk.get('gap5_sd') is not None else 0.45
+    _est5 = (_own5 + _gap5) if _own5 is not None else None
+    if _est5 is not None and (est is None or _est5 > est):
+        est = _est5
     live = daily.get(tkey)
     # TWC IS SHOWN, NOT TRUSTED. It was briefly folded into this floor and that
     # was a mistake, caught by backtest before it could cost anything.
@@ -2696,6 +2742,33 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         sd = min(sd, max(EXACT_FLOOR_SD_MIN,
                          math.sqrt(max(sd * sd - OFFSET_SD * OFFSET_SD, 0.0)))
                      if exact_now else OFFSET_SD)
+        if _est5 is not None and _est5 >= (rmax + HOURLY_PEAK_OFFSET if rmax is not None else -99):
+            # the floor came from the 5-minute feed: what is hidden is the
+            # 5-minute gap, not the hourly one
+            sd = min(sd, max(EXACT_FLOOR_SD_MIN, _gap5_sd))
+    # PEAK BEHIND US: how likely the day's high has already happened at this
+    # hour, from the one-minute archive, conditioned on cooling when the
+    # latest reading sits a degree under the running max. Reported for the
+    # sheet; and when it is near-certain AND the 5-minute feed is in hand, the
+    # remaining spread is the 5-minute gap even if the runs still hope for more.
+    peak_done = None
+    _bh = (_pk.get('by_hour') or {}).get(str(now.hour))
+    if _bh:
+        _lastv = None
+        _hobs2 = {h: v for h, v in (obh.get(tkey) or {}).items() if h0 <= h <= now.hour and v is not None}
+        if _hobs2:
+            _lastv = _hobs2[max(_hobs2)]
+        _o5 = own5_row(cfg, today) if _own5 is not None else None
+        if _o5 and isinstance(_o5.get('last'), (int, float)):
+            _lastv = _o5['last']
+        _runmax = max(x for x in (rmax, _own5) if x is not None) if (rmax is not None or _own5 is not None) else None
+        cooling = (_lastv is not None and _runmax is not None and _lastv <= _runmax - 1.0)
+        pd = _bh.get('p_done_cooling') if (cooling and _bh.get('p_done_cooling') is not None and (_bh.get('n_cooling') or 0) >= 8) else _bh.get('p_done')
+        peak_done = {'p': pd, 'cooling': cooling, 'hour': now.hour, 'n': _pk.get('n_days'),
+                     'last': _lastv, 'run_max': _runmax}
+        if pd is not None and pd >= 0.85 and _est5 is not None and not binding_now:
+            sd = min(sd, max(EXACT_FLOOR_SD_MIN, _gap5_sd + 0.15))
+            print('%s peak behind us %.0f%% at %d:00 with the 5-minute feed in hand: spread %.2f' % (cfg['key'], 100 * pd, now.hour, sd))
     res_lock = residuals(fcm, bias_of, daily, obh, LOCK_HOUR, tkey, h0_of)
     sd_lock, _ = spread(res_lock, LOCK_HOUR, binding_now)
 
@@ -3352,6 +3425,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'now_at': ob_last[0][0][11:16] if ob_last else None,
             'fc_peak': round(fpeak, 2) if fpeak is not None else None,
             'peak_hour': peak_hour,
+            'peak_done': peak_done,
+            'own5_gap': _gap5,
             'ours': [round(p, 4) for p in ps],
             'pick': rows[best]['label'], 'p': round(ps[best], 4),
             'market_pick': rows[mbest]['label'], 'market_p': rows[mbest]['mid'],

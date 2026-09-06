@@ -56304,6 +56304,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (warm ? 'The lean above has not been corrected for it; the forecast is the one voice still above the readings.'
                     : 'The day is running ahead of the runs; the ranges above the lean deserve more weight than the sheet gives them.'));
         }
+        /* PEAK BEHIND US, measured from the one-minute archive per city and
+           hour, conditioned on cooling. Decisive in the afternoon: it is the
+           signal that a day is settled hours before the climate report. */
+        var PD = T.peak_done;
+        if (!settledNow && PD && PD.p != null && PD.p >= 0.5){
+          out.unshift('<b style="color:' + (PD.p >= 0.85 ? '#2fbfa8' : '#63dbb6') + ';">'
+            + (PD.p >= 0.85 ? 'The peak is behind us' : 'The peak is probably behind us') + '</b> \u2014 '
+            + Math.round(100 * PD.p) + '% of the last ' + (PD.n || 0) + ' days had set their high by ' + hr12(PD.hour)
+            + (PD.cooling ? ', and the readings are falling' : '') + '. '
+            + (T.own5_max != null
+                ? 'The settlement sensor\u2019s own 5-minute high is <b>' + D1(T.own5_max) + '\u00B0</b>; the true peak runs about '
+                  + D1(T.own5_gap != null ? T.own5_gap : 0.3) + '\u00B0 above it, so the day is known to within a degree now.'
+                : 'The hourly stream hides about a degree; the six-hour group and the climate report show the rest.'));
+        }
         /* THE CLOCK VERDICT, FIRST. "This is the window" / "past the window" is
            measured (price_study, every settled day) and it decides whether
            anything below is worth acting on; it led the hour chart, a screen
