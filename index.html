@@ -54354,7 +54354,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 /* OVER THE HOUR CHART: x follows the chart's columns (h0..h0+n-1,
                    2px gaps), y is the temperature across the 56px money band. */
                 var h0 = +ov.getAttribute('data-h0') || 7, nH = +ov.getAttribute('data-n') || 16, gap = 2;
-                var OW = Math.max(200, ov.clientWidth || 600), OH = 64;
+                var OW = Math.max(200, ov.clientWidth || 600), OH = 46;
                 var colW = (OW - gap * (nH - 1)) / nH;
                 var xOf = function(min){
                   var hh = min / 60 - h0;
@@ -54363,11 +54363,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   return i * (colW + gap) + f * colW;
                 };
                 var pts = last.curve.filter(function(p){ return xOf(p[0]) != null; });
+                /* TODAY, FOR COMPARISON: the hourly readings so far at :51, on the
+                   same clock and the same temperature scale (user, 2026-09-06:
+                   "add todays line as comparison") */
+                var tod = (T.obs_hours || []).map(function(p){ return [p[0] * 60 + 51, p[1]]; })
+                  .filter(function(p){ return p[1] != null && xOf(p[0]) != null; });
                 if (pts.length > 10){
-                  var ys2 = pts.map(function(p){ return p[1]; });
+                  var ys2 = pts.map(function(p){ return p[1]; }).concat(tod.map(function(p){ return p[1]; }));
                   var lo2 = Math.floor(Math.min.apply(null, ys2)) - 1;
                   var hi2 = Math.ceil(Math.max(last.cli_max, Math.max.apply(null, ys2))) + 1;
-                  var yOf = function(v){ return 12 + (OH - 12 - 6) * (hi2 - v) / (hi2 - lo2); };
+                  var yOf = function(v){ return 5 + (OH - 5 - 13) * (hi2 - v) / (hi2 - lo2); };
                   var d2 = pts.map(function(p, i){
                     return (i ? 'L' : 'M') + xOf(p[0]).toFixed(1) + ' ' + yOf(p[1]).toFixed(1);
                   }).join('');
@@ -54380,12 +54385,29 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   });
                   if (last.cli_at_min != null && xOf(last.cli_at_min) != null){
                     var xs2 = xOf(last.cli_at_min), a2 = xs2 > OW * 0.7 ? 'end' : 'start';
-                    o += '<line x1="' + xs2.toFixed(1) + '" x2="' + xs2.toFixed(1) + '" y1="4" y2="' + (OH - 2)
+                    o += '<line x1="' + xs2.toFixed(1) + '" x2="' + xs2.toFixed(1) + '" y1="2" y2="' + (OH - 1)
                       + '" stroke="#f2833f" stroke-width="1"/>'
-                      + '<text x="' + (a2 === 'end' ? xs2 - 3 : xs2 + 3).toFixed(1) + '" y="9" fill="#f2833f" font-size="7.5" '
+                      /* the label sits at the FOOT of the strip: the settlement minute
+                         is the day's peak, so the line is at the top there and the
+                         bottom is clear */
+                      + '<text x="' + (a2 === 'end' ? xs2 - 3 : xs2 + 3).toFixed(1) + '" y="' + (OH - 2) + '" fill="#f2833f" font-size="7.5" '
                       + 'stroke="#0d1117" stroke-width="3" paint-order="stroke" '
                       + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + a2 + '">'
                       + dayLabel(last.date) + ' SETTLED ' + T1(last.cli_max) + '° · ' + m12(last.cli_at_min) + '</text>';
+                  }
+                  if (tod.length > 1){
+                    var dT = tod.map(function(p, i){
+                      return (i ? 'L' : 'M') + xOf(p[0]).toFixed(1) + ' ' + yOf(p[1]).toFixed(1);
+                    }).join('');
+                    o += '<path d="' + dT + '" fill="none" stroke="#2fbfa8" stroke-width="1.6" stroke-linejoin="round"/>';
+                    tod.forEach(function(p){
+                      o += '<circle cx="' + xOf(p[0]).toFixed(1) + '" cy="' + yOf(p[1]).toFixed(1) + '" r="2" fill="#2fbfa8"/>';
+                    });
+                    var lp = tod[tod.length - 1], lx = xOf(lp[0]), la = lx > OW * 0.8 ? 'end' : 'start';
+                    o += '<text x="' + (la === 'end' ? lx - 4 : lx + 4).toFixed(1) + '" y="' + (yOf(lp[1]) + 3).toFixed(1)
+                      + '" fill="#2fbfa8" font-size="7.5" stroke="#0d1117" stroke-width="3" paint-order="stroke" '
+                      + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + la + '">TODAY '
+                      + T1(lp[1]) + '°</text>';
                   }
                   ov.innerHTML = o + '</svg>';
                 }
@@ -54466,7 +54488,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + (S.n < 10 ? ' · THIN, READ AS A SKETCH' : '') + '</div>';
             el.innerHTML = '<div style="margin:0 6px;">' + chart
               + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;margin-top:6px;">'
-              + 'MINUTE REPLAY \u00B7 THE WHITE LINE OVER THE CHART IS THE LAST SETTLED DAY, MINUTE BY MINUTE</div>' + sent + html + '</div>';
+              + 'MINUTE REPLAY \u00B7 WHITE LINE, THE LAST SETTLED DAY MINUTE BY MINUTE \u00B7 <span style="color:#2fbfa8;">TEAL, TODAY\u2019S HOURLY READINGS SO FAR</span></div>' + sent + html + '</div>';
           })
           .catch(function(){});
       };
@@ -55222,7 +55244,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            filled by bvMinuteReplay; data-h0/data-n tell it the column geometry. */
         var hourChart = '<div style="position:relative;margin-top:6px;">'
           + '<div id="bv-replay-overlay" data-h0="' + bh[0].h + '" data-n="' + bh.length
-          + '" style="position:absolute;left:0;right:0;top:0;height:64px;pointer-events:none;z-index:1;"></div>'
+          + '" style="position:absolute;left:0;right:0;top:2px;height:46px;pointer-events:none;z-index:1;"></div>'
           + '<div style="display:grid;grid-template-columns:repeat('
           + bh.length + ',1fr);gap:2px;">'
           + bh.map(function(x){
@@ -55255,6 +55277,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                       + 'pointer-events:none;"></div>'
                     : '')
                 + '<div style="position:relative;">'
+                /* a clear strip for the replay curve: nothing else is drawn here,
+                   so the line never crosses a bar or a number */
+                + '<div style="height:46px;"></div>'
                 /* the money, diverging from a zero line */
                 + '<div style="height:56px;display:flex;flex-direction:column;">'
                 + '<div style="flex:1;display:flex;align-items:flex-end;justify-content:center;">'

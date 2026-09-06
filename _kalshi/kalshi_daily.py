@@ -3225,6 +3225,9 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'bias_days': nb, 'sd_days': nsd,
             'obs_so_far': obs_far, 'obs_through': obs_hr,
             'obs_peak_hour': obs_peak_hour, 'obs_peak_read': obs_peak_read,
+            # today's hourly readings so far, [hour, degF], for the panel to draw
+            # beside the replayed day's curve
+            'obs_hours': [[h, round(v, 1)] for h, v in sorted(_day_obs.items())],
             # WHAT THE EXCHANGE IS SETTLING ON, next to what the station read.
             # The panel shows both, because the gap is the thing worth seeing
             # and it is not small: Chicago ran +4.0 the day this was wired in,
