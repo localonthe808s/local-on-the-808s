@@ -54025,9 +54025,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
                 var names = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark' };
                 var ks = Object.keys(A).sort(function(a, b){ return (A[b].max7 || 0) - (A[a].max7 || 0); });
-                topEl.innerHTML = '<div style="margin-top:8px;padding:7px 10px;border-radius:8px;'
-                  + 'background:rgba(0,210,152,.06);border:1px solid rgba(0,210,152,.16);">'
-                  + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
+                topEl.innerHTML = '<div style="margin-top:7px;font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
                   + 'AIRPORTS, 5-MINUTE READINGS' + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
                   + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
                   + ks.map(function(k){
@@ -54039,8 +54037,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     }).join('')
                   + '</div>'
                   + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
-                  + 'The earliest readings on this sheet. Central Park\u2019s own 5-minute stream is not public; when the three airports '
-                  + 'are peaking between the hourly reports, the park usually is too.</div></div>';
+                  + 'Central Park\u2019s own 5-minute stream is not public; when the three airports '
+                  + 'are peaking between the hourly reports, the park usually is too.</div>';
               }
               var parts = Object.keys(A).map(function(k){
                 var a = A[k];
@@ -56286,7 +56284,29 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* THE FRESHEST READINGS ON THE SHEET go here, not at the bottom: the
            airports' 5-minute maxima arrive from the worker's summary a moment
            after the sheet opens and are filled in below the briefing. */
+        + '<div style="margin-top:8px;padding:7px 10px;border-radius:8px;'
+        + 'background:rgba(0,210,152,.06);border:1px solid rgba(0,210,152,.16);">'
+        + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
+        + 'EARLY READINGS \u00B7 THE FRESHEST NUMBERS ON THE SHEET</div>'
+        /* TWC'S OWN CENTRAL PARK READING, at the top where it can be acted on.
+           It lived only in the SYSTEM block, and it is the one public field
+           that carried Saturday's 79 twenty minutes before the market. Blended,
+           not the sensor: a warning, never a floor. */
+        + ((T.twc_now != null || T.twc_max != null)
+            ? '<div style="margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
+              + '<b style="color:#63dbb6;">TWC, Central Park</b> '
+              + (T.twc_now != null ? D1(T.twc_now) + '\u00B0 now' : '')
+              + (T.twc_max != null ? (T.twc_now != null ? ' \u00B7 ' : '') + 'high since 7 AM <b>' + D1(T.twc_max) + '\u00B0</b>' : '')
+              + (T.twc_gap != null ? ' <span style="color:#9fd9c4;">\u00B7 station ' + (T.twc_gap > 0 ? '\u2212' : '+') + D1(Math.abs(T.twc_gap)) + '\u00B0</span>' : '')
+              + ' <span style="color:#45b491;">as of ' + mtaEsc(stamp12(K.updated).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')) + '</span>'
+              + '</div>'
+              + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
+              + 'The field that showed Saturday\u2019s 79 twenty minutes before the market did. A blended product, not the sensor itself: '
+              + 'it has read 3\u00B0 high before, so it is a warning, never a floor. Refreshed every bake.</div>'
+            : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, Central Park \u2014 no reading yet'
+              + (etH < 7 ? ' (its since-7 AM field holds yesterday until 7 AM)' : '') + '</div>')
         + '<div id="bv-apt5-top"></div>'
+        + '</div>'
         + yourBook
 
         /* WHERE THE DAY STANDS keeps the full width: it is one continuous
