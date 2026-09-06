@@ -344,10 +344,21 @@ def calibration_bands(rows, hours=(7, 13), min_n=150):
 def main():
     only = None
     if '--city' in sys.argv:
-        only = sys.argv[sys.argv.index('--city') + 1]
+        # a comma list: --city las,aus. Markets NOT named keep their existing
+        # rows (the New York study is hours of fetching; a Las Vegas run must
+        # not throw it away, which overwriting price_rows.json used to do).
+        only = [x.strip() for x in sys.argv[sys.argv.index('--city') + 1].split(',') if x.strip()]
     all_rows, per = [], {}
+    if only:
+        try:
+            with open(os.path.join(HERE, 'price_rows.json')) as f:
+                all_rows = [r for r in json.load(f)
+                            if r.get('city') and not any(r['city'].startswith(o) for o in only)]
+            print('kept %d rows from markets not in this run' % len(all_rows))
+        except Exception:
+            all_rows = []
     for cfg in K.MARKETS:
-        if only and not cfg['key'].startswith(only):
+        if only and not any(cfg['key'].startswith(o) for o in only):
             continue
         K.HOURLY_PEAK_OFFSET, K.OFFSET_SD = K.OFFSET_DEFAULT, K.OFFSET_SD_DEFAULT
         try:
@@ -355,9 +366,10 @@ def main():
         except Exception as e:
             print('%s FAILED: %s: %s' % (cfg['key'], type(e).__name__, e))
             continue
-        per[cfg['key']] = summarise(r)
         all_rows += r
         print('  -> %d hour-rows | %s' % (len(r), K.timing_report()))
+    for k in sorted(set(r.get('city') for r in all_rows if r.get('city'))):
+        per[k] = summarise([r for r in all_rows if r.get('city') == k])
     doc = {'built': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ'),
            'hour_rows': len(all_rows), 'by_market': per,
            'pooled': summarise(all_rows),

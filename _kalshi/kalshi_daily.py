@@ -3286,6 +3286,9 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # settled days. Falls back to the assumed accuracy curve otherwise.
             'exit': measured_exit(cfg),
             'calib': _CALIB.get(cfg['key']) or None,
+            # whether the hour study above is this market's own or a fallback
+            # (price_study by_market), so the panel can label it honestly
+            'hours_own': bool(((_STUDY[0] if _STUDY else None) or {}).get('by_market', {}).get(cfg['key'])),
             'by_hour': measured_hours(cfg) or [
                 {'h': h, 'acc': HOUR_ACC[h], 'sd': SD_FALLBACK.get(h)}
                 for h in sorted(HOUR_ACC)],

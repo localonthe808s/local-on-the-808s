@@ -55553,7 +55553,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'color:#2c7f66;margin-top:7px;">'
                 /* the hour study only exists for New York (price_study by_market);
                    the other cities fall back to it and must say so */
-                + (isNY ? 'MEASURED OVER ' + days + ' SETTLED DAYS'
+                + ((isNY || T.hours_own) ? 'MEASURED OVER ' + days + ' SETTLED DAYS' + (isNY ? '' : ' \u00B7 ' + CITY.tab + '\u2019S OWN QUOTES')
                         : 'NEW YORK\u2019S HOURS, MEASURED OVER ' + days + ' SETTLED DAYS \u00B7 '
                           + CITY.tab + '\u2019S OWN STUDY NOT YET RUN') + '</div>'
               : '')
@@ -56272,7 +56272,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            down (user, 2026-09-06: "move a line like that to the top summary"). */
         if (!settledNow && win && typeof measured !== 'undefined' && measured)
           out.unshift('<b style="color:' + (winCol || '#2fbfa8') + ';">' + win + '</b>'
-            + (isNY ? '' : ' <span style="opacity:.65;">(New York\u2019s measured window; '
+            + ((isNY || T.hours_own) ? '' : ' <span style="opacity:.65;">(New York\u2019s measured window; '
                 + CITY.tab.toLowerCase() + '\u2019s own is not studied yet)</span>'));
         if (out.length) brief = '<div style="font:.66rem system-ui,sans-serif;color:#00D298;'
           /* BULLETS, NOT A PARAGRAPH. Six independent facts -- where the day has
