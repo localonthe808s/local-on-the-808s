@@ -53452,14 +53452,30 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
     var cwkPosAt = 0;
     function cwkPositions(force, done){
       var tk = cwkToken();
-      if (!tk) { if (done) done(); return; }
+      /* THE FEED KEEPS A STATUS the SYSTEM block can print. "My holdings aren't
+         showing" (user, 2026-09-06) had three possible causes -- no token in
+         this browser, the worker failing, or an account with no open
+         positions -- and the sheet showed the same nothing for all three. */
+      if (!tk) { window._cwPotStatus = { state: 'no_token' }; if (done) done(); return; }
       var now = Date.now();
       if (!force && now - cwkPosAt < 6e4) { if (done) done(); return; }
       cwkPosAt = now;
       fetch(CWK_POS_URL + '?cb=' + now, { headers: { 'Authorization': 'Bearer ' + tk } })
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(j){ if (j && !j.error) window._cwPot = j; if (done) done(); })
-        .catch(function(){ if (done) done(); });
+        .then(function(r){
+          if (r.status === 401){ window._cwPotStatus = { state: 'bad_token' }; return null; }
+          if (!r.ok){ window._cwPotStatus = { state: 'error', why: 'HTTP ' + r.status }; return null; }
+          return r.json();
+        })
+        .then(function(j){
+          if (j && !j.error){
+            window._cwPot = j;
+            window._cwPotStatus = { state: 'ok', n: (j.positions || []).length, at: now };
+          } else if (j && j.error){
+            window._cwPotStatus = { state: 'error', why: String(j.error).slice(0, 80) };
+          }
+          if (done) done();
+        })
+        .catch(function(e){ window._cwPotStatus = { state: 'error', why: String(e && e.message || e).slice(0, 80) }; if (done) done(); });
     }
 
     var cwKalshiPullAt = 0;
@@ -54270,6 +54286,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         : qcRow((oAge != null && oAge < 80) ? QCG : QCA, 'STATION',
             T1(T.now_temp) + '° AT ' + t12(T.now_at) + ' · ' + ageTxt(oAge),
             (oAge != null && oAge >= 80) ? 'it reports hourly at :51' : ''));
+      /* the account feed, so an empty sheet says why it is empty */
+      (function(){
+        var st = window._cwPotStatus || {};
+        var onThis = bookRows.length;
+        if (st.state === 'no_token')
+          qcL.push(qcRow(QCA, 'ACCOUNT', 'NOT LINKED IN THIS BROWSER',
+            'open the site once with your ?kt= link on this device; the token lives in this browser only'));
+        else if (st.state === 'bad_token')
+          qcL.push(qcRow(QCR, 'ACCOUNT', 'TOKEN REFUSED', 'the worker rejected it; the panel token may have been rotated'));
+        else if (st.state === 'error')
+          qcL.push(qcRow(QCR, 'ACCOUNT', 'FEED FAILED', mtaEsc(st.why || 'no detail')));
+        else if (st.state === 'ok')
+          qcL.push(qcRow(onThis ? QCG : QCN, 'ACCOUNT',
+            (st.n ? st.n + ' OPEN POSITION' + (st.n === 1 ? '' : 'S') : 'NO OPEN POSITIONS')
+              + (st.n ? ' \u00B7 ' + (onThis ? onThis + ' ON THIS MARKET' : 'NONE ON ' + CITY.tab) : ''),
+            'live from the exchange' + (st.at ? ', ' + ageTxt(Date.now() - st.at) : '')));
+        else
+          qcL.push(qcRow(QCN, 'ACCOUNT', 'NOT FETCHED YET', 'press refresh'));
+      })();
 
       /* 4b. THE REPORT THE DAY IS SETTLED ON.
             This row used to be labelled SETTLES and show The Weather Company's
