@@ -106,14 +106,20 @@ jobs:
           # There is nothing to MERGE here. These files are regenerated whole and
           # ours is the newer read of the market, so take whatever landed on main
           # and lay ours back on top. Nothing else in the tree is touched.
+          # ONLY THE FILES THIS RUN CHANGED travel to the replay. Laying every
+          # kalshi_*.json back over origin also laid back files this run never
+          # touched -- on 2026-09-06 a runner that started before a push
+          # replaced the new per-city kalshi_minutes.json with its stale copy.
+          changed="$(git diff --name-only -- kalshi_*.json)"
+          echo "changed: $changed"
           tmp="$(mktemp -d)"
-          cp kalshi_*.json "$tmp"/
+          for f in $changed; do cp "$f" "$tmp"/; done
           for i in 1 2 3; do
             git push && exit 0
             echo "push rejected, replaying onto origin/main (attempt $i)"
             git fetch origin main
             git reset --hard origin/main
-            cp "$tmp"/kalshi_*.json .
+            for f in $changed; do cp "$tmp"/"$(basename "$f")" "$f"; done
             # the head file is written by two lanes now; merge it per market
             # rather than laying ours over whatever the other lane just pushed
             git show origin/main:kalshi_ny.json > "$tmp"/origin_ny.json 2>/dev/null \
