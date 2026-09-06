@@ -54610,8 +54610,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var under = [];
         if (T.twc_fc != null) under.push(['TWC ' + T1(T.twc_fc) + '°', T.twc_fc, MKC]);
         if (T.nws_fc != null) under.push(['NWS ' + T1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
-        if (T.six_max != null && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3))
-          under.push(['6-HR MAX ' + T1(T.six_max) + '°', T.six_max, '#2fbfa8']);
+        if (T.six_max != null && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3)){
+          var sw = T.six_window;
+          var swTxt = (sw && sw.length === 2)
+            ? ' · ' + t12(sw[0] + ':00').replace(':00', '') + '–' + t12(sw[1] + ':00').replace(':00', '') : '';
+          under.push(['6-HR MAX ' + T1(T.six_max) + '°' + swTxt, T.six_max, '#2fbfa8']);
+        }
         if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
           under.push(['TWC MAX ' + T1(T.twc_max) + '°', T.twc_max, '#f2833f']);
         var lastX = -99, row = 0;

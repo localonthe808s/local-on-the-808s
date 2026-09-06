@@ -876,6 +876,9 @@ def portal_day(cfg, day):
     return {}
 
 
+SIX_WINDOW = {}          # per market: [start hour, end hour] of the group that holds six_max
+
+
 def metar_six_max(cfg, day):
     """The day's max from the ASOS six-hourly groups, or None.
 
@@ -921,7 +924,11 @@ def metar_six_max(cfg, day):
             continue
         c = (int(g.group(2)) / 10.0) * (-1 if g.group(1) == '1' else 1)
         f = round(c * 9.0 / 5.0 + 32.0, 1)
-        best = f if best is None else max(best, f)
+        if best is None or f > best:
+            best = f
+            # the window that carried it, in local hours, so the panel can say
+            # "2-8 AM" against "8 AM-2 PM" -- the second is the one that matters
+            SIX_WINDOW[cfg['key']] = [st.astimezone(z).hour, end.astimezone(z).hour]
     return best
 
 
@@ -3222,7 +3229,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # The panel shows both, because the gap is the thing worth seeing
             # and it is not small: Chicago ran +4.0 the day this was wired in,
             # New York +2.0 on the afternoon that made the case for it.
-            'six_max': _six,
+            'six_max': _six, 'six_window': SIX_WINDOW.get(cfg['key']),
             # THE REPORT THE DAY IS ACTUALLY SETTLED ON. Verified against the
             # exchange's own expiration_value on 112 of 112 settled days. The
             # panel leads with this; everything else on screen is an estimate of
