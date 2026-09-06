@@ -55725,7 +55725,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
         /* ACT or WAIT, decided by the clock, not left to the reader */
         var actNow = pg && early;
-        var verb = !pg ? 'NO BET TODAY'
+        /* A DAY WITH A POSITION ALREADY ON IT IS NOT A "NO BET" DAY. The reader
+           who has bought NO on a range this morning and then sees NO BET TODAY
+           reads it as "you should not have" -- or worse, as an invitation to
+           look for something else. Say what is held and that the book is full. */
+        var held = bookRows.map(function(k){
+          var h = posOn[k];
+          return h.side.toUpperCase() + ' on ' + deg(k)
+            + (h.cost != null ? ' ($' + (+h.cost).toFixed(2) + ' in)' : '');
+        });
+        var verb = !pg ? (held.length ? 'NO MORE BETS TODAY' : 'NO BET TODAY')
                  : actNow ? 'BET ' + (vbest.dir === 'against' ? 'NO' : 'YES')
                  : 'WAIT · THEN BET ' + (vbest.dir === 'against' ? 'NO' : 'YES');
         var timeChip = !pg ? ''
@@ -55871,12 +55880,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                             + (bookRoll.dropped > 1 ? 's are' : ' is')
                             + ' too small to buy even one contract at this pot size.' : ''))
                     : '')
-              : kvLine('WHY NOT', (vbest && vbest.ev > -0.5
+              : kvLine(held.length ? 'HELD' : 'WHY NOT', (held.length
+                    ? 'You already hold <b>' + held.join('</b> and <b>') + '</b>. Nothing else on the board clears the '
+                      + cents(KMIN_EDGE) + ' floor'
+                      + (vbest && vbest.ev > -0.5
+                          ? ' \u2014 the best gap left is ' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))
+                            + ', ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label) + ' at ' + cents(vbest.ask)
+                          : '')
+                      + '. Hold what you have to settlement; adding to it is not a new bet, and a second range on the same day '
+                      + 'is a second way to lose. '
+                    : vbest && vbest.ev > -0.5
                     ? 'The best gap on the board is <b>' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))
                       + '</b> after the fee, ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label)
                       + ' at ' + cents(vbest.ask) + ' \u2014 under the ' + cents(KMIN_EDGE) + ' floor a bet has to clear. '
                     : 'No range is priced under what it is estimated to be worth once the fee is counted. ')
-                    + 'This changes: each bake brings the newest runs and the newest price, and a gap opens on about one day in three. Sitting out is a position.'))
+                    + (held.length
+                        ? 'The panel keeps watching: if a real gap opens later it will say so here, but the default for a day with a position on it is to leave it alone.'
+                        : 'This changes: each bake brings the newest runs and the newest price, and a gap opens on about one day in three. Sitting out is a position.')))
           /* the TIMING row is gone: the chip beside the headline already says
              IN THE WINDOW / WINDOW HAS PASSED, and a row restating it in a
              sentence was the same fact twice in one box. */
