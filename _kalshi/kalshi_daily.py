@@ -84,9 +84,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # Chicago settles on CLIMDW, which is MIDWAY, not O'Hare -- the two routinely
 # differ by a degree and O'Hare would have been wrong all season.
 def _mkt(key, series, city, station, net, lat, lon, tz, tzl, cli, slug, wfo=None,
-         skill=True):
+         skill=True, twc_geocode=False):
     return {'key': key, 'series': series, 'label': city + ' daily high',
-            'wfo': wfo, 'skill': skill,
+            'wfo': wfo, 'skill': skill, 'twc_geocode': twc_geocode,
             'station': station, 'network': net, 'lat': lat, 'lon': lon,
             'field': 'max_temp_f', 'tz': tz, 'tzlabel': tzl,
             'city': city, 'cli': cli,
@@ -104,7 +104,7 @@ MARKETS = [
     # the one market that matters most. Revisit with the live trail.
     _mkt('ny_high',  'KXHIGHNY',   'New York',     'NYC', 'NY_ASOS', 40.7789, -73.9692,
          'America/New_York',    'ET', 'CLINYC', 'highest-temperature-in-nyc', 'OKX',
-         skill=False),
+         skill=False, twc_geocode=True),
     _mkt('chi_high', 'KXHIGHCHI',  'Chicago',      'MDW', 'IL_ASOS', 41.786,  -87.752,
          'America/Chicago',     'CT', 'CLIMDW', 'highest-temperature-in-chicago', 'LOT'),
     _mkt('mia_high', 'KXHIGHMIA',  'Miami',        'MIA', 'FL_ASOS', 25.791,  -80.316,
@@ -655,10 +655,24 @@ def twc_history(cfg, day):
     from zoneinfo import ZoneInfo
     icao = cfg.get('icao') or ('K' + cfg['station'])
     z = ZoneInfo(cfg.get('tz', 'America/New_York'))
+    # THE KNYC LOCATION KEY RETURNS LAGUARDIA. `v1/location/KNYC:9:US` answers
+    # with obs_name "New York/LaGuardia", key KLGA -- re-confirmed 2026-09-06 --
+    # so for the one market that matters the "TWC history" on the panel was a
+    # different airport (it read 79 on 2026-09-05 only because LaGuardia and
+    # the park happened to peak alike; IEM had LGA 80). The geocode form of
+    # the same endpoint resolves to "New York/Central Park", key KNYC. Used
+    # only where a market says so: elsewhere the ICAO form is right and the
+    # geocode form can snap to a neighbour.
+    if cfg.get('twc_geocode'):
+        u = ('https://api.weather.com/v1/geocode/%.4f/%.4f/observations/'
+             'historical.json?apiKey=%s&units=e&startDate=%s'
+             % (cfg['lat'], cfg['lon'], TWC_KEY, day.strftime('%Y%m%d')))
+    else:
+        u = ('https://api.weather.com/v1/location/%s:9:US/observations/'
+             'historical.json?apiKey=%s&units=e&startDate=%s'
+             % (icao, TWC_KEY, day.strftime('%Y%m%d')))
     try:
-        j = get_json('https://api.weather.com/v1/location/%s:9:US/observations/'
-                     'historical.json?apiKey=%s&units=e&startDate=%s'
-                     % (icao, TWC_KEY, day.strftime('%Y%m%d')), timeout=45)
+        j = get_json(u, timeout=45)
     except Exception as e:
         print('twc history: %s unavailable (%s)' % (icao, e))
         return []
