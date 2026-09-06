@@ -54007,6 +54007,32 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var nyToday = days['ny_high|' + T.date];
             if (nyToday && nyToday.apt5 && nyToday.apt5.s){
               var A = nyToday.apt5.s;
+              /* the top-of-sheet line: latest reading and the high since 7 AM
+                 at each airport, newest reading first */
+              var topEl = document.getElementById('bv-apt5-top');
+              if (topEl){
+                var atUtc = Date.parse(nyToday.apt5.at || '');
+                var atTxt = isNaN(atUtc) ? '' : new Date(atUtc).toLocaleTimeString('en-US',
+                  { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+                var names = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark' };
+                var ks = Object.keys(A).sort(function(a, b){ return (A[b].max7 || 0) - (A[a].max7 || 0); });
+                topEl.innerHTML = '<div style="margin-top:8px;padding:7px 10px;border-radius:8px;'
+                  + 'background:rgba(0,210,152,.06);border:1px solid rgba(0,210,152,.16);">'
+                  + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
+                  + 'AIRPORTS, 5-MINUTE READINGS' + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
+                  + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
+                  + ks.map(function(k){
+                      var a = A[k];
+                      return '<div><b style="color:#63dbb6;">' + (names[k] || k) + '</b> '
+                        + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '') + '</span>' : '\u2014')
+                        + (a.max7 != null ? ' <span style="color:#9fd9c4;">\u00B7 high since 7 AM <b>' + T1(a.max7) + '\u00B0</b></span>' : '')
+                        + '</div>';
+                    }).join('')
+                  + '</div>'
+                  + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
+                  + 'The earliest readings on this sheet. Central Park\u2019s own 5-minute stream is not public; when the three airports '
+                  + 'are peaking between the hourly reports, the park usually is too.</div></div>';
+              }
               var parts = Object.keys(A).map(function(k){
                 var a = A[k];
                 return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : T1(a.max7) + '\u00B0') + '</b>'
@@ -55968,6 +55994,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
       var body = ''
         + brief
+        /* THE FRESHEST READINGS ON THE SHEET go here, not at the bottom: the
+           airports' 5-minute maxima arrive from the worker's summary a moment
+           after the sheet opens and are filled in below the briefing. */
+        + '<div id="bv-apt5-top"></div>'
         + yourBook
 
         /* WHERE THE DAY STANDS keeps the full width: it is one continuous
