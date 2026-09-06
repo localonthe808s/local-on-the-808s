@@ -55045,8 +55045,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var fmark = label(xf, FCC, T1(T.pred) + '° FORECAST' + fcTime, fcLabelTop);
         /* the official forecasts and the station's own hard numbers, under the axis */
         var under = [];
-        if (T.twc_fc != null) under.push(['TWC ' + D1(T.twc_fc) + '°', T.twc_fc, MKC]);
-        if (T.nws_fc != null) under.push(['NWS ' + D1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
+        /* FORECAST, said on the mark: "TWC 81°" beside a TWC running maximum in
+           the card above read as two readings (user, 2026-09-06) */
+        if (T.twc_fc != null) under.push(['TWC FORECAST ' + D1(T.twc_fc) + '°', T.twc_fc, MKC]);
+        if (T.nws_fc != null) under.push(['NWS FORECAST ' + D1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
         /* only the afternoon groups earn a place on the axis: the 8 AM-2 PM
            group at 1:51 PM and the 2-8 PM group at 7:51 PM are hard numbers
            the settlement cannot go below; the overnight groups repeat the
@@ -55060,7 +55062,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           under.push(['6-HR MAX ' + T1(T.six_max) + '°' + swTxt, T.six_max, '#2fbfa8']);
         }
         if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
-          under.push(['TWC MAX ' + D1(T.twc_max) + '°', T.twc_max, '#f2833f']);
+          under.push(['TWC RUNNING MAX ' + D1(T.twc_max) + '°', T.twc_max, '#f2833f']);
         var lastX = -99, row = 0;
         under.sort(function(a, b){ return a[1] - b[1]; }).forEach(function(u){
           var x = xp(u[1]);
