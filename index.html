@@ -53447,21 +53447,38 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          refresh has asked for it, and gets it. */
       if (!force && now - cwKalshiPullAt < 3e5) return fin(false);
       cwKalshiPullAt = now;
-      cwkPositions(force);
       var cb = '?v=' + Math.floor(now / 6e4);
-      fetch('kalshi_rain.json' + cb).then(function(r){ return r.json(); })
-        .then(function(j){ if (j && j.cities) window._cwRain = j; }).catch(function(){});
-      fetch('kalshi_ny.json' + cb).then(function(r){ return r.json(); })
-        .then(function(j){
-          if (!j || !j.today) return fin(false);
-          var stale = window._cwKalshi && window._cwKalshi.updated;
-          window._cwKalshi = j;
-          if (stale === j.updated) return fin(false);  /* same bake, leave it alone */
-          try { cwDrawSensors(); } catch (e){}
-          var p = document.getElementById('cw-kalshi-panel');
-          if (p && p.style.display !== 'none') cwKalshiTap();
-          fin(true);
-        }).catch(function(){ fin(false); });
+      /* A PRESSED REFRESH REDRAWS EVEN WHEN THE BAKE HAS NOT MOVED. The
+         positions, the rain board, the lead study, the portal row and the
+         ages all come from other fetches or from the clock, and a refresh
+         that fetched them and then declined to redraw because the temperature
+         file was the same bake left them stale on screen. The positions are
+         waited for first, so the redraw has them. The scroll position is
+         kept, and the button still gets its tick when the bake is the same. */
+      var redraw = function(changed){
+        var p = document.getElementById('cw-kalshi-panel');
+        if (p && p.style.display !== 'none'){
+          var sc = p.scrollTop;
+          cwKalshiTap();
+          var p2 = document.getElementById('cw-kalshi-panel');
+          if (p2) p2.scrollTop = sc;
+        }
+        fin(changed);
+      };
+      cwkPositions(force, function(){
+        var rainDone = fetch('kalshi_rain.json' + cb).then(function(r){ return r.json(); })
+          .then(function(j){ if (j && j.cities) window._cwRain = j; }).catch(function(){});
+        fetch('kalshi_ny.json' + cb).then(function(r){ return r.json(); })
+          .then(function(j){
+            if (!j || !j.today) return fin(false);
+            var stale = window._cwKalshi && window._cwKalshi.updated;
+            window._cwKalshi = j;
+            var changed = (stale !== j.updated);
+            if (changed) try { cwDrawSensors(); } catch (e){}
+            if (!changed && !force) return fin(false);   /* the automatic pull: same bake, leave it alone */
+            rainDone.then(function(){ redraw(changed); });
+          }).catch(function(){ fin(false); });
+      });
     }
     /* the KALSHI daily-high market, read off Belvedere Castle. Shows their
        ladder against ours, the pick we locked before the market closed, and
@@ -55468,7 +55485,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   + 'it is not a new bet.')
             + '</div>';
         })();
-        var warnStale = (oAge != null && oAge >= 45 && !T.day_over)
+        /* BEHIND MEANS A REPORT IS OUT THAT THIS SHEET HAS NOT BAKED. The old
+           test was age alone: at 9:50 an 8:51 reading is 59 minutes old, but
+           the 9:51 report does not exist yet, so the market has nothing
+           newer either and the warning was crying wolf for most of every
+           hour. Now: the newest :51 report that has been public for four
+           minutes is later than the reading here -- or the reading is more
+           than 75 minutes old, which no cadence explains. */
+        var behind = false;
+        if (oAge != null && !T.day_over){
+          var nd2 = new Date(nowET), mm = nd2.getUTCMinutes(), hh2 = nd2.getUTCHours();
+          var lastRep = (mm >= 55) ? hh2 * 60 + 51 : ((hh2 + 23) % 24) * 60 + 51;   /* minutes since midnight ET */
+          var hmNow = String(T.now_at || '').match(/^(\d{1,2}):(\d{2})/);
+          var readAt = hmNow ? (+hmNow[1]) * 60 + (+hmNow[2]) : null;
+          if (readAt != null && lastRep > readAt + 1 && !(mm < 55 && hh2 === 0)) behind = true;
+          if (oAge >= 75) behind = true;
+        }
+        var warnStale = behind
           ? '<div style="margin:6px 0 0;padding:6px 8px;border-radius:6px;'
             + 'background:rgba(242,131,63,.12);'
             + 'font:600 8.5px system-ui,sans-serif;color:#f2833f;letter-spacing:.02em;'
