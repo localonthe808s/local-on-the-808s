@@ -53449,6 +53449,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         return localStorage.getItem('bv_kalshi_token') || '';
       } catch (e){ return ''; }
     }
+    /* CAPTURE THE TOKEN ON ARRIVAL. It used to be read only when the castle
+       was opened, so a visit with ?kt= that never opened the panel stored
+       nothing (2026-09-06). Now any page load with the parameter stores it. */
+    try { cwkToken(); } catch (e){}
     var cwkPosAt = 0;
     function cwkPositions(force, done){
       var tk = cwkToken();
