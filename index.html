@@ -54610,7 +54610,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var under = [];
         if (T.twc_fc != null) under.push(['TWC ' + T1(T.twc_fc) + '°', T.twc_fc, MKC]);
         if (T.nws_fc != null) under.push(['NWS ' + T1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
-        if (T.six_max != null && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3)){
+        /* only the afternoon groups earn a place on the axis: the 8 AM-2 PM
+           group at 1:51 PM and the 2-8 PM group at 7:51 PM are hard numbers
+           the settlement cannot go below; the overnight groups repeat the
+           reading beside them and were read as a second peak */
+        var sw0 = T.six_window;
+        if (T.six_max != null && sw0 && sw0.length === 2 && sw0[1] >= 14
+            && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3)){
           var sw = T.six_window;
           var swTxt = (sw && sw.length === 2)
             ? ' · ' + t12(sw[0] + ':00').replace(':00', '') + '–' + t12(sw[1] + ':00').replace(':00', '') : '';
