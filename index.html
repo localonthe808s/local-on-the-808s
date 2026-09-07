@@ -54853,7 +54853,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          the numbers above come from. */
       var SENS_SHORT = { KNYC: 'CENTRAL PARK', KLGA: 'LAGUARDIA', KJFK: 'JFK', KEWR: 'NEWARK', KLAS: 'HARRY REID',
                          KVGT: 'N. LAS VEGAS', KAUS: 'BERGSTROM', KATT: 'CAMP MABRY' };
-      var bvSensChart = function(d, order, own, nowMin, width){
+      var bvSensChart = function(d, order, own, nowMin, width, sel){
         /* drawn at the container's own width so the type is never stretched */
         var W = Math.max(420, Math.round(width || 720)), H = 96, L = 26, R = 92, T = 10, B = 16;
         var ser = order.map(function(k){ var a = d.s[k]; return (a && a.series && a.series.length > 1) ? { k: k, pts: a.series, a: a } : null; }).filter(Boolean);
@@ -54889,6 +54889,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (q.k === 'KNYC') pts.forEach(function(p){ g += '<circle cx="' + px2(p[0]).toFixed(1) + '" cy="' + py2(p[1]).toFixed(1) + '" r="2.2" fill="#0d1117" stroke="#fff" stroke-width="1.4"/>'; });
           var last = pts[pts.length - 1];
           g += '<circle cx="' + px2(last[0]).toFixed(1) + '" cy="' + py2(last[1]).toFixed(1) + '" r="' + (isOwn ? 2.6 : 2) + '" fill="' + col + '"/>';
+          /* EVERY READING IS A TARGET (user 2026-09-07: "the CP line should
+             let me click and see the temp at each node"). An invisible disc
+             on each sample; the tap writes the reading to the line under the
+             chart, and the chosen one is ringed with a guide down to the axis. */
+          pts.forEach(function(p){
+            var on = sel && sel.k === q.k && sel.m === p[0];
+            if (on) g += '<line x1="' + px2(p[0]).toFixed(1) + '" x2="' + px2(p[0]).toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="rgba(255,255,255,.28)" stroke-width="1"/>'
+                      + '<circle cx="' + px2(p[0]).toFixed(1) + '" cy="' + py2(p[1]).toFixed(1) + '" r="4.5" fill="none" stroke="' + col + '" stroke-width="1.6"/>';
+            g += '<circle class="bv-sens-pt" data-k="' + q.k + '" data-m="' + p[0] + '" cx="' + px2(p[0]).toFixed(1) + '" cy="' + py2(p[1]).toFixed(1) + '" r="6" fill="transparent" style="cursor:pointer;"/>';
+          });
           /* the high since 7 AM, a tick where it landed */
           if (q.a.max7 != null && q.a.maxAt){ var mm = q.a.maxAt.split(':'); var mx = (+mm[0]) * 60 + (+mm[1]);
             g += '<line x1="' + px2(mx).toFixed(1) + '" x2="' + px2(mx).toFixed(1) + '" y1="' + (py2(q.a.max7) - 5).toFixed(1) + '" y2="' + (py2(q.a.max7) + 5).toFixed(1) + '" stroke="' + col + '" stroke-width="1"' + (isOwn ? '' : ' opacity=".7"') + '/>'; }
@@ -54933,7 +54943,28 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                already carry each station's newest reading; the legend adds
                only what the picture cannot say -- the reading's clock, its
                age, and the high since 7 AM with its minute. */
-            el2.innerHTML = bvSensChart(d, rows, own, nowMin, el2.clientWidth)
+            /* THE TAPPED READING, AS A LINE UNDER THE GRAPH (user 2026-09-07:
+               "make it a sub text line for the graph"): the station and its
+               reading at that minute, then what every other line read at the
+               same minute (nearest sample). Remembered across the minute
+               repaint. */
+            var readout = function(){
+              var se = window._cwSensSel; if (!se || !d.s[se.k] || !d.s[se.k].series) return '';
+              var at = function(k){ var ser = d.s[k].series || [], best = null;
+                ser.forEach(function(p){ if (best == null || Math.abs(p[0] - se.m) < Math.abs(best[0] - se.m)) best = p; });
+                return (best && Math.abs(best[0] - se.m) <= 35) ? best : null; };
+              var me = at(se.k); if (!me) return '';
+              var hm = function(m){ return t12(('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2)); };
+              var others = rows.filter(function(k){ return k !== se.k; }).map(function(k){ var p = at(k); return p ? '<span style="color:#63dbb6;">' + (SENS_SHORT[k] || k) + '</span> ' + T1(p[1]) + '\u00B0' : null; }).filter(Boolean);
+              return '<div style="margin-top:4px;font:700 9px system-ui,sans-serif;color:#fff;">'
+                + '<span style="color:' + ((se.k === own || se.k === 'KNYC') ? '#fff' : '#63dbb6') + ';">' + (SENS_SHORT[se.k] || se.k) + '</span> <b>' + T1(me[1]) + '\u00B0</b> at ' + hm(me[0])
+                + (me[0] !== se.m ? ' <span style="color:#45b491;">(nearest sample)</span>' : '')
+                + (others.length ? ' <span style="color:#2c7f66;">\u00B7 at that minute</span> ' + others.join(' <span style="color:#2c7f66;">\u00B7</span> ') : '')
+                + '</div>';
+            };
+            var paint = function(){
+            el2.innerHTML = bvSensChart(d, rows, own, nowMin, el2.clientWidth, window._cwSensSel)
+              + readout()
               + '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:3px;font:600 8.5px system-ui,sans-serif;color:#9fd9c4;">'
               + rows.map(function(k){
                   var a = d.s[k], age = ageOf2(a.at), pv = prev[k];
@@ -54952,7 +54983,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + (own
                   ? 'the white line is the settlement sensor itself, every 5 minutes; the tick is its high since 7 AM, and the true peak runs about 0.3\u00B0 above the samples.'
                   : 'white is Central Park\u2019s own HOURLY reports (its 5-minute stream is not public; MADIS pending); teal is the airports every 5 minutes.')
-              + '</div>';
+              + ' Tap any point on a line to read it.</div>';
+            };
+            paint();
+            el2.onclick = function(e){
+              var t = e.target && e.target.closest ? e.target.closest('.bv-sens-pt') : null;
+              if (!t) return;
+              e.stopPropagation();
+              window._cwSensSel = { k: t.getAttribute('data-k'), m: +t.getAttribute('data-m') };
+              paint();
+            };
             el2.setAttribute('data-live', '1');
             /* the header's NOW: the settlement sensor's newest 5-minute sample
                replaces the hourly report there, since it is the same station
