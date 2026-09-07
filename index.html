@@ -53026,14 +53026,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var el2 = document.getElementById('cw-info');
           if (!el2) return;
           var d = ((j && j.success && j.success.data) || []).slice();
-          /* the surface deposit first, the bedrock beneath it after: the API
-             lists every scale's unit in no fixed order (Brooklyn came back
-             Raritan before the glacial cover on top of it) */
-          d.sort(function(a, b){ return (+a.t_int_age || 0) - (+b.t_int_age || 0); });
-          var seen = {}, uniq = [];
-          d.forEach(function(x){ var k = (x.strat_name || x.name || '').toLowerCase(); if (k && !seen[k]){ seen[k] = 1; uniq.push(x); } });
-          d = uniq;
-          var u = d[0];
+          /* THREE MAPS ANSWER EVERY POINT (2026-09-07): source 133 is the
+             New York State bedrock map -- the one with Manhattan Formation,
+             Inwood Marble, Hartland, Fordham, Raritan, the serpentinite; 7 and
+             154 are continental-scale maps that only say "Quaternary" or
+             "Precambrian-Phanerozoic sedimentary". So: the BEDROCK is the 133
+             unit; a younger unit from the coarse maps is the COVER on top of
+             it (Long Island's glacial blanket); the coarse map's older
+             generalities are dropped as noise. */
+          var bed = d.filter(function(x){ return x.source_id === 133; })[0] || null;
+          var cover = d.filter(function(x){ return x !== bed && bed && (+x.t_int_age || 0) < (+bed.t_int_age || 0) - 1; })
+            .sort(function(a, b){ return (+a.t_int_age || 0) - (+b.t_int_age || 0); })[0] || null;
+          if (!bed){ d.sort(function(a, b){ return (+a.t_int_age || 0) - (+b.t_int_age || 0); }); bed = d[0] || null; }
+          var u = bed;
+          d = [u].concat(cover ? [cover] : []).filter(Boolean);
           var ageOf = function(x){
             return (x.b_int_name && x.t_int_name)
               ? (x.b_int_name === x.t_int_name ? x.b_int_name : x.b_int_name + ' – ' + x.t_int_name)
@@ -53049,19 +53055,22 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var age = ageOf(u);
             var desc = String(u.descrip || '').replace(/\s+/g, ' ');
             if (desc.length > 220) desc = desc.slice(0, 217).replace(/\s\S*$/, '') + '…';
+            /* the chip takes the TILE's colour for this unit where the baked
+               legend knows it, so the readout matches the paint */
+            var chip = (function(){ var L = window._cwRockLegend || []; var nm = (u.strat_name || u.name || '').toLowerCase();
+              var hit = L.filter(function(x){ return (x.n || '').toLowerCase() === nm || (x.bedrock || '').toLowerCase() === nm; })[0]; return hit ? hit.c : (u.color || null); })();
             el2.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-              + (u.color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + mtaEsc(u.color) + ';border:1px solid rgba(27,35,64,.25);"></span>' : '')
+              + (chip ? '<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + mtaEsc(chip) + ';border:1px solid rgba(27,35,64,.25);"></span>' : '')
+              + '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.1em;color:#5b647a;">' + (cover ? 'BEDROCK' : 'ROCK') + '</span>'
               + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(u.strat_name || u.name).toUpperCase() + '</span>'
               + (age ? '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + mtaEsc(age).toUpperCase() + '</span>' : '')
               + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">MACROSTRAT</span>' + x + '</div>'
               + (lith ? '<div style="font:700 10px system-ui,sans-serif;margin-top:3px;">' + mtaEsc(lith) + '</div>' : '')
               + (desc ? '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:2px;line-height:1.45;">' + mtaEsc(desc) + '</div>' : '')
-              + (d.length > 1
-                  ? '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">BENEATH IT: '
-                    + d.slice(1, 3).map(function(x){
-                        return (x.color ? '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + mtaEsc(x.color) + ';border:1px solid rgba(27,35,64,.25);vertical-align:middle;margin-right:4px;"></span>' : '')
-                          + '<b style="color:#1b2340;">' + mtaEsc(x.strat_name || x.name) + '</b>' + (ageOf(x) ? ' · ' + mtaEsc(ageOf(x)) : '');
-                      }).join(' &nbsp;·&nbsp; ') + '</div>'
+              + (cover
+                  ? '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">COVER ON TOP: '
+                    + '<b style="color:#1b2340;">' + mtaEsc(cover.strat_name || cover.name) + '</b>' + (ageOf(cover) ? ' · ' + mtaEsc(ageOf(cover)) : '')
+                    + (String(cover.lith || '').indexOf('{') >= 0 ? ' · ' + mtaEsc(String(cover.lith).replace(/^Major:\{|\}$/g, '').replace(/[{}]/g, '')) : '') + '</div>'
                   : '');
           }
           var xb = document.getElementById('cw-rock-x');
@@ -53347,8 +53356,49 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          or rock; with nothing tapped it takes no room above the map. */
       var el = document.getElementById('cw-info');
       if (!el || mtaSel) return;
+      if (cw.rock && cwMapMode()){ cwRockLegend(el); return; }
       el.innerHTML = '';
       el.style.display = 'none';
+    }
+    /* THE GEOLOGY LEGEND (user 2026-09-07): at rest on the geology view the
+       bar reads the key -- the three fault weights and what the rock
+       colours are. The rock key is baked from the tiles themselves
+       (city_rock_legend.json: each tile colour, the unit it stands for, its
+       age and its share of the city), so the chips match what is painted. */
+    function cwRockLegend(el){
+      el.style.display = '';
+      if (!window._cwRockLegend && !window._cwRockLegendReq){
+        window._cwRockLegendReq = 1;
+        fetch('city_rock_legend.json?v=1').then(function(r2){ return r2.json(); })
+          .then(function(j){ if (j && j.legend){ window._cwRockLegend = j.legend; cwInfoDefault(); } }).catch(function(){});
+      }
+      var sw = function(w, dashed, core){
+        return '<span style="display:inline-block;width:30px;height:0;border-top:' + w + 'px ' + (dashed ? 'dashed' : 'solid') + ' #7a1416;box-shadow:0 0 0 1px rgba(255,255,255,.85);vertical-align:middle;position:relative;">'
+          + (core ? '<span style="position:absolute;left:0;right:0;top:-' + (w / 2 + 0.6) + 'px;border-top:1.2px solid rgba(255,238,205,.95);"></span>' : '') + '</span>';
+      };
+      var lab = function(t){ return '<span style="font:600 8px system-ui,sans-serif;letter-spacing:.06em;color:#3b4460;text-transform:uppercase;margin-left:6px;">' + t + '</span>'; };
+      var faults = '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.1em;color:#5b647a;">FAULTS \u00b7 USGS BEDROCK SHEETS</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;align-items:center;">'
+        + '<span>' + sw(4, false, true) + lab('major \u00b7 named, thrust, or drawn heavy and over 1 km') + '</span>'
+        + '<span>' + sw(3, false, false) + lab('fault \u00b7 drawn heavy or over 1 km') + '</span>'
+        + '<span>' + sw(2, false, false) + lab('minor') + '</span>'
+        + '<span>' + sw(3, true, false) + lab('approximately located') + '</span>'
+        + '</div>';
+      var L = window._cwRockLegend || [];
+      var rock = '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.1em;color:#5b647a;">THE ROCK \u00b7 MACROSTRAT \u00b7 SHARE OF THE CITY</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:4px;">'
+        + (L.length ? L.filter(function(u){ return u.share >= 0.02; }).slice(0, 9).map(function(u){
+            var age = u.age ? (u.age === u.age_t || !u.age_t ? u.age : u.age + ' \u2013 ' + u.age_t) : '';
+            return '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">'
+              + '<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:' + mtaEsc(u.c) + ';border:1px solid rgba(27,35,64,.3);"></span>'
+              + '<span style="font:700 8.5px system-ui,sans-serif;color:#1b2340;">' + mtaEsc(u.n) + '</span>'
+              + (age ? '<span style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;text-transform:uppercase;">' + mtaEsc(age) + '</span>' : '')
+              + '<span style="font:600 7.5px system-ui,sans-serif;color:#8a91a5;">' + Math.round(100 * u.share) + '%</span></span>';
+          }).join('') : '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;">READING THE KEY\u2026</span>')
+        + '</div>'
+        + '<div style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">TAP THE MAP FOR THE ROCK AND THE BEDROCK BENEATH IT \u00b7 TAP A FAULT FOR ITS RECORD</div>';
+      el.innerHTML = '<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,2fr);gap:6px 22px;align-items:start;">'
+        + '<div>' + faults + '</div><div style="min-width:0;">' + rock + '</div></div>';
     }
     /* one panel for every non-train map feature — same chrome as the
        arrivals panel so a tap always answers the same way */
