@@ -50220,7 +50220,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         && LOCATION.lon > -74.35 && LOCATION.lon < -73.60;
     }
     var cw = { built:false, running:false, idx:0, timer:null, cardsTimer:null, wprod:'bref',
-               prod:'bref', front:true, radarOn:false, floods:false, trains:true, wide:null };
+               prod:'bref', front:true, radarOn:false, floods:false, trains:true, wide:null, rock:false };
     /* the widget's own framing: the launch box stretched south so Rockaway
        and the inlet stay in frame (user 2026-08-30) — taller than the shared
        1.1372 box, and the widget-body's global 16/10 aspect is overridden */
@@ -50742,6 +50742,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* the FLOODS overlay is its own full-box layer riding the base
            transform — toggling it is an instant display flip, never a
            recompose (2026-08-31); soft washes upscale fine at depth */
+        /* GEOLOGY (user 2026-09-07): Macrostrat's carto tiles, drawn on their
+           own canvas and clipped to the five boroughs, so the rock shows only
+           inside the city's outline. Above the under-map, below the floods,
+           the vectors and the street ghost. Its own canvas because the tile
+           server sends no CORS header: anything it is drawn into is tainted,
+           and nothing may ever read pixels from this one. */
+        + '<canvas id="cw-rock" style="' + IMG + 'z-index:0;pointer-events:none;will-change:transform;display:none;"></canvas>'
         + '<img id="cw-fl" alt="" src="/nyc-basemap-floods.png?v=9" style="' + IMG + 'object-fit:fill;z-index:0;will-change:transform;display:none;">'
         /* the ghost-water vectors (marsh, ponds, stream courses) draw here
            per painted view at device resolution — crisp at any zoom, the
@@ -50765,7 +50772,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<span id="cw-wide-tag-sub" style="display:none;font:700 8px system-ui,sans-serif;color:rgba(255,255,255,.82);margin-top:2px;"></span>'
         + '</div>'
         + '<div id="cw-time" style="position:absolute;right:8px;top:6px;z-index:4;font:700 9px system-ui,sans-serif;letter-spacing:.08em;color:rgba(255,255,255,.9);background:rgba(8,12,22,.6);border-radius:6px;padding:3px 8px;"></div>'
-        + '<div style="position:absolute;right:8px;bottom:6px;z-index:4;font:500 8px system-ui,sans-serif;color:rgba(30,30,50,.6);background:rgba(255,255,255,.6);padding:1px 6px;border-radius:4px;">\u00a9 OpenStreetMap \u00b7 Protomaps \u00b7 NOAA NCEI \u00b7 NOAA KOKX super-res \u00b7 MTA \u00b7 Blitzortung \u00b7 Viele 1865</div>'
+        + '<div id="cw-attrib" style="position:absolute;right:8px;bottom:6px;z-index:4;font:500 8px system-ui,sans-serif;color:rgba(30,30,50,.6);background:rgba(255,255,255,.6);padding:1px 6px;border-radius:4px;">\u00a9 OpenStreetMap \u00b7 Protomaps \u00b7 NOAA NCEI \u00b7 NOAA KOKX super-res \u00b7 MTA \u00b7 Blitzortung \u00b7 Viele 1865</div>'
         /* the water-cycle loader owns the blue until the first compose
            lands (user 2026-08-31) \u2014 same spinner as the radar widget,
            its own gradient id so both instances resolve */
@@ -50895,7 +50902,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       tabs.appendChild(mb);
       var tabs2 = document.getElementById('cw-tabs2');
       fb2.style.cssText = TAB;
-      if (wpRow){ wpRow.appendChild(fb2); wpRow.appendChild(tb2); }
+      /* GEOLOGY: the bedrock and surficial units under the city, from
+         Macrostrat (CC-BY). A layer of the map, like FLOODING and TREES. */
+      var gb = document.createElement('button');
+      gb.id = 'cw-tab-rock';
+      gb.textContent = 'GEOLOGY';
+      gb.style.cssText = TAB;
+      gb.onclick = function(){ cw.rock = !cw.rock; paintTabs(); cwRockDraw(); };
+      if (wpRow){ wpRow.appendChild(fb2); wpRow.appendChild(tb2); wpRow.appendChild(gb); }
       /* row three is empty now, so its bottom gap moves up to the sub-tabs */
       if (tabs2) tabs2.style.display = 'none';
       if (wpRow) wpRow.style.padding = '5px 8px 6px';
@@ -50914,7 +50928,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       c._zoomed = true;
       /* painted-view layers only — the frames and floods overlay ride the
          BASE transform now (full-box registration, view-independent) */
-      var LAYERS = ['cw-bm-under','cw-gv','cw-bm-ghost','cw-ov'];
+      var LAYERS = ['cw-bm-under','cw-rock','cw-gv','cw-bm-ghost','cw-ov'];
       var z = { k:1, tx:0, ty:0 };       // painted transform
       var zt = { k:1, tx:0, ty:0 };      // target: wheel/dblclick ease toward it
       var anim = null;
@@ -51184,6 +51198,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (hit) offer(hd / mpp, 10, cwGhostTap, hit);
         }
         if (cand) cand.fn(cand.arg);
+        else if (cw.rock && cwMapMode()) cwRockTap(X, Y);
       });
       c.addEventListener('pointermove', function(ev){
         if (!(ev.pointerId in pts)) return;
@@ -51292,6 +51307,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         f.style.display = mapMode ? '' : 'none';   // a layer of the map, not of the radar
         f.style.background = cw.floods ? 'rgba(43,34,244,.9)' : 'rgba(234,88,12,.92)';
         f.style.color = 'rgba(255,255,255,.97)';
+      }
+      var gk = document.getElementById('cw-tab-rock');
+      if (gk){
+        gk.style.display = mapMode ? '' : 'none';
+        gk.style.background = cw.rock ? 'rgba(43,34,244,.9)' : 'rgba(234,88,12,.92)';
+        gk.style.color = 'rgba(255,255,255,.97)';
       }
       cwInfoDefault();
       WIDE.forEach(function(wv){
@@ -51757,7 +51778,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
     /* visibility, not display: these carry display logic of their own (cw-fl
        is display:none unless FLOODING is on) and clobbering it would strand
        the flood layer off when the loader let go */
-    var CW_CITY_LAYERS = ['cw-bm-base','cw-bm-under','cw-bm-ghost','cw-fl',
+    var CW_CITY_LAYERS = ['cw-bm-base','cw-bm-under','cw-rock','cw-bm-ghost','cw-fl',
                           'cw-gv','cw-frame-a','cw-frame-b','cw-ov'];
     function cwCityLayers(show){
       CW_CITY_LAYERS.forEach(function(id){
@@ -51801,7 +51822,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (on) cwWideLoadCap = setTimeout(function(){ cwWideLoad(false); }, 10000);
     }
     function setWide(id){
-      if (id){ cwFloodsOff(); cwTreesOff(); }
+      if (id){ cwFloodsOff(); cwTreesOff(); cwRockOff(); }
       cw.wide = id || null;
       var el = document.getElementById('cw-wide'), tag = document.getElementById('cw-wide-tag');
       if (cwWideTimer){ clearInterval(cwWideTimer); cwWideTimer = null; }
@@ -52856,6 +52877,153 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
     /* FLOODING belongs to the CITY MAP tab. Leaving that tab has to drop the
        layer, or it stays painted over the radar with its button hidden and no
        way to switch it off (found 2026-09-02). */
+    function cwRockOff(){
+      if (!cw.rock) return;
+      cw.rock = false;
+      cwRockDraw();
+    }
+    /* ---- GEOLOGY: Macrostrat carto tiles under the city (2026-09-07) ----
+       Tiles for the painted view at the zoom whose resolution best matches
+       the canvas, drawn inside a clip of the five boroughs. No CORS on the
+       tile server, so the canvas is write-only. The rock under a tap is
+       named from Macrostrat's point API (CORS-open) into the info bar. */
+    var _rockTiles = {}, _rockKey = '';
+    function _rockTile(url){
+      if (!_rockTiles[url]) _rockTiles[url] = new Promise(function(res, rej){
+        var im = new Image();
+        im.onload = function(){ res(im); };
+        im.onerror = function(){ delete _rockTiles[url]; rej(); };
+        im.src = url;
+      });
+      return _rockTiles[url];
+    }
+    function cwRockDraw(){
+      var cvs = document.getElementById('cw-rock');
+      if (!cvs) return;
+      var at = document.getElementById('cw-attrib');
+      if (at){
+        if (!at.getAttribute('data-base')) at.setAttribute('data-base', at.textContent);
+        at.textContent = at.getAttribute('data-base') + (cw.rock ? ' · Macrostrat' : '');
+      }
+      if (!cw.rock || !cwMapMode()){
+        cvs.style.display = 'none';
+        _rockKey = '';
+        return;
+      }
+      if (!window._cwBoros && !window._cwBorosReq){
+        window._cwBorosReq = 1;
+        fetch('city_boroughs.json?v=3').then(function(r2){ return r2.json(); })
+          .then(function(j){ if (j && j.b){ window._cwBoros = j.b; window._cwBorosHi = j.hi || null; cwRockDraw(); } }).catch(function(){});
+      }
+      var body = document.getElementById('cw-body');
+      var r = body ? body.getBoundingClientRect() : null;
+      if (!r || !r.width) return;
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      var W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+      var v = cwPainted, R2 = 6378137, HALF = 20037508.342789244;
+      var mpp = (v.X1 - v.X0) / W;
+      var zz = Math.max(9, Math.min(13, Math.floor(Math.log(156543.03392804097 / mpp) / Math.LN2)));
+      var key = [W, H, zz, v.X0.toFixed(0), v.Y0.toFixed(0), v.X1.toFixed(0), v.Y1.toFixed(0), !!window._cwBoros].join('|');
+      var tileM = 2 * HALF / Math.pow(2, zz);
+      var tx0 = Math.floor((v.X0 + HALF) / tileM), tx1 = Math.floor((v.X1 + HALF) / tileM);
+      var ty0 = Math.floor((HALF - v.Y1) / tileM), ty1 = Math.floor((HALF - v.Y0) / tileM);
+      var jobs = [];
+      for (var tx = tx0; tx <= tx1; tx++) for (var ty = ty0; ty <= ty1; ty++)
+        (function(x, y){
+          jobs.push(_rockTile('https://tiles.macrostrat.org/carto/' + zz + '/' + x + '/' + y + '.png')
+            .then(function(im){ return { im: im, x: x, y: y }; }, function(){ return null; }));
+        })(tx, ty);
+      Promise.all(jobs).then(function(parts){
+        if (!cw.rock || !cwMapMode()) return;
+        var cvs2 = document.getElementById('cw-rock');
+        if (!cvs2) return;
+        var key2 = key + '|' + parts.filter(Boolean).length;
+        if (key2 === _rockKey && cvs2.width === W && cvs2.height === H) return;   /* nothing moved */
+        _rockKey = key2;
+        cvs2.width = W; cvs2.height = H;
+        var g = cvs2.getContext('2d');
+        g.clearRect(0, 0, W, H);
+        var boros = window._cwBorosHi || window._cwBoros;
+        if (boros){
+          var px = function(c){ return ((c[0] * Math.PI / 180 * R2) - v.X0) / (v.X1 - v.X0) * W; };
+          var py = function(c){ return (v.Y1 - R2 * Math.log(Math.tan(Math.PI / 4 + c[1] * Math.PI / 360))) / (v.Y1 - v.Y0) * H; };
+          g.beginPath();
+          boros.forEach(function(b){
+            (b.r || []).forEach(function(ring){
+              ring.forEach(function(c, i2){ if (i2) g.lineTo(px(c), py(c)); else g.moveTo(px(c), py(c)); });
+              g.closePath();
+            });
+          });
+          g.clip();
+        }
+        var sx = W / (v.X1 - v.X0), sy = H / (v.Y1 - v.Y0);
+        parts.filter(Boolean).forEach(function(p2){
+          var X0 = p2.x * tileM - HALF, Y1 = HALF - p2.y * tileM;
+          g.drawImage(p2.im, (X0 - v.X0) * sx, (v.Y1 - Y1) * sy, tileM * sx, tileM * sy);
+        });
+        cvs2.style.display = '';
+      });
+    }
+    function cwRockTap(X, Y){
+      var R2 = 6378137;
+      var lon = X / R2 * 180 / Math.PI;
+      var lat = (2 * Math.atan(Math.exp(Y / R2)) - Math.PI / 2) * 180 / Math.PI;
+      var el = document.getElementById('cw-info');
+      if (!el) return;
+      mtaPanelClose(); cwFeatClose();
+      el.innerHTML = '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">READING THE ROCK AT ' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '…</div>';
+      var seq = (cwRockTap._seq = (cwRockTap._seq || 0) + 1);
+      fetch('https://macrostrat.org/api/v2/geologic_units/map?lat=' + lat.toFixed(5) + '&lng=' + lon.toFixed(5) + '&format=json')
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (seq !== cwRockTap._seq) return;
+          var el2 = document.getElementById('cw-info');
+          if (!el2) return;
+          var d = ((j && j.success && j.success.data) || []).slice();
+          /* the surface deposit first, the bedrock beneath it after: the API
+             lists every scale's unit in no fixed order (Brooklyn came back
+             Raritan before the glacial cover on top of it) */
+          d.sort(function(a, b){ return (+a.t_int_age || 0) - (+b.t_int_age || 0); });
+          var seen = {}, uniq = [];
+          d.forEach(function(x){ var k = (x.strat_name || x.name || '').toLowerCase(); if (k && !seen[k]){ seen[k] = 1; uniq.push(x); } });
+          d = uniq;
+          var u = d[0];
+          var ageOf = function(x){
+            return (x.b_int_name && x.t_int_name)
+              ? (x.b_int_name === x.t_int_name ? x.b_int_name : x.b_int_name + ' – ' + x.t_int_name)
+                + (x.b_int_age && x.t_int_age ? ' (' + Math.round(x.b_int_age) + '–' + Math.round(x.t_int_age) + ' Ma)' : '')
+              : '';
+          };
+          var x = '<button id="cw-rock-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">✕</button>';
+          if (!u){
+            el2.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">NO MAPPED UNIT HERE</span>'
+              + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">MACROSTRAT</span>' + x + '</div>';
+          } else {
+            var lith = String(u.lith || '').replace(/^Major:\{|\}$/g, '').replace(/\},?\s*Minor:\{/g, '; minor ').replace(/[{}]/g, '');
+            var age = ageOf(u);
+            var desc = String(u.descrip || '').replace(/\s+/g, ' ');
+            if (desc.length > 220) desc = desc.slice(0, 217).replace(/\s\S*$/, '') + '…';
+            el2.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+              + (u.color ? '<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + mtaEsc(u.color) + ';border:1px solid rgba(27,35,64,.25);"></span>' : '')
+              + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(u.strat_name || u.name).toUpperCase() + '</span>'
+              + (age ? '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + mtaEsc(age).toUpperCase() + '</span>' : '')
+              + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">MACROSTRAT</span>' + x + '</div>'
+              + (lith ? '<div style="font:700 10px system-ui,sans-serif;margin-top:3px;">' + mtaEsc(lith) + '</div>' : '')
+              + (desc ? '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:2px;line-height:1.45;">' + mtaEsc(desc) + '</div>' : '')
+              + (d.length > 1
+                  ? '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">BENEATH IT: '
+                    + d.slice(1, 3).map(function(x){
+                        return (x.color ? '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + mtaEsc(x.color) + ';border:1px solid rgba(27,35,64,.25);vertical-align:middle;margin-right:4px;"></span>' : '')
+                          + '<b style="color:#1b2340;">' + mtaEsc(x.strat_name || x.name) + '</b>' + (ageOf(x) ? ' · ' + mtaEsc(ageOf(x)) : '');
+                      }).join(' &nbsp;·&nbsp; ') + '</div>'
+                  : '');
+          }
+          var xb = document.getElementById('cw-rock-x');
+          if (xb) xb.onclick = function(e){ e.stopPropagation(); cwInfoDefault(); };
+        })
+        .catch(function(){ cwInfoDefault(); });
+    }
+
     function cwTreesOff(){
       if (!cw.trees) return;
       cw.trees = false;
@@ -52874,7 +53042,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        and the tap targets ask this, so nothing is left tappable-but-invisible. */
     function cwMapMode(){ return !cw.wide && !cw.radarOn; }
     function setProduct(p){
-      cwFloodsOff(); cwTreesOff();
+      cwFloodsOff(); cwTreesOff(); cwRockOff();
       if (cw.wide){
         /* you were looking at a wide view: come back to the city map and
            show this product, rather than toggling something you can't see */
@@ -53143,12 +53311,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (cw.trains) on.push('TRAINS');
       if (cw.floods) on.push('FLOODING');
       if (cw.trees) on.push('TREES');
+      if (cw.rock) on.push('GEOLOGY');
       if (on.length) parts.push(on.join(' + '));
       el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;">'
         + '<span style="font:700 .62rem system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#1b2340;">'
         + parts.join('<span style="opacity:.35;"> \u00B7 </span>') + '</span>'
         + '<span style="font:600 .58rem system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#5b647a;margin-left:auto;">'
-        + (cw.trains ? 'TAP A STATION FOR ITS TRAINS' : 'TAP THE MAP') + '</span></div>';
+        + (cw.rock ? 'TAP THE MAP FOR THE ROCK BENEATH' : cw.trains ? 'TAP A STATION FOR ITS TRAINS' : 'TAP THE MAP') + '</span></div>';
     }
     /* one panel for every non-train map feature — same chrome as the
        arrivals panel so a tap always answers the same way */
@@ -57275,6 +57444,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }
     }
     function cwDrawSensors(){
+      try { cwRockDraw(); } catch (e){}
       cwDrawGhost();
       var cvs = document.getElementById('cw-ov');
       if (!cvs) return;
