@@ -12833,7 +12833,7 @@ window._updateHeroWx = function(code, night){
                       </div>
                       <!-- the city's buried streams, traced off Viele's 1865 survey into
                            our own vectors — where the water was is where basements flood -->
-                      <div id="floodnet-ghost" onclick="toggleGhostRivers()" title="Manhattan's buried streams and marshes, traced off Viele's 1865 survey — the waterways under today's streets" style="margin-top:3px;padding:4px 0;border-radius:8px;border:1px solid rgba(0,107,182,.2);background:transparent;font-size:.4rem;font-weight:700;color:rgba(0,107,182,.45);cursor:pointer;text-align:center;user-select:none;">GHOST RIVERS · 1865</div>
+                      <div id="floodnet-ghost" onclick="toggleGhostRivers()" title="The city's buried streams and marshes, traced off Viele's 1865 survey of Manhattan and the 1897 USGS sheets of the other boroughs — the waterways under today's streets" style="margin-top:3px;padding:4px 0;border-radius:8px;border:1px solid rgba(0,107,182,.2);background:transparent;font-size:.4rem;font-weight:700;color:rgba(0,107,182,.45);cursor:pointer;text-align:center;user-select:none;">GHOST RIVERS · 1865–97</div>
                     </div><div style="background:rgba(255,255,255,.62);backdrop-filter:blur(20px);border-radius:14px;padding:8px 10px;border:1px solid rgba(43,34,244,.10);box-shadow:0 0 40px rgba(43,34,244,.035),0 6px 24px rgba(15,23,42,.12);">
                       <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><span style="width:3px;height:10px;background:#2B22F4;border-radius:2px;"></span><span style="font-size:.36rem;color:rgba(43,34,244,.45);font-weight:800;letter-spacing:.1em;">VIEW</span></div>
                       <div style="display:flex; gap:3px;">
@@ -49019,7 +49019,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          The stitched station/conus maps are Protomaps too \u2014 CARTO is gone. */
       if (on) at.textContent = '\u00a9 OpenStreetMap \u00b7 Protomaps \u00b7 '
         + (mode === 'city' ? 'NOAA NCEI \u00b7 ' : '') + srcName
-        + (mode === 'city' ? ' \u00b7 ghost rivers: Viele 1865' : '') + ' \u00b7 \u26a1 Blitzortung.org';
+        + (mode === 'city' ? ' \u00b7 ghost rivers: Viele 1865 \u00b7 USGS 1897' : '') + ' \u00b7 \u26a1 Blitzortung.org';
     }
     // Header source label follows the live view \u2014 it read "NWS RADAR" for all
     // three WMS views while the map credit underneath named the actual feed.
@@ -57251,7 +57251,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var p3 = ft.properties || {};
       var bits = [];
       if (p3.len_m) bits.push(p3.len_m + ' M TRACED');
-      cwFeatPanel(p3.name || 'UNNAMED WATERCOURSE', 'BURIED · VIELE 1865',
+      cwFeatPanel(p3.name || 'UNNAMED WATERCOURSE', 'BURIED · ' + (p3.src || 'VIELE 1865').toUpperCase(),
         (p3.story ? '<div style="font:.62rem system-ui,sans-serif;color:#334;margin-top:6px;line-height:1.5;">' + mtaEsc(p3.story) + '</div>' : '')
         + '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.05em;margin-top:6px;">'
         + (bits.length ? bits.join(' · ') + ' · ' : '') + 'STILL FLOWING UNDER THE STREET</div>');
@@ -66678,8 +66678,8 @@ function initNowMicroTabs(){
       if (window._ghostPending){ window._ghostPending.push(cb); return; }
       window._ghostPending = [cb];
       Promise.all([
-        fetch('ghost-rivers.json').then(function(r){ return r.json(); }),
-        fetch('ghost-marsh.json').then(function(r){ return r.json(); })
+        fetch('ghost-rivers.json?v=2').then(function(r){ return r.json(); }),
+        fetch('ghost-marsh.json?v=2').then(function(r){ return r.json(); })
       ]).then(function(a){
         window._ghostData = { streams: a[0], marsh: a[1] };
         var q = window._ghostPending; window._ghostPending = null;
@@ -66706,7 +66706,7 @@ function initNowMicroTabs(){
                a blue wash, which over the map's own water reads as a stain */
             L.geoJSON(d.marsh, { renderer: L.canvas({ padding:0.4 }), interactive:false,
               style: function(){ return { stroke:false, fillColor:'#d6e2f4', fillOpacity:.62 }; },
-              attribution: 'Buried streams traced from Viele 1865' }),
+              attribution: 'Buried water: Viele 1865 (Manhattan), USGS 1897 (Brooklyn, Queens, the Bronx)' }),
             /* dashed is the whole grammar: solid is water still there, dashed is
                water that is under you */
             L.geoJSON(d.streams, { renderer: L.canvas({ padding:0.4 }),
@@ -66717,14 +66717,15 @@ function initNowMicroTabs(){
                   + (p.name ? p.name.toUpperCase() : 'UNNAMED WATERCOURSE') + '</div>'
                   + (p.story ? '<div style="font:.58rem system-ui,sans-serif;color:#334;margin-top:3px;">' + p.story + '</div>' : '')
                   + '<div style="font:.5rem system-ui,sans-serif;color:#889;margin-top:4px;">'
-                  + p.len_m + ' m \u00b7 traced from Viele, 1865</div>');
+                  + p.len_m + ' m \u00b7 traced from ' + (p.src || 'Viele 1865') + '</div>');
               } })
           ]);
         }
         window._ghostLayer.addTo(hazardMap);
         if (window._hazardEngageMap) window._hazardEngageMap();
-        /* Manhattan only — that is the island the survey covers end to end */
-        hazardMap.flyToBounds([[40.695, -74.03], [40.882, -73.90]], { padding:[16,16], duration:0.8 });
+        /* the four boroughs the surveys cover (Manhattan from Viele 1865, the
+           rest from the USGS 1897 quads); Staten Island has no sheet yet */
+        hazardMap.flyToBounds([[40.56, -74.05], [40.91, -73.72]], { padding:[16,16], duration:0.8 });
       });
     };
     window.floodNetArea = function(area){
