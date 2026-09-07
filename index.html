@@ -50908,7 +50908,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       gb.id = 'cw-tab-rock';
       gb.textContent = 'GEOLOGY';
       gb.style.cssText = TAB;
-      gb.onclick = function(){ cw.rock = !cw.rock; paintTabs(); cwRockDraw(); };
+      gb.onclick = function(){ cw.rock = !cw.rock; paintTabs(); cwRockDraw(); cwDrawSensors(); };
       if (wpRow){ wpRow.appendChild(fb2); wpRow.appendChild(tb2); wpRow.appendChild(gb); }
       /* row three is empty now, so its bottom gap moves up to the sub-tabs */
       if (tabs2) tabs2.style.display = 'none';
@@ -51130,7 +51130,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (dPx > reach) return;
           if (!cand || dPx < cand.d) cand = { d: dPx, fn: fn, arg: arg };
         };
-        if (cw.trains && cwMapMode() && window.BV_MTA_STOPS){
+        if (cw.trains && cwMapMode() && !cw.rock && window.BV_MTA_STOPS){   /* no station taps on the geology view (user 2026-09-07) */
           var bs = null, bsd = Infinity;
           window.BV_MTA_STOPS.forEach(function(st){
             var d = Math.hypot(toX(st[3]) - X, toY(st[2]) - Y);
@@ -57641,7 +57641,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         return [(X - v.X0) / (v.X1 - v.X0) * cvs.width,
                 (v.Y1 - Y) / (v.Y1 - v.Y0) * cvs.height];
       });
-      if (cw.trains && cwMapMode() && window.BV_MTA_STOPS){
+      if (cw.trains && cwMapMode() && !cw.rock && window.BV_MTA_STOPS){   /* the station dots leave with the geology, like the pipes */
         /* subway-map idiom: white dot, ink ring; the tapped station glows */
         window.BV_MTA_STOPS.forEach(function(st){
           var X = st[3] * Math.PI / 180 * R2;
