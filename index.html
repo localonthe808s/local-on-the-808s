@@ -53222,6 +53222,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                  the story layers against the core, so park green cancels out
                  and never reaches it. */
               q[i] = 21; q[i + 1] = 162; q[i + 2] = 251;
+            } else if (q[i] > 140 && q[i + 1] > 128 && q[i + 1] > q[i + 2] + 40){
+              /* THE SHOULDER TOO (user 2026-09-07: "we still have flood prone
+                 waters looking yellow"). The lab lays the stormwater lime down
+                 in soft passes, so most of its pixels are lime already MIXED
+                 with the orange grid at some strength — yellow-oranges the
+                 green test above never sees. Read that strength back off the
+                 green channel (orange land sits at G=114, the lime at 255) and
+                 lay the same flood blue at the same strength, as alpha, so the
+                 wash still fades into the ground the way the lab drew it. */
+              var t = Math.min(1, (q[i + 1] - 114) / 141);
+              q[i] = 21; q[i + 1] = 162; q[i + 2] = 251;
+              q[i + 3] = Math.round(q[i + 3] * Math.max(0.25, t));
             }
           }
           g.putImageData(idat, 0, 0);
