@@ -29,17 +29,18 @@ jobs:
       - name: Refit the timing, exit and calibration studies on the three cities
         run: |
           python3 -u _kalshi/price_study.py --city ny,las,aus
+          python3 -u _kalshi/trail_study.py || echo "trail study failed (kept going)"
           python3 -u _kalshi/peak_stats.py || echo "peak stats failed (kept going)"
       - name: Commit if changed
         run: |
           set -euo pipefail
-          if git diff --quiet -- _kalshi/price_study.json _kalshi/peak_stats.json; then echo "no change"; exit 0; fi
+          if git diff --quiet -- _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json; then echo "no change"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _kalshi/price_study.json _kalshi/peak_stats.json
+          git add _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json
           git commit -m "Kalshi nightly refit: hour windows, exit policy and calibration on the three cities"
           for i in 1 2 3; do
             git push && exit 0
-            git fetch origin main && git rebase origin/main || { git rebase --abort; git reset --hard origin/main; git add _kalshi/price_study.json _kalshi/peak_stats.json; git commit -m "Kalshi nightly refit"; }
+            git fetch origin main && git rebase origin/main || { git rebase --abort; git reset --hard origin/main; git add _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json; git commit -m "Kalshi nightly refit"; }
           done
           exit 1

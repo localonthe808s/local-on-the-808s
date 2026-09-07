@@ -4,3 +4,5 @@
 _kalshi/price_rows.json
 _kalshi/candle_cache.json
 _kalshi/_rescore/
+# the per-bake trail rows, pushed to R2 by the workflow, never committed
+_kalshi/trail_out/

@@ -2570,6 +2570,43 @@ def compose_run_review(cfg, record):
     return R
 
 
+def trail_row(doc, now):
+    """THE BAKE TRAIL (2026-09-07): one compact row per bake per city -- what the
+    sheet said (bet, price, size, grade inputs), what was on offer (every rung's
+    ask and depth), and what the readings were (hourly max, 5-minute sensor, TWC,
+    six-hour group) with their clocks. Appended locally per day; the workflow
+    appends the day's file to R2 (kalshi/trail/<key>_<date>.jsonl, public on the
+    cdn). Mids can be rebuilt from Kalshi's candles later; depth and the plan
+    cannot, which is why this exists. No bankroll figures in here."""
+    T = doc.get('today') or {}
+    b = T.get('bet') or None
+    tm = T.get('tomorrow') or {}
+    o5 = T.get('own5_row') or {}
+    pk = T.get('peak_done') or {}
+    return {
+        't': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'lt': now.strftime('%H:%M'), 'date': T.get('date'), 'k': doc.get('key') or T.get('key'),
+        'pred': T.get('pred'), 'sd': round(T.get('sd') or 0, 3), 'p': T.get('p'), 'pick': T.get('pick'),
+        'mpick': T.get('market_pick'), 'mp': T.get('market_p'), 'agree': T.get('agree'),
+        'bet': ({'dir': b['dir'], 'label': b['label'], 'price': b['price'], 'ev': b['ev'], 'q': b.get('q'),
+                 'kelly': b.get('kelly'), 'size': b.get('size')} if b else None),
+        'locked': bool(T.get('locked')), 'over': bool(T.get('day_over')), 'decided': bool(T.get('day_decided')),
+        'blend_w': T.get('blend_w'), 'peak_p': pk.get('p') if isinstance(pk, dict) else None,
+        'obs': {'hmax': T.get('obs_so_far'), 'now': T.get('now_temp'), 'now_at': T.get('now_at'),
+                'own5': T.get('own5_max'), 'own5_last': o5.get('last') if isinstance(o5, dict) else None,
+                'own5_at': o5.get('at') if isinstance(o5, dict) else None,
+                'twc': T.get('twc_max'), 'twc_now': T.get('twc_now'), 'twc_corr': bool(T.get('twc_corroborated')),
+                'apt': T.get('apt_max'), 'six': T.get('six_max'), 'six_win': T.get('six_window'),
+                'cli': T.get('cli_max'), 'cli_at': T.get('cli_at'), 'cli_final': bool(T.get('cli_final'))},
+        'models': T.get('models') or None,
+        'ladder': [[r.get('label'), r.get('ask'), r.get('ysize'), r.get('nask'), r.get('nsize'), r.get('market'), r.get('ours')]
+                   for r in (T.get('ladder') or [])],
+        'tom': ({'pick': tm.get('pick'), 'p': tm.get('p'), 'pred': tm.get('pred'),
+                 'bet': ({'dir': tm['bet']['dir'], 'label': tm['bet']['label'], 'price': tm['bet']['price'], 'ev': tm['bet']['ev']} if tm.get('bet') else None)}
+                if tm else None),
+    }
+
+
 def run_market(cfg, ticker_cache=TICKER_CACHE):
     dry = '--dry' in sys.argv
     _TL.cfg = cfg
@@ -3785,6 +3822,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # each hour actually returned, against the market's own quotes on
             # settled days. Falls back to the assumed accuracy curve otherwise.
             'exit': measured_exit(cfg),
+            'bet': best_bet(rows, ps),
             'calib': _CALIB.get(cfg['key']) or None,
             'edge_floor': {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE},
             # how often the mid-morning runs move the pick between 8 and 11,
@@ -3829,6 +3867,14 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         return 0
     with open(OUT, 'w') as f:
         json.dump(doc, f, separators=(',', ':'))
+    # the bake trail, appended for the workflow to push to R2
+    try:
+        row = trail_row(doc, now); row['k'] = cfg['key']
+        tdir = os.path.join(HERE, 'trail_out'); os.makedirs(tdir, exist_ok=True)
+        with open(os.path.join(tdir, '%s_%s.jsonl' % (cfg['key'], tkey)), 'a') as tf:
+            tf.write(json.dumps(row, separators=(',', ':')) + '\n')
+    except Exception as e:
+        print('trail row skipped (%s)' % e)
     print('wrote %s (%d scored days) -- %s'
           % (OUT, record['n'], timing_report()))
     # a one-line digest for the panel's other-cities table, so seven markets

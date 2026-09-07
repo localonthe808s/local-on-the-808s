@@ -80,6 +80,37 @@ jobs:
           # once the day has settled. Self-throttled to a few requests a day.
           python3 -u _kalshi/minute_replay.py || echo "minute replay failed (kept going)"
 
+      # THE BAKE TRAIL -> R2 (2026-09-07). Each bake appends one row per city to
+      # _kalshi/trail_out/<key>_<date>.jsonl; this step appends those to the
+      # day's object in the bucket behind cdn.bluishvoid.com. Read-append-write:
+      # a missing object is a new day; any OTHER failure to read aborts rather
+      # than overwriting a day's history with one row. Never blocks the commit.
+      - name: Append the bake trail to R2
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          EP="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          files=(_kalshi/trail_out/*.jsonl)
+          if [ ${#files[@]} -eq 0 ]; then echo "no trail rows this run"; exit 0; fi
+          aws s3 ls "s3://bluishvoid-bg/kalshi/trail/" --endpoint-url "$EP" > /dev/null
+          for f in "${files[@]}"; do
+            k="kalshi/trail/$(basename "$f")"
+            tmp="$(mktemp)"
+            if aws s3api head-object --bucket bluishvoid-bg --key "$k" --endpoint-url "$EP" > /dev/null 2>&1; then
+              aws s3 cp "s3://bluishvoid-bg/$k" "$tmp" --endpoint-url "$EP" --only-show-errors
+            fi
+            cat "$f" >> "$tmp"
+            aws s3 cp "$tmp" "s3://bluishvoid-bg/$k" --endpoint-url "$EP" \
+              --content-type "application/x-ndjson" --cache-control "public, max-age=120" --only-show-errors
+            echo "appended $(wc -l < "$f") row(s) -> $k ($(wc -l < "$tmp") total)"
+          done
+          rm -rf _kalshi/trail_out
       - name: Commit if changed
         run: |
           set -euo pipefail
