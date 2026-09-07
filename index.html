@@ -50724,6 +50724,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + 'margin:0 14px;padding:5px 8px 0;background:rgba(255,255,255,.6);backdrop-filter:blur(12px);"></div>'
         + '<div id="cw-tabs2" style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;'
         + 'margin:0 14px;padding:5px 8px 6px;background:rgba(255,255,255,.6);backdrop-filter:blur(12px);"></div>'
+        /* THE INFO BAR (user 2026-09-07): a top-down reading strip in the
+           tabs' frosted family, sitting between the FLOODING/TREES row and
+           the map. At rest it says what the map is showing; a tapped
+           station puts its arrivals here instead of a popup over the map. */
+        + '<div id="cw-info" style="margin:0 14px;padding:7px 12px 8px;background:rgba(255,255,255,.6);'
+        + 'backdrop-filter:blur(12px);border-top:1px solid rgba(27,35,64,.10);font-family:system-ui,sans-serif;'
+        + 'color:#1b2340;min-height:2.2em;"></div>'
         + '<div id="cw-body" style="position:relative;overflow:hidden;aspect-ratio:1.1405;border-radius:0 0 10px 10px;margin:0 14px 8px;background:#17457F;">'
         /* the full-extent bake rides UNDER the composed view with its own
            registration transform, so zooming out never shows navy — any
@@ -51286,6 +51293,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         f.style.background = cw.floods ? 'rgba(43,34,244,.9)' : 'rgba(234,88,12,.92)';
         f.style.color = 'rgba(255,255,255,.97)';
       }
+      cwInfoDefault();
       WIDE.forEach(function(wv){
         var b = document.getElementById('cw-wtab-' + wv.id);
         if (!b) return;
@@ -51927,6 +51935,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         if (wv.lagMin != null){ tEl.textContent = '~' + wv.lagMin + ' MIN'; return; }
         var age = (urls.length - 1 - k) * stepMs;
         tEl.textContent = age < 60000 ? 'NOW' : '~' + Math.round(age / 60000) + ' MIN AGO';
+        cwInfoDefault();
       };
       urls.forEach(function(u, k){
         var im = new Image();
@@ -53112,7 +53121,34 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var p = document.getElementById('cw-mta-panel');
       if (p) p.remove();
       if (mtaPanelTimer){ clearInterval(mtaPanelTimer); mtaPanelTimer = null; }
+      cwInfoDefault();
       cwDrawSensors();
+    }
+    /* THE INFO BAR'S RESTING LINE: what the map is showing right now -- the
+       view, the radar product and its age, the layers that are lit -- and
+       what a tap does. Repainted by paintTabs and the frame clock. */
+    function cwInfoDefault(){
+      var el = document.getElementById('cw-info');
+      if (!el || mtaSel) return;
+      var parts = [];
+      var wv = cw.wide ? WIDE.filter(function(w){ return w.id === cw.wide; })[0] : null;
+      if (wv) parts.push('<b>' + mtaEsc(wv.label) + '</b>');
+      else if (cw.radarOn){
+        var pr = PRODUCTS.filter(function(x){ return x[0] === cw.prod; })[0];
+        parts.push('<b>' + mtaEsc(pr ? pr[1] : 'RADAR') + '</b>');
+      } else parts.push('<b>CITY MAP</b>');
+      var t = document.getElementById('cw-time');
+      if ((cw.radarOn || cw.wide) && t && t.textContent) parts.push('FRAME ' + mtaEsc(t.textContent));
+      var on = [];
+      if (cw.trains) on.push('TRAINS');
+      if (cw.floods) on.push('FLOODING');
+      if (cw.trees) on.push('TREES');
+      if (on.length) parts.push(on.join(' + '));
+      el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;">'
+        + '<span style="font:700 .62rem system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#1b2340;">'
+        + parts.join('<span style="opacity:.35;"> \u00B7 </span>') + '</span>'
+        + '<span style="font:600 .58rem system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#5b647a;margin-left:auto;">'
+        + (cw.trains ? 'TAP A STATION FOR ITS TRAINS' : 'TAP THE MAP') + '</span></div>';
     }
     /* one panel for every non-train map feature — same chrome as the
        arrivals panel so a tap always answers the same way */
@@ -57013,25 +57049,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (!body) return;
       cwFeatClose(); cwKalshiClose();   // one panel at a time
       mtaSel = st;
-      var p = document.getElementById('cw-mta-panel');
-      if (!p){
-        p = document.createElement('div');
-        p.id = 'cw-mta-panel';
-        /* FULL WIDTH, FILLED SIDEWAYS (user 2026-09-03). It spanned the
-           widget already; the fault was never the width but that a narrow
-           column of times sat in it, leaving a slab of empty white on a
-           1132px box. The panel keeps the space and the groups now spread
-           across it, in the departure-board grammar of the subway board
-           above the map. */
-        p.style.cssText = 'position:absolute;left:8px;right:8px;bottom:8px;z-index:6;background:rgba(252,252,250,.95);'
-          + 'border-radius:10px;padding:9px 12px 10px;font-family:system-ui,sans-serif;color:#1b2340;'
-          + 'box-shadow:0 6px 24px rgba(10,20,40,.35);max-height:46%;overflow-y:auto;overscroll-behavior:contain;';
-        ['pointerdown','click','dblclick'].forEach(function(evn){
-          p.addEventListener(evn, function(e){ e.stopPropagation(); });
-        });
-        p.addEventListener('wheel', function(e){ e.stopPropagation(); }, { passive: true });
-        body.appendChild(p);
-      }
+      /* INTO THE INFO BAR, not a popup over the map (user 2026-09-07). The
+         bar above the map is the reading surface now; the old bottom panel
+         is gone. Same departure-board grammar as the hood board. */
+      var p = document.getElementById('cw-info');
+      if (!p) return;
       p.innerHTML = '<div style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(st[1]).toUpperCase()
         + '</div><div style="font:600 9px system-ui,sans-serif;color:#5b647a;margin-top:4px;">LOADING ARRIVALS…</div>';
       mtaPanelFill(st);
@@ -57058,11 +57080,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       mtaComplexArrivals(st, function(members, acc){ mtaPanelRender(st, members, acc); });
     }
     function mtaPanelRender(st, members, acc){
-      var p = document.getElementById('cw-mta-panel');
+      var p = document.getElementById('cw-info');
       if (!p || mtaSel !== st) return;
       var nw = Date.now() / 1000;
-      var html = '<div style="display:flex;align-items:baseline;gap:8px;">'
+      /* the complex's lines as chips beside the name, the hood board's grammar */
+      var seenRt = {}, chips = '';
+      members.forEach(function(m){ String(m[4] || '').split(/\s+/).forEach(function(rt){ if (rt && !seenRt[rt]){ seenRt[rt] = 1; chips += mtaChip(rt); } }); });
+      var html = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
         + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;white-space:nowrap;">' + mtaEsc(st[1]).toUpperCase() + '</span>'
+        + (chips ? '<span style="display:inline-flex;gap:3px;align-items:center;">' + chips + '</span>' : '')
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;white-space:nowrap;">LIVE · MTA</span>'
         + '<button id="cw-mta-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">✕</button></div>';
       /* A complex brings up to four direction groups — Herald Square is
