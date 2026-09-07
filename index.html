@@ -55486,26 +55486,36 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var xn = (T.now_temp == null) ? null : xp(T.now_temp);
         var xo = (T.obs_so_far == null) ? null : xp(T.obs_so_far);
         var xf = xp(T.pred);
-        var crowded = (xn != null && xo != null && Math.abs(xn - xo) < 13);
+        /* stacked labels are about half as wide: 9% of the axis is a collision now, not 13 */
+        var crowded = (xn != null && xo != null && Math.abs(xn - xo) < 9);
         var tick = function(x, col, top, h){
           return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + top
             + 'px;height:' + h + 'px;width:2px;background:' + col
             + ';transform:translateX(-1px);"></div>';
         };
+        /* STACKED (user 2026-09-07: "stack the text in here a bit so
+           everything isnt as long"): the fact on the first line (77° NOW),
+           its qualifier on a smaller second (2:51 PM). Half the width, so
+           the labels stop running into each other along the axis. */
+        var LBL_H = 17;                         // one stacked label, top to top
         var label = function(x, col, txt, top){
-          return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (top == null ? -9 : top) + 'px;'
-            + 'transform:translateX(' + anchor(x) + ');font:800 7.5px system-ui,sans-serif;'
-            + 'color:' + col + ';white-space:nowrap;">' + txt + '</div>';
+          var t1 = Array.isArray(txt) ? txt[0] : txt, t2 = Array.isArray(txt) ? (txt[1] || '') : '';
+          return '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (top == null ? -LBL_H : top) + 'px;'
+            + 'transform:translateX(' + anchor(x) + ');text-align:' + (x < 14 ? 'left' : x > 86 ? 'right' : 'center')
+            + ';white-space:nowrap;line-height:1;">'
+            + '<div style="font:800 7.5px system-ui,sans-serif;color:' + col + ';">' + t1 + '</div>'
+            + (t2 ? '<div style="font:700 6.5px system-ui,sans-serif;letter-spacing:.03em;color:' + col + ';opacity:.78;margin-top:1px;">' + t2 + '</div>' : '')
+            + '</div>';
         };
         /* the peak's own hour: the warmest hourly reading's. "BY 9 AM" was the
            hour the running maximum was computed through, which read as the
            time of the peak; overnight highs made that plainly wrong. */
-        var peakTime = (T.obs_peak_hour != null) ? ' · ' + t12(T.obs_peak_hour + ':00')
+        var peakTime = (T.obs_peak_hour != null) ? t12(T.obs_peak_hour + ':00')
                      + (T.obs_peak_read != null && Math.abs(T.obs_peak_read - T.obs_so_far) > 0.2
-                          ? ' (' + T1(T.obs_peak_read) + '° read)' : '')
-                     : (T.obs_through != null) ? ' · THROUGH ' + t12(T.obs_through + ':00') : '';
-        var nowTime = T.now_at ? ' · ' + t12(T.now_at) : '';
-        var fcTime = (T.peak_hour != null && !dayDone) ? ' · PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') : '';
+                          ? ' · ' + T1(T.obs_peak_read) + '° READ' : '')
+                     : (T.obs_through != null) ? 'THROUGH ' + t12(T.obs_through + ':00') : '';
+        var nowTime = T.now_at ? t12(T.now_at) : '';
+        var fcTime = (T.peak_hour != null && !dayDone) ? 'PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') : '';
         var omark = '', nmark = '';
         if (xo != null) omark = tick(xo, '#2fbfa8', 2, 21);
         if (xn != null){
@@ -55518,29 +55528,29 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              the peak on the line above by its tick -- one run-on label read
              as a single fact */
           if (Math.abs(T.now_temp - T.obs_so_far) < 0.25)
-            nmark += label((xn + xo) / 2, '#2fbfa8', T1(T.now_temp) + '° NOW &amp; PEAK' + nowTime);
+            nmark += label((xn + xo) / 2, '#2fbfa8', [T1(T.now_temp) + '° NOW &amp; PEAK', nowTime]);
           else {
-            nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '° NOW' + nowTime);
-            omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '° PEAK' + peakTime, -20);
+            nmark += label(xn, '#2fbfa8', [T1(T.now_temp) + '° NOW', nowTime]);
+            omark += label(xo, '#2fbfa8', [T1(T.obs_so_far) + '° PEAK', peakTime], -2 * LBL_H);
           }
         } else {
-          if (xn != null) nmark += label(xn, '#2fbfa8', T1(T.now_temp) + '° NOW' + nowTime);
-          if (xo != null) omark += label(xo, '#2fbfa8', T1(T.obs_so_far) + '° PEAK' + peakTime);
+          if (xn != null) nmark += label(xn, '#2fbfa8', [T1(T.now_temp) + '° NOW', nowTime]);
+          if (xo != null) omark += label(xo, '#2fbfa8', [T1(T.obs_so_far) + '° PEAK', peakTime]);
         }
         /* the forecast, labelled with the hour the runs put its peak -- above
            the axis unless the NOW/PEAK labels are already there */
         /* when the forecast sits within a few degrees of NOW or PEAK its label
            goes on a third line ABOVE the axis, not below into the official
            forecasts' labels */
-        var fcNear = (xo != null && Math.abs(xf - xo) < 16) || (xn != null && Math.abs(xf - xn) < 16);
-        var fcLabelTop = fcNear ? (crowded ? -31 : -20) : -9;
-        var fmark = label(xf, FCC, T1(T.pred) + '° FORECAST' + fcTime, fcLabelTop);
+        var fcNear = (xo != null && Math.abs(xf - xo) < 10) || (xn != null && Math.abs(xf - xn) < 10);
+        var fcLabelTop = fcNear ? (crowded ? -3 * LBL_H : -2 * LBL_H) : -LBL_H;
+        var fmark = label(xf, FCC, [T1(T.pred) + '° FORECAST', fcTime], fcLabelTop);
         /* the official forecasts and the station's own hard numbers, under the axis */
         var under = [];
         /* FORECAST, said on the mark: "TWC 81°" beside a TWC running maximum in
            the card above read as two readings (user, 2026-09-06) */
-        if (T.twc_fc != null) under.push(['TWC FORECAST ' + D1(T.twc_fc) + '°', T.twc_fc, MKC]);
-        if (T.nws_fc != null) under.push(['NWS FORECAST ' + D1(T.nws_fc) + '°', T.nws_fc, '#8fb3d9']);
+        if (T.twc_fc != null) under.push([[D1(T.twc_fc) + '° TWC', 'FORECAST'], T.twc_fc, MKC]);
+        if (T.nws_fc != null) under.push([[D1(T.nws_fc) + '° NWS', 'FORECAST'], T.nws_fc, '#8fb3d9']);
         /* only the afternoon groups earn a place on the axis: the 8 AM-2 PM
            group at 1:51 PM and the 2-8 PM group at 7:51 PM are hard numbers
            the settlement cannot go below; the overnight groups repeat the
@@ -55550,11 +55560,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             && (T.obs_so_far == null || Math.abs(T.six_max - T.obs_so_far) > 0.3)){
           var sw = T.six_window;
           var swTxt = (sw && sw.length === 2)
-            ? ' · ' + t12(sw[0] + ':00').replace(':00', '') + '–' + t12(sw[1] + ':00').replace(':00', '') : '';
-          under.push(['6-HR MAX ' + T1(T.six_max) + '°' + swTxt, T.six_max, '#2fbfa8']);
+            ? t12(sw[0] + ':00').replace(':00', '') + '–' + t12(sw[1] + ':00').replace(':00', '') : '';
+          under.push([[T1(T.six_max) + '° 6-HR MAX', swTxt], T.six_max, '#2fbfa8']);
         }
         if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
-          under.push(['TWC RUNNING MAX ' + D1(T.twc_max) + '°', T.twc_max, '#f2833f']);
+          under.push([[D1(T.twc_max) + '° TWC', 'RUNNING MAX'], T.twc_max, '#f2833f']);
         var lastX = -99, row = 0;
         under.sort(function(a, b){ return a[1] - b[1]; }).forEach(function(u){
           var x = xp(u[1]);
@@ -55562,11 +55572,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           row = (Math.abs(x - lastX) < 9) ? row + 1 : 0; lastX = x;
           fmark += '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (14 + (fcLabelTop === 23 ? 10 : 0)) + 'px;height:8px;width:2px;'
             + 'background:' + u[2] + ';transform:translateX(-1px);"></div>'
-            + '<div style="position:absolute;left:' + x.toFixed(1) + '%;top:' + (24 + 9 * row) + 'px;'
-            + 'transform:translateX(' + anchor(x) + ');font:800 6.5px system-ui,sans-serif;letter-spacing:.04em;'
-            + 'color:' + u[2] + ';white-space:nowrap;">' + u[0] + '</div>';
+            + label(x, u[2], u[0], 24 + (LBL_H + 2) * row);   /* a breath between stacked rows (Austin: TWC and NWS on one value) */
         });
-        var topRoom = fcNear ? (crowded ? 38 : 26) : (crowded ? 26 : 14);
+        var topRoom = (fcNear ? (crowded ? 3 : 2) : (crowded ? 2 : 1)) * LBL_H + 5;
         scale = '<div style="position:relative;height:108px;margin:' + topRoom + 'px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
