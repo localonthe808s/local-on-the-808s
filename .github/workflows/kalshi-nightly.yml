@@ -42,8 +42,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -m "Kalshi nightly refit: hour windows, exit policy and calibration on the three cities"
-          for i in 1 2 3; do
+          # THE PUSH RACE (found 2026-09-07): the bake pushes every five minutes,
+          # so a plain push is rejected about half the time. The study scripts
+          # also leave modified caches in the tree, and `git rebase` refuses
+          # with unstaged changes -- which is how the first CI tune run failed
+          # AFTER a clean nine-minute replay. Discard everything not committed,
+          # then rebase and retry.
+          OURS=$(git rev-parse HEAD)
+          git checkout -- . || true
+          for i in 1 2 3 4 5; do
             git push && exit 0
-            git fetch origin main && git rebase origin/main || { git rebase --abort; git reset --hard origin/main; git add _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json; git commit -m "Kalshi nightly refit"; }
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort || true; git reset --hard origin/main; git checkout "$OURS" -- _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json; git commit -m "Kalshi nightly refit"; }
+            sleep $((RANDOM % 20 + 5))
           done
           exit 1
