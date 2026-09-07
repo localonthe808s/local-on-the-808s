@@ -53148,6 +53148,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        letterbox meant scrolling a scroller inside a map. cwFeatPanel is left
        exactly as it is, because the outfalls, sensors and buried streams say a
        paragraph each and the small sheet suits them. */
+    /* a handle for the capture harness: open the sheet without hunting for the
+       castle on the map (its screen position moves with the viewport) */
+    window._cwKalshiOpen = function(){ try { cwKalshiTap(); } catch (e){} };
     function cwKalshiPanel(title, sub, html, meta, mid){
       var body = document.getElementById('cw-body');
       if (!body) return;
@@ -53256,7 +53259,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + 'flex:0 0 auto;">'
         + '&#10005;</button></div>'
         + (sub ? '<div style="margin-top:4px;">' + sub + '</div>' : '')
-        + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta + '</div>' : '')
+        /* on a phone the clock and the positions stack under the date lines */
+        + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta
+            + (mid ? '<div style="margin-top:6px;">' + mid.replace(/text-align:right/g, 'text-align:left') + '</div>' : '') + '</div>' : '')
         + '</div></div>'
         + html;
       [].slice.call(p.querySelectorAll('.cwk-city')).forEach(function(b){
@@ -56493,7 +56498,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }).join('');
       /* NO OPEN POSITION: the slot under the clock still says so, with the
          cash on hand, rather than going blank (user, 2026-09-06). */
-      if (!(bookKnown || otherRows) && !PHONE){
+      if (!(bookKnown || otherRows)){
         var stP = window._cwPotStatus || {};
         var cashP = (window._cwPot && window._cwPot.cash != null) ? window._cwPot.cash : null;
         posTop = '<div style="display:block;text-align:right;">'
@@ -56508,7 +56513,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (stP.state === 'ok' ? 'THE PLAN BELOW IS THE NEXT BET; NOTHING IS RIDING NOW' : 'SEE THE ACCOUNT ROW UNDER SYSTEM') + '</div>'
           + '</div>';
       }
-      if ((bookKnown || otherRows) && !PHONE){
+      if (bookKnown || otherRows){
         var bookPL = bookVal - bookCost;
         posTop = '<div style="display:block;text-align:right;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
