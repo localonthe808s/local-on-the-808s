@@ -51146,7 +51146,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           });
           if (bf) offer(bfd / mpp, 12, cwFloodNetTap, bf);
         }
-        if (window._cwCSO && cwMapMode()){
+        if (window._cwCSO && cwMapMode() && !cw.rock){   /* the pipes leave with the geology (user 2026-09-07) */
           var bc = null, bcd = Infinity;
           window._cwCSO.forEach(function(p2){
             var d = Math.hypot(toX(p2[0]) - X, toY(p2[1]) - Y);
@@ -57349,7 +57349,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          pipe reads from above — a red rectangle jutting from the coast into
          the water along each outfall's baked water-facing angle (sampled
          from the basemap at bake time). No glow. Always on. */
-      if (window._cwCSO && cwMapMode()){
+      if (window._cwCSO && cwMapMode() && !cw.rock){   /* no outfall pipes on the geology view (user 2026-09-07) */
         /* the glyph is drawn, not a dash: a tapered barrel running out from
            the bulkhead to a squared mouth, with a headwall bar where it
            leaves the land. Ink outline so it stays crisp on orange land and
