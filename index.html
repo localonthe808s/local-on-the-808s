@@ -54107,7 +54107,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           .then(function(r){ return r.ok ? r.json() : null; })
           .then(function(d){
             if (!d) return;
-            var days = d.days || {}, ids = Object.keys(days);
+            var days = d.days || {};
+            /* the three cities on the tabs only (user, 2026-09-06); the worker's
+               summary still carries the dropped cities for thirty days */
+            var ids = Object.keys(days).filter(function(id){
+              var k = id.split('|')[0].replace('_high', '');
+              return CWK_CITIES.some(function(c){ return c.key === k; });
+            });
             var ticks = d.ticks || 0;
             /* a city-day counts as closed once nothing has moved for two hours,
                which is also long enough that a stalled feed shows as stale
