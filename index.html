@@ -52993,9 +52993,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       el.style.display = '';
       var km = f.len_m ? (f.len_m >= 1000 ? (f.len_m / 1000).toFixed(1) + ' km' : f.len_m + ' m') : '';
       el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-        + '<span style="display:inline-block;width:22px;height:0;border-top:' + (f.k === 'certain' ? '2px solid' : '2px dashed') + ' #1a1614;"></span>'
-        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(f.n ? f.n : (f.t === 'thrust' ? 'THRUST FAULT' : 'FAULT')).toUpperCase() + '</span>'
-        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '') + '</span>'
+        + '<span style="display:inline-block;width:26px;height:0;border-top:' + ((f.r === 3 ? 4 : f.r === 2 ? 3 : 2) + 'px ' + (f.k === 'certain' ? 'solid' : 'dashed')) + ' #7a1416;box-shadow:0 0 0 1px rgba(255,255,255,.8);"></span>'
+        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(f.n ? f.n : (f.t === 'thrust' ? 'THRUST FAULT' : f.r === 3 ? 'MAJOR FAULT' : f.r === 2 ? 'FAULT' : 'MINOR FAULT')).toUpperCase() + '</span>'
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '')
+        + (f.w ? ' \u00b7 ' + (f.r >= 2 ? 'DRAWN HEAVY' : 'DRAWN LIGHT') + ' ON THE SHEET' : '') + '</span>'
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">USGS ' + mtaEsc(f.src || '') + '</span>'
         + '<button id="cw-fault-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button></div>'
         + '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:3px;line-height:1.45;">'
@@ -57391,16 +57392,37 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           g.clip();
         }
         g.lineCap = 'round'; g.lineJoin = 'round';
-        [0, 1].forEach(function(pass){
-          window._cwFaults.forEach(function(f){
-            g.beginPath();
-            f.c.forEach(function(c, i2){ if (i2) g.lineTo(px(c), py(c)); else g.moveTo(px(c), py(c)); });
-            if (pass === 0){ g.setLineDash([]); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 4.2 * dpr; }
-            else {
-              g.setLineDash(f.k === 'certain' ? [] : [7 * dpr, 5 * dpr]);
-              g.strokeStyle = '#1a1614'; g.lineWidth = 1.9 * dpr;
-            }
-            g.stroke();
+        /* THREE PASSES, ONE LOOK (user 2026-09-07: "make them look different
+           than subway lines"): a white halo, an oxblood body, and a pale
+           core down the middle -- a two-tone stroke nothing else on the map
+           wears (transit is a single colour, roads are white or grey). The
+           thrust is heavier. Dashed where the survey drew it dashed. The
+           ghost takes a third of any colour here, so the body is darker than
+           it reads. */
+        /* WEIGHT IS THE SURVEY'S (user 2026-09-07: "no severity or size
+           shown"): the sheet drew its major faults heavier, and that stroke
+           weight (`w`, px at 300 dpi) travels with each trace. A MAJOR fault
+           -- drawn heavy, named, or a thrust -- gets the full two-tone
+           stroke; an ordinary one is a slimmer line that still wears the
+           halo and the oxblood, so the family reads the same. Ordinary
+           faults draw first so the majors sit on top where they cross. */
+        /* three ranks (`r`): 3 = named, thrust, or heavy AND over a kilometre;
+           2 = heavy or over a kilometre; 1 = the rest. Body width and the pale
+           core follow the rank; lower ranks draw first so the big ones sit on top. */
+        var body = function(f){ var r = f.r || 1; return r === 3 ? (f.t === 'thrust' ? 5.2 : 4.4) : r === 2 ? 3.0 : 1.9; };
+        [0, 1, 2].forEach(function(pass){
+          [1, 2, 3].forEach(function(tier){
+            window._cwFaults.forEach(function(f){
+              if ((f.r || 1) !== tier) return;
+              var bw = body(f);
+              g.beginPath();
+              f.c.forEach(function(c, i2){ if (i2) g.lineTo(px(c), py(c)); else g.moveTo(px(c), py(c)); });
+              var dash = (f.k === 'certain') ? [] : [(2 + bw * 1.6) * dpr, (1.5 + bw) * dpr];
+              if (pass === 0){ g.setLineDash([]); g.strokeStyle = 'rgba(255,255,255,' + (tier === 3 ? '.85' : tier === 2 ? '.75' : '.6') + ')'; g.lineWidth = (bw + (tier === 1 ? 1.8 : 2.6)) * dpr; }
+              else if (pass === 1){ g.setLineDash(dash); g.strokeStyle = tier === 1 ? '#8d2a2c' : '#7a1416'; g.lineWidth = bw * dpr; }
+              else { if (tier !== 3) return; g.setLineDash(dash); g.strokeStyle = 'rgba(255,238,205,.95)'; g.lineWidth = 1.2 * dpr; }
+              g.stroke();
+            });
           });
         });
         g.setLineDash([]);
