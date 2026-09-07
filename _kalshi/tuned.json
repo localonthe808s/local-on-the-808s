@@ -1,0 +1,68 @@
+{
+ "las_high": {
+  "active": {
+   "bias_hl": 7,
+   "sd_mult": 0.75,
+   "skill": true
+  },
+  "current": {
+   "skill": true,
+   "bias_hl": null,
+   "sd_mult": 0.75
+  },
+  "why": "gain 0.0145, wins both halves",
+  "n": 67,
+  "tested": {
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.3217,
+    "hits": 53,
+    "old": 0.2922,
+    "new": 0.3494
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.3508,
+    "hits": 53,
+    "old": 0.3195,
+    "new": 0.3802
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.3159,
+    "hits": 53,
+    "old": 0.2871,
+    "new": 0.343
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.3471,
+    "hits": 54,
+    "old": 0.3188,
+    "new": 0.3737
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.2951,
+    "hits": 53,
+    "old": 0.2708,
+    "new": 0.318
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.3224,
+    "hits": 54,
+    "old": 0.2932,
+    "new": 0.3499
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.2806,
+    "hits": 55,
+    "old": 0.2698,
+    "new": 0.2907
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.3055,
+    "hits": 55,
+    "old": 0.2915,
+    "new": 0.3188
+   }
+  },
+  "chosen_at": "2026-09-07"
+ },
+ "_built": "2026-09-07T18:10Z"
+}
