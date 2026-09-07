@@ -54197,11 +54197,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       };
 
       var qcRow = function(col, name, val, note){
-        return '<div style="display:flex;align-items:baseline;gap:7px;margin-top:5px;">'
+        /* two columns, full width, labels on one line and values allowed two
+           (user, 2026-09-06: "use two columns to be shorter ... have everything align") */
+        return '<div style="display:flex;align-items:flex-start;gap:7px;margin-top:5px;min-width:0;">'
           + '<span style="width:7px;height:7px;border-radius:50%;background:' + col
-          + ';display:inline-block;flex:0 0 auto;position:relative;top:-1px;"></span>'
+          + ';display:inline-block;flex:0 0 auto;position:relative;top:3px;"></span>'
           + '<span style="font:800 8px system-ui,sans-serif;letter-spacing:.07em;'
-          + 'color:#5b647a;width:52px;flex:0 0 auto;">' + name + '</span>'
+          + 'color:#5b647a;width:68px;flex:0 0 auto;white-space:nowrap;line-height:1.5;">' + name + '</span>'
           /* WHITE. This was #223 -- a near-black picked for a light surface, on a
              panel whose background is #0d1117. It rendered as dark grey on
              near-black and the whole SYSTEM block was close to unreadable. */
@@ -54747,7 +54749,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       setTimeout(bvMinuteReplay, 0);
 
       var qcBox = hdr('SYSTEM')
-        + '<div style="margin-top:2px;">' + qcL.join('') + '</div>'
+        + '<div style="margin-top:2px;display:grid;grid-template-columns:' + (PHONE ? '1fr' : '1fr 1fr') + ';gap:0 22px;align-items:start;">' + qcL.join('') + '</div>'
         /* filled in asynchronously from the worker; see bvLeadStudy below */
         + '<div id="bv-lead-study"></div>';
       /* the zone label travels with the data, so a second city reads correctly */
