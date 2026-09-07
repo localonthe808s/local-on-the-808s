@@ -56470,6 +56470,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (cost != null ? ' <span style="color:#9fd9c4;">\u00B7 $' + (+cost).toFixed(2) + ' in</span>' : '')
           + extra + '</div>';
       }).join('');
+      /* NO OPEN POSITION: the slot under the clock still says so, with the
+         cash on hand, rather than going blank (user, 2026-09-06). */
+      if (!(bookKnown || otherRows) && !PHONE){
+        var stP = window._cwPotStatus || {};
+        var cashP = (window._cwPot && window._cwPot.cash != null) ? window._cwPot.cash : null;
+        posTop = '<div style="display:block;text-align:right;">'
+          + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
+          + '<div style="font:700 9px system-ui,sans-serif;color:#7b8496;margin-top:2px;white-space:nowrap;">'
+          + (stP.state === 'ok' ? 'NONE OPEN' + (cashP != null ? ' <span style="color:#9fd9c4;">\u00B7 $' + cashP.toFixed(2) + ' cash on hand</span>' : '')
+             : stP.state === 'no_token' ? 'ACCOUNT NOT LINKED IN THIS BROWSER'
+             : stP.state === 'error' || stP.state === 'bad_token' ? 'ACCOUNT FEED FAILED'
+             : 'CHECKING THE ACCOUNT\u2026')
+          + '</div>'
+          + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
+          + (stP.state === 'ok' ? 'THE PLAN BELOW IS THE NEXT BET; NOTHING IS RIDING NOW' : 'SEE THE ACCOUNT ROW UNDER SYSTEM') + '</div>'
+          + '</div>';
+      }
       if ((bookKnown || otherRows) && !PHONE){
         var bookPL = bookVal - bookCost;
         posTop = '<div style="display:block;text-align:right;">'
