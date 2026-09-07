@@ -54126,8 +54126,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          is cut in half and the stake with it, until the live count recovers
          (2026-09-06). */
       var liveGate = (function(){
+        /* the rolling brake (bake, last 14 live days against the backtest)
+           once it has five days; the two-day gate covers the first week */
+        var bk = T.brake;
+        if (bk && bk.f < 1)
+          return { f: bk.f, txt: 'cut ' + Math.round(100 * (1 - bk.f)) + '%, live ' + Math.round(100 * bk.live_hit) + '% vs ' + Math.round(100 * bk.backtest_hit) + '% expected over ' + bk.n + ' days' };
         var lv = R.live || {};
-        if ((lv.n || 0) >= 2 && (lv.hits || 0) / lv.n < 0.5)
+        if (!bk && (lv.n || 0) >= 2 && (lv.hits || 0) / lv.n < 0.5)
           return { f: 0.5, txt: 'cut 50%, live ' + (lv.hits || 0) + ' of ' + lv.n + ' days right' };
         return null;
       })();
@@ -55344,6 +55349,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));'
         + 'gap:11px 14px;margin-top:5px;">' + tiles.join('') + '</div>'
         + realLine + moneyLine + pubLine + liveHoursLine
+        + (function(){
+            var EX = R.execution;
+            if (!EX || !EX.n) return '';
+            return '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;margin-top:5px;line-height:1.6;">'
+              + '<b style="color:#45b491;">EXECUTION</b> \u00b7 ' + EX.n + (EX.n === 1 ? ' fill' : ' fills') + ' since the trail began, '
+              + EX.in_plan + ' on the plan\u2019s line'
+              + (EX.slip_mean_c != null ? ' \u00b7 paid ' + (EX.slip_mean_c >= 0 ? '+' : '\u2212') + Math.abs(EX.slip_mean_c).toFixed(1) + '\u00a2 against the plan\u2019s price' : '')
+              + (EX.delay_median_min != null ? ' \u00b7 placed ' + EX.delay_median_min + ' min after it first showed' : '')
+              + '</div>';
+          })()
         + '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
         + 'margin-top:5px;line-height:1.6;">'
         + '<b style="color:#45b491;">' + (dayName(T.date) || 'TODAY') + '</b> '
@@ -55739,8 +55754,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var later = (F.moved_ret_late != null && F.moved_ret_early != null && F.moved_ret_late > F.moved_ret_early + 0.15);
           var vals = Array.isArray(runs) ? runs.filter(function(x){ return typeof x === 'number'; }) : [];
           var spread = vals.length >= 3 ? (Math.max.apply(null, vals) - Math.min.apply(null, vals)) : null;
+          var FL = T.flip_live;
           out.push('The mid-morning runs moved the pick between ' + hr12(F.h_early) + ' and ' + hr12(F.h_late)
-            + ' on <b>' + Math.round(100 * F.rate) + '%</b> of days'
+            + ' on <b>' + Math.round(100 * (FL ? FL.rate : F.rate)) + '%</b> of days' + (FL ? ' (measured live, ' + FL.n + ' days)' : '')
             + (later
                 ? '; on those days the ' + hr12(F.h_late) + ' bet paid ' + sgn(F.moved_ret_late) + ' against ' + sgn(F.moved_ret_early)
                   + ' per $1, while a steady pick had the better price at ' + hr12(F.h_early) + '.'

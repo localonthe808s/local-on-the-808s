@@ -610,7 +610,22 @@ def metar_today(cfg, day):
             continue
         f = round(float(t) * 9.0 / 5.0 + 32.0, 1)
         out[loc.hour] = max(out.get(loc.hour, -99.0), f)
+        # the day's latest report also gives the regime the trail logs (2026-09-07):
+        # wind, present weather, sky cover -- the rain-day blind spot's raw material
+        if utc > _METAR_LATEST.get(icao, {}).get('_utc', datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)):
+            cl = m.get('clouds') or []
+            _METAR_LATEST[icao] = {'_utc': utc, 'at': loc.strftime('%H:%M'), 'wdir': m.get('wdir'), 'wspd': m.get('wspd'),
+                                   'wx': m.get('wxString') or None, 'cover': (cl[-1].get('cover') if cl else None),
+                                   'rain': bool(m.get('wxString') and ('RA' in str(m.get('wxString')) or 'TS' in str(m.get('wxString')) or 'DZ' in str(m.get('wxString'))))}
     return out
+
+
+_METAR_LATEST = {}
+def metar_regime(cfg):
+    icao = cfg.get('icao') or ('K' + cfg['station'])
+    r = dict(_METAR_LATEST.get(icao) or {})
+    r.pop('_utc', None)
+    return r or None
 
 
 # THE SETTLEMENT FEED ITSELF, NOT A PROXY FOR IT.
@@ -2253,6 +2268,7 @@ def fetch_fills(cfg, lookup):
                             'price': float(cents) / 100.0,
                             'contracts': float(f.get('count') or 0),
                             'fee': None, 'note': 'api',
+                            'at': f.get('created_time'),
                             'id': f.get('trade_id') or f.get('order_id')})
     except Exception as e:
         print('portfolio: %s: %s' % (type(e).__name__, e))
@@ -2570,6 +2586,75 @@ def compose_run_review(cfg, record):
     return R
 
 
+TRAIL_URL = 'https://cdn.bluishvoid.com/kalshi/trail/%s_%s.jsonl'
+_TRAIL_CACHE = {}
+def trail_rows(key, day):
+    """the day's bake rows from R2 (see trail_row), or [] before the trail existed"""
+    k = (key, day)
+    if k in _TRAIL_CACHE:
+        return _TRAIL_CACHE[k]
+    rows = []
+    try:
+        req = urllib.request.Request(TRAIL_URL % (key, day), headers={'User-Agent': 'bluishvoid.com bake'})
+        txt = urllib.request.urlopen(req, timeout=20).read().decode('utf-8', 'replace')
+        for line in txt.splitlines():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                pass
+        rows.sort(key=lambda r: r.get('t') or '')
+    except Exception:
+        rows = []
+    _TRAIL_CACHE[k] = rows
+    return rows
+
+
+def execution_score(cfg, fills, label_of):
+    """EXECUTION AGAINST THE PLAN (2026-09-07): each fill matched to the bake that
+    was on screen when it was struck. Was it the plan's line, what did the plan
+    say to pay, how long after the plan first showed it was it placed. Only fills
+    since the trail began can be scored; older ones are simply not counted."""
+    out = []
+    for t in fills:
+        at = t.get('at')
+        if not at or not t.get('date'):
+            continue
+        rows = trail_rows(cfg['key'], t['date'])
+        if not rows:
+            continue
+        T = str(at)[:19].replace('T', ' ')
+        before = [r for r in rows if (r.get('t') or '')[:19].replace('T', ' ') <= T]
+        if not before:
+            continue
+        row = before[-1]
+        b = row.get('bet')
+        lab = label_of(t['lo'], t['hi'])
+        dirn = 'against' if t['side'] == 'no' else 'for'
+        in_plan = bool(b and b.get('label') == lab and b.get('dir') == dirn)
+        first = next((r for r in rows if r.get('bet') and r['bet'].get('label') == lab and r['bet'].get('dir') == dirn), None)
+        delay = None
+        if first:
+            try:
+                t0 = datetime.datetime.strptime((first['t'] or '')[:19], '%Y-%m-%dT%H:%M:%S')
+                t1 = datetime.datetime.strptime(T, '%Y-%m-%d %H:%M:%S')
+                delay = round((t1 - t0).total_seconds() / 60)
+            except Exception:
+                delay = None
+        out.append({'date': t['date'], 'at': at, 'side': t['side'], 'label': lab, 'price': t['price'],
+                    'contracts': t.get('contracts'), 'in_plan': in_plan,
+                    'plan_price': (b.get('price') if in_plan else None),
+                    'slip_c': (round(100 * (t['price'] - b['price']), 1) if in_plan and b.get('price') is not None else None),
+                    'delay_min': delay, 'bake_at': row.get('lt')})
+    if not out:
+        return None
+    sl = [x['slip_c'] for x in out if x['slip_c'] is not None]
+    dl = [x['delay_min'] for x in out if x['delay_min'] is not None]
+    return {'n': len(out), 'in_plan': sum(1 for x in out if x['in_plan']),
+            'slip_mean_c': round(statistics.mean(sl), 1) if sl else None,
+            'delay_median_min': int(statistics.median(dl)) if dl else None,
+            'recent': out[-6:]}
+
+
 def trail_row(doc, now):
     """THE BAKE TRAIL (2026-09-07): one compact row per bake per city -- what the
     sheet said (bet, price, size, grade inputs), what was on offer (every rung's
@@ -2599,6 +2684,7 @@ def trail_row(doc, now):
                 'apt': T.get('apt_max'), 'six': T.get('six_max'), 'six_win': T.get('six_window'),
                 'cli': T.get('cli_max'), 'cli_at': T.get('cli_at'), 'cli_final': bool(T.get('cli_final'))},
         'models': T.get('models') or None,
+        'rg': T.get('regime') or None,
         'ladder': [[r.get('label'), r.get('ask'), r.get('ysize'), r.get('nask'), r.get('nsize'), r.get('market'), r.get('ours')]
                    for r in (T.get('ladder') or [])],
         'tom': ({'pick': tm.get('pick'), 'p': tm.get('p'), 'pred': tm.get('pred'),
@@ -3495,6 +3581,22 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # the day-ahead run and a bias fitted only on days already past.
     record['live'] = tally(live)
     record['backtest'] = tally([h for h in scored if h.get('backtest')])
+    # THE DRIFT BRAKE (2026-09-07): the last fourteen live days against the
+    # backtest's hit rate. A city running a fifth behind sizes at half, a tenth
+    # behind at three quarters, until it recovers. Needs five live days to say
+    # anything; the panel's two-day gate covers the first week.
+    try:
+        cutoff = (now.date() - datetime.timedelta(days=14)).isoformat()
+        l14 = [h for h in live if h.get('date', '') >= cutoff]
+        bt = record['backtest']
+        if len(l14) >= 5 and bt.get('n'):
+            lh = sum(1 for h in l14 if h.get('hit')) / float(len(l14))
+            bh = bt['hits'] / float(bt['n'])
+            gap = bh - lh
+            record['brake'] = {'f': 0.5 if gap >= 0.2 else 0.75 if gap >= 0.1 else 1.0,
+                               'n': len(l14), 'live_hit': round(lh, 3), 'backtest_hit': round(bh, 3)}
+    except Exception as e:
+        print('brake: skipped (%s)' % e)
     # head-to-head only exists where a contemporaneous market price was captured
     def priced_on_time(h):
         L = h.get('lock') or {}
@@ -3623,6 +3725,19 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                               if (r['date'], r['side'], r['lo'], r['hi'],
                                   round(r['price'], 2)) not in seen]
     tr_done, tr_open = score_trades(rows_in, hist)
+    # execution against the plan (needs the trail; fills before it are not counted)
+    try:
+        _lab = {}
+        for r in rows:
+            _lab[(r.get('lo'), r.get('hi'))] = r['label']
+        for h in hist.values():
+            for r in ((h.get('lock') or {}).get('ladder') or []):
+                _lab.setdefault((r.get('lo'), r.get('hi')), r.get('label'))
+        _ex = execution_score(cfg, rows_in, lambda lo, hi: _lab.get((lo, hi)))
+        if _ex:
+            record['execution'] = _ex
+    except Exception as e:
+        print('execution: skipped (%s)' % e)
     if tr_done or tr_open:
         staked = sum(t['contracts'] * t['cost'] for t in tr_done)
         pl = sum(t['pl'] for t in tr_done)
@@ -3825,6 +3940,14 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'bet': best_bet(rows, ps),
             'calib': _CALIB.get(cfg['key']) or None,
             'edge_floor': {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE},
+            'regime': metar_regime(cfg),
+            'brake': record.get('brake'),
+            # the live plan-stability figure once the bake trail has two weeks
+            # (trail_study.py); the panel prefers it over the archive replay
+            'flip_live': (lambda st: ({'rate': round(1 - st['stable_to_11'][0] / float(st['stable_to_11'][1]), 3),
+                                       'n': st['stable_to_11'][1], 'days': st['n_days']}
+                                      if st and st.get('n_days', 0) >= 14 and (st.get('stable_to_11') or [0, 0])[1] >= 10 else None))(
+                (lambda f: (json.load(open(f)).get('cities', {}).get(cfg['key'], {}).get('summary') if os.path.exists(f) else None))(os.path.join(HERE, 'trail_study.json'))),
             # how often the mid-morning runs move the pick between 8 and 11,
             # and what each hour's bet returned on those days (price_study)
             'flip': (((_STUDY[0] if _STUDY else None) or {}).get('flip_by_market') or {}).get(cfg['key']),
