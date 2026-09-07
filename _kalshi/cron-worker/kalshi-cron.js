@@ -306,7 +306,12 @@ const OBS_MARKETS = [
 // ONE CALL FOR EVERY 5-MINUTE STATION, used by the minute tick, the obs log
 // and the public /sensors endpoint. {STID: {last, at, max7, n}} in each
 // market's own zone; the "at" is the reading's local HH:MM.
-async function readSensors(env, recentMin) {
+// withSeries (the /sensors endpoint only): every reading of the station's
+// LOCAL day so far, [[minutes since midnight, F], ...], so the sheet can draw
+// the trend rather than quote one number (user 2026-09-07: "a line that shows
+// every 5 minute reading ... so trends are visible"). The obs log and the
+// alerts never ask for it -- it would bloat every KV row twentyfold.
+async function readSensors(env, recentMin, withSeries) {
   const out = {};
   if (!env || !env.SYNOPTIC_TOKEN) return out;
   const stids = Object.values(APT5).map((a) => a.stids).join(',');
@@ -321,18 +326,24 @@ async function readSensors(env, recentMin) {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     const ts = (st.OBSERVATIONS || {}).date_time || [], vs = (st.OBSERVATIONS || {}).air_temp_set_1 || [];
     let mx = null, mxAt = null, last = null, lastAt = null;
+    const series = [];
     for (let i = 0; i < ts.length; i++) {
       const v = vs[i]; if (typeof v !== 'number') continue;
       const hh = Number(ts[i].slice(11, 13));
       if (ts[i].slice(0, 10) === today && hh >= 7 && (mx == null || v > mx)) { mx = v; mxAt = ts[i].slice(11, 16); }
       last = v; lastAt = ts[i].slice(11, 16);
+      if (withSeries && ts[i].slice(0, 10) === today) series.push([hh * 60 + Number(ts[i].slice(14, 16)), Math.round(v * 10) / 10]);
     }
     out[st.STID] = { max7: mx, maxAt: mxAt, last, at: lastAt, n: ts.length };
+    if (withSeries) out[st.STID].series = series;
   }
   return out;
 }
 const APT5 = {
-  ny_high:  { stids: 'KLGA,KJFK,KEWR', tz: 'America/New_York' },
+  // KNYC rides along for the trend line: Synoptic carries Central Park HOURLY
+  // (the 5-minute stream is NWS-run and not in the FAA feed; MADIS pending),
+  // so its points are the hourly reports, drawn as such. Never OWN5 for NY.
+  ny_high:  { stids: 'KLGA,KJFK,KEWR,KNYC', tz: 'America/New_York' },
   las_high: { stids: 'KLAS,KVGT',      tz: 'America/Los_Angeles' },
   aus_high: { stids: 'KAUS,KATT',      tz: 'America/Chicago' }
 };
@@ -814,7 +825,7 @@ export default {
       // panel polls this every minute while it is open (2026-09-06: "it's about
       // seeing the latest information and knowing first when temp changes").
       let sens = {};
-      try { sens = await readSensors(env, 720); } catch (e) { /* empty */ }
+      try { sens = await readSensors(env, 1080, true); } catch (e) { /* empty */ }
       return new Response(JSON.stringify({ at: new Date().toISOString(), s: sens }), {
         headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...cors(ALLOWED) } });
     }

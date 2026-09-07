@@ -54456,18 +54456,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 var atUtc = Date.parse(nyToday.apt5.at || '');
                 var atTxt = isNaN(atUtc) ? '' : new Date(atUtc).toLocaleTimeString('en-US',
                   { timeZone: CITY.tz, hour: 'numeric', minute: '2-digit' });
-                var names = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark', KLAS: 'Harry Reid (the settlement sensor)',
+                var names = { KNYC: 'Central Park (the settlement sensor, hourly)', KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark',
+                              KLAS: 'Harry Reid (the settlement sensor)',
                               KVGT: 'North Las Vegas', KAUS: 'Bergstrom (the settlement sensor)', KATT: 'Camp Mabry' };
                 var own = CITY.own5;   /* the station that settles, when its own 5-minute feed is public */
+                var lead1 = function(k){ return k === own || k === 'KNYC'; };
                 var ks = Object.keys(A).sort(function(a, b){
-                  if (a === own) return -1; if (b === own) return 1;
+                  if (lead1(a)) return -1; if (lead1(b)) return 1;
                   return (A[b].max7 || 0) - (A[a].max7 || 0); });
                 topEl.innerHTML = '<div style="margin-top:7px;font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
                   + (own ? 'THE SETTLEMENT SENSOR, 5-MINUTE READINGS' : 'AIRPORTS, 5-MINUTE READINGS') + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
                   + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
                   + ks.map(function(k){
                       var a = A[k];
-                      return '<div' + (k === own ? ' style="font-size:11px;"' : '') + '><b style="color:' + (k === own ? '#fff' : '#63dbb6') + ';">' + (names[k] || k) + '</b> '
+                      return '<div' + (lead1(k) ? ' style="font-size:11px;"' : '') + '><b style="color:' + (lead1(k) ? '#fff' : '#63dbb6') + ';">' + (names[k] || k) + '</b> '
                         + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '') + '</span>' : '\u2014')
                         + (a.max7 != null ? ' <span style="color:#9fd9c4;">\u00B7 high since 7 AM <b>' + T1(a.max7) + '\u00B0</b></span>' : '')
                         + '</div>';
@@ -54800,9 +54802,67 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          and knowing first when temp changes"). A new high since the last
          poll is flagged. */
       var SENS_URL = 'https://bluish-void-kalshi-cron.junkyjunkjunkjunkjunk.workers.dev/sensors';
-      var SENS_STATIONS = { ny: ['KLGA', 'KJFK', 'KEWR'], las: ['KLAS', 'KVGT'], aus: ['KAUS', 'KATT'] };
-      var SENS_NAMES = { KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark', KLAS: 'Harry Reid (the settlement sensor)',
+      var SENS_STATIONS = { ny: ['KNYC', 'KLGA', 'KJFK', 'KEWR'], las: ['KLAS', 'KVGT'], aus: ['KAUS', 'KATT'] };
+      var SENS_NAMES = { KNYC: 'Central Park (the settlement sensor, hourly)', KLGA: 'LaGuardia', KJFK: 'JFK', KEWR: 'Newark',
+                         KLAS: 'Harry Reid (the settlement sensor)',
                          KVGT: 'North Las Vegas', KAUS: 'Bergstrom (the settlement sensor)', KATT: 'Camp Mabry' };
+      /* THE TREND, DRAWN (user 2026-09-07: "a line that shows every 5 minute
+         reading from central park so trends are visible"). Every reading of
+         the local day so far, one line per station: the settlement sensor
+         white and heavy -- Harry Reid and Bergstrom at 5-minute cadence;
+         Central Park at its HOURLY reports with a dot per report, because its
+         5-minute stream is not public (MADIS pending) -- the airports thin
+         and teal. Whole-degree gridlines, the newest value on each line's
+         end, the high since 7 AM marked. SVG, drawn from the same payload
+         the numbers above come from. */
+      var bvSensChart = function(d, order, own, nowMin){
+        var W = 720, H = 96, L = 24, R = 88, T = 10, B = 16;
+        var ser = order.map(function(k){ var a = d.s[k]; return (a && a.series && a.series.length > 1) ? { k: k, pts: a.series, a: a } : null; }).filter(Boolean);
+        if (!ser.length) return '';
+        var lo = Infinity, hi = -Infinity, x0 = 6 * 60, x1 = Math.max(nowMin + 5, 8 * 60);
+        ser.forEach(function(q){ q.pts.forEach(function(p){ if (p[0] >= x0){ if (p[1] < lo) lo = p[1]; if (p[1] > hi) hi = p[1]; } }); });
+        if (!isFinite(lo)) return '';
+        lo = Math.floor(lo - 0.6); hi = Math.ceil(hi + 0.6);
+        if (hi - lo < 4){ var c0 = (hi + lo) / 2; lo = Math.floor(c0 - 2); hi = Math.ceil(c0 + 2); }
+        var px2 = function(m){ return L + (m - x0) / (x1 - x0) * (W - L - R); };
+        var py2 = function(v){ return T + (hi - v) / (hi - lo) * (H - T - B); };
+        var h12 = function(m){ var h = Math.floor(m / 60); return ((h % 12) || 12) + (h < 12 ? ' AM' : ' PM'); };
+        var g = '';
+        var step = (hi - lo) > 12 ? 2 : 1;
+        for (var v = lo; v <= hi; v += step)
+          g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py2(v).toFixed(1) + '" y2="' + py2(v).toFixed(1) + '" stroke="rgba(99,219,182,.12)" stroke-width="1"/>'
+             + '<text x="' + (L - 4) + '" y="' + (py2(v) + 2.5).toFixed(1) + '" text-anchor="end" font-size="7" font-weight="700" fill="#2c7f66" font-family="system-ui,sans-serif">' + v + '°</text>';
+        for (var m = Math.ceil(x0 / 120) * 120; m <= x1; m += 120)
+          g += '<line x1="' + px2(m).toFixed(1) + '" x2="' + px2(m).toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="rgba(99,219,182,.08)" stroke-width="1"/>'
+             + '<text x="' + px2(m).toFixed(1) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="7" font-weight="700" fill="#2c7f66" font-family="system-ui,sans-serif">' + h12(m) + '</text>';
+        /* 7 AM: the settlement clock starts here */
+        g += '<line x1="' + px2(420).toFixed(1) + '" x2="' + px2(420).toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="rgba(242,131,63,.35)" stroke-width="1" stroke-dasharray="2 3"/>';
+        var TEAL = ['#63dbb6', '#3fae8c', '#9fd9c4'];
+        var ti = 0, labels = [];
+        ser.forEach(function(q){
+          var isOwn = (q.k === own) || (q.k === 'KNYC');
+          var col = isOwn ? '#ffffff' : TEAL[ti++ % TEAL.length];
+          var pts = q.pts.filter(function(p){ return p[0] >= x0 && p[0] <= x1; });
+          if (pts.length < 2) return;
+          var dd = pts.map(function(p, i){ return (i ? 'L' : 'M') + px2(p[0]).toFixed(1) + ' ' + py2(p[1]).toFixed(1); }).join(' ');
+          g += '<path d="' + dd + '" fill="none" stroke="' + col + '" stroke-width="' + (isOwn ? 2 : 1.1) + '" stroke-linejoin="round" stroke-linecap="round"' + (isOwn ? '' : ' opacity=".85"') + '/>';
+          if (q.k === 'KNYC') pts.forEach(function(p){ g += '<circle cx="' + px2(p[0]).toFixed(1) + '" cy="' + py2(p[1]).toFixed(1) + '" r="2.2" fill="#0d1117" stroke="#fff" stroke-width="1.4"/>'; });
+          var last = pts[pts.length - 1];
+          g += '<circle cx="' + px2(last[0]).toFixed(1) + '" cy="' + py2(last[1]).toFixed(1) + '" r="' + (isOwn ? 2.6 : 2) + '" fill="' + col + '"/>';
+          /* the high since 7 AM, a tick where it landed */
+          if (q.a.max7 != null && q.a.maxAt){ var mm = q.a.maxAt.split(':'); var mx = (+mm[0]) * 60 + (+mm[1]);
+            g += '<line x1="' + px2(mx).toFixed(1) + '" x2="' + px2(mx).toFixed(1) + '" y1="' + (py2(q.a.max7) - 5).toFixed(1) + '" y2="' + (py2(q.a.max7) + 5).toFixed(1) + '" stroke="' + col + '" stroke-width="1"' + (isOwn ? '' : ' opacity=".7"') + '/>'; }
+          labels.push({ y: py2(last[1]), col: col, txt: T1(last[1]) + '° ' + (q.k === 'KNYC' ? 'CENTRAL PARK' : q.k === own ? (SENS_NAMES[q.k] || q.k).split(' (')[0].toUpperCase() : (SENS_NAMES[q.k] || q.k).toUpperCase()), own: isOwn });
+        });
+        /* end labels, nudged apart so they never sit on each other */
+        labels.sort(function(a, b2){ return a.y - b2.y; });
+        for (var i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 9) labels[i].y = labels[i - 1].y + 9;
+        for (var j = labels.length - 1; j > 0; j--) if (labels[j].y > H - B - 2){ labels[j].y = H - B - 2; if (labels[j].y - labels[j - 1].y < 9) labels[j - 1].y = labels[j].y - 9; }
+        labels.forEach(function(lb){
+          g += '<text x="' + (W - R + 5) + '" y="' + (lb.y + 2.5).toFixed(1) + '" font-size="7" font-weight="' + (lb.own ? '800' : '700') + '" fill="' + lb.col + '" font-family="system-ui,sans-serif" letter-spacing=".04em">' + lb.txt + '</text>';
+        });
+        return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="display:block;width:100%;height:' + H + 'px;margin-top:6px;">' + g + '</svg>';
+      };
       var bvSensors = function(){
         var el = document.getElementById('bv-apt5-top');
         var p = document.getElementById('cw-kalshi-panel');
@@ -54824,7 +54884,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               var a = nowMin - t; if (a < -60) a += 1440; return a < 0 ? 0 : a;
             };
             var rows = sts.filter(function(k){ return d.s[k]; }).sort(function(a, b){
-              if (a === own) return -1; if (b === own) return 1;
+              if (a === own || a === 'KNYC') return -1; if (b === own || b === 'KNYC') return 1;
               return (d.s[b].max7 || 0) - (d.s[a].max7 || 0); });
             if (!rows.length) return;
             var atTxt = new Date(d.at).toLocaleTimeString('en-US', { timeZone: CITY.tz, hour: 'numeric', minute: '2-digit' });
@@ -54835,7 +54895,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + rows.map(function(k){
                   var a = d.s[k], age = ageOf2(a.at), pv = prev[k];
                   var newHigh = (pv != null && a.max7 != null && a.max7 > pv + 0.05);
-                  return '<div' + (k === own ? ' style="font-size:11px;"' : '') + '><b style="color:' + (k === own ? '#fff' : '#63dbb6') + ';">'
+                  var big = (k === own || k === 'KNYC');
+                  return '<div' + (big ? ' style="font-size:11px;"' : '') + '><b style="color:' + (big ? '#fff' : '#63dbb6') + ';">'
                     + (SENS_NAMES[k] || k) + '</b> '
                     + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '')
                         + (age != null ? ' \u00B7 ' + (age < 1 ? 'just now' : age + ' min ago') : '') + '</span>' : '\u2014')
@@ -54845,10 +54906,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + '</div>';
                 }).join('')
               + '</div>'
+              + bvSensChart(d, rows, own, nowMin)
               + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
               + (own
-                  ? 'These are the settlement station\u2019s own readings \u2014 the number that settles, before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor; the true peak runs about 0.3\u00B0 above the 5-minute samples.'
-                  : 'Central Park\u2019s own 5-minute stream is not public; when the three airports are peaking between the hourly reports, the park usually is too.')
+                  ? 'These are the settlement station\u2019s own readings \u2014 the number that settles, before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor; the true peak runs about 0.3\u00B0 above the 5-minute samples. The line is every 5-minute reading today; the tick on it is the high since 7 AM.'
+                  : 'The white line is Central Park\u2019s own readings, but HOURLY: its 5-minute stream is not public (the MADIS request is pending). The airports\u2019 lines are every 5-minute reading; when they are peaking between the hourly reports, the park usually is too.')
               + '</div>';
             el2.setAttribute('data-live', '1');
             /* the header's NOW: the settlement sensor's newest 5-minute sample
