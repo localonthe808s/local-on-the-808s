@@ -53739,14 +53739,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + 'align-items:center;justify-content:center;min-height:56px;margin:14px 0 0;'
           + 'border-radius:12px;border:1px solid #4aa3e088;background:rgba(74,163,224,.16);'
           + 'color:#4aa3e0;text-decoration:none;font:800 15px system-ui,sans-serif;'
-          + 'letter-spacing:.05em;-webkit-tap-highlight-color:transparent;">' + label + '</a>'
-          + '<button type="button" class="cwk-btn2" data-copy="' + mtaEsc(T.event || '')
-          + '" style="display:flex;align-items:center;justify-content:center;width:100%;'
-          + 'min-height:42px;margin:8px 0 2px;border-radius:9px;background:transparent;'
-          + 'border:1px dashed rgba(74,163,224,.35);color:#359478;'
-          + 'font:700 10px system-ui,sans-serif;letter-spacing:.07em;cursor:pointer;'
-          + '-webkit-tap-highlight-color:transparent;">COPY ' + mtaEsc(T.event || 'MARKET')
-          + ' FOR THE APP&rsquo;S SEARCH</button>';
+          + 'letter-spacing:.05em;-webkit-tap-highlight-color:transparent;">' + label + '</a>';
+          /* the COPY-for-the-app button under it left 2026-09-06 with the
+             desktop one (user: "remove this copy button too") */
       };
 
       var kvLine = function(k, v){
@@ -53885,83 +53880,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + '</div>';
       };
 
-      /* ---- THE LADDER AS COLUMNS ------------------------------------------
-         Six ranges read across, not down, so today and tomorrow can sit side by
-         side and be compared at a glance -- which is the actual question the
-         panel is for: is the market moving toward or away from us overnight.
-
-         BOTH CHARTS USE A FIXED 0-100% AXIS. Scaling each to its own maximum
-         would use the space better and would also make a 68% column in one
-         chart the same height as a 49% column in the other, which is precisely
-         the comparison a reader is about to make by eye. Probability is a
-         bounded quantity; it gets a bounded axis.
-
-         Two bars per range: forecast then market, 2px apart. The recommended
-         range tints its whole column, and a range the day has already walked
-         past is struck through rather than dropped, because "impossible" is
-         information. */
-      var vLadder = function(lad, opt){
-        opt = opt || {};
-        /* SHORT (user, 2026-09-06: "could this be shorter?"): the bars are
-           scaled to the tallest one, so the plot is as tall as its biggest
-           probability needs and no taller */
-        var H = 44;
-        var nf = opt.nf, pick = opt.pick, mpick = opt.mpick, bet = opt.bet;
-        var tallest = Math.max(0.05, Math.max.apply(null, (lad || []).map(function(r){
-          var mk = nf ? nf(r.market) : r.market;
-          return Math.max(r.ours || 0, mk == null ? 0 : mk); })));
-        var col = function(r){
-          var mine = (r.ours || 0) / tallest, mkt0 = nf ? nf(r.market) : r.market, mkt = (mkt0 == null) ? null : mkt0 / tallest;
-          var out = opt.dead ? opt.dead(r) : false;
-          var win = (r.label === pick), mwin = (r.label === mpick);
-          var on = bet && bet.ev > 0 && bet.r === r;
-          var sideC = on ? ((bet.dir === 'against') ? NOC : YESC) : null;
-          var mineH = Math.max(1, Math.round(H * mine));
-          var mktH = (mkt == null) ? 0 : Math.max(1, Math.round(H * mkt));
-          /* Two bars share the column, so each takes a share of its width rather
-             than a fixed 7px that vanished in a wide cell. Capped, so a
-             full-width sheet does not turn them into slabs. */
-          var bar = function(h, fill) {
-            return '<div style="width:34%;max-width:30px;min-width:5px;height:' + h
-              + 'px;background:' + fill + ';border-radius:2px 2px 0 0;"></div>';
-          };
-          var held = opt.held && opt.held[r.label];
-          return '<div style="min-width:0;text-align:center;padding:4px 1px 5px;'
-            + 'border-radius:6px;' + (on ? 'background:' + sideC + '1f;' : '')
-            + (out ? 'opacity:.42;' : '') + '">'
-            /* the plot: bars grow from a shared baseline */
-            + '<div style="height:' + H + 'px;display:flex;align-items:flex-end;'
-            + 'justify-content:center;gap:3px;">'
-            + bar(mineH, win ? FCC : 'rgba(245,165,36,.42)')
-            + bar(mktH, mwin ? MKC : 'rgba(0,210,152,.36)')
-            + '</div>'
-            + '<div style="height:1px;background:rgba(0,210,152,.18);margin:0 1px;"></div>'
-            + '<div style="font:' + (win ? '800' : '600') + ' 8.5px system-ui,sans-serif;'
-            + 'color:' + (win ? FCC : '#45b491') + ';margin-top:4px;white-space:nowrap;'
-            + (out ? 'text-decoration:line-through;' : '') + '">' + deg(r.label) + '</div>'
-            + (held ? '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.06em;'
-                + 'color:' + (held.side === 'yes' ? YESC : NOC) + ';margin-top:2px;">HELD '
-                + held.side.toUpperCase() + '</div>' : '')
-            + '<div style="font:800 9px system-ui,sans-serif;margin-top:3px;color:'
-            + (win ? FCC : '#63dbb6') + ';">' + (out ? 'OUT' : pct(r.ours || 0)) + '</div>'
-            + '<div style="font:' + (mwin ? '800' : '600') + ' 9px system-ui,sans-serif;color:'
-            + (mwin ? MKC : '#359478') + ';">' + (mkt0 == null ? '\u2014' : pct(mkt0)) + '</div>'
-            + '<div style="display:flex;gap:2px;justify-content:center;margin-top:4px;">'
-            + '<div style="flex:1;font:800 8px system-ui,sans-serif;padding:2px 0;'
-            + 'border-radius:3px;color:' + YESC + ';background:' + YESC
-            + (on && bet.dir === 'for' ? '33;border:1px solid ' + YESC + '99;' : '14;')
-            + '">' + cents(r.ask) + '</div>'
-            + '<div style="flex:1;font:800 8px system-ui,sans-serif;padding:2px 0;'
-            + 'border-radius:3px;color:' + NOC + ';background:' + NOC
-            + (on && bet.dir === 'against' ? '33;border:1px solid ' + NOC + '99;' : '14;')
-            + '">' + cents(r.nask) + '</div></div>'
-            + '</div>';
-        };
-        return '<div style="display:grid;grid-template-columns:repeat(' + lad.length
-          + ',1fr);gap:3px;margin-top:7px;">' + lad.map(col).join('') + '</div>';
-          /* the swatch legend left 2026-09-06 (user): the amber/teal pair is
-             the same one the odds under each column already wear */
-      };
+      /* the vLadder chart builder was removed 2026-09-06 (its last use, the
+         plan box, repeated the axis) */
 
       /* ---- the ladder: our probability against the market's price ---- */
       /* the reported high can never come in under a temperature already on the
@@ -55563,9 +55483,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                      worstAt: worstAt, dropped: book.length - takeable.length };
       }
 
-      rows = vLadder(T.ladder || [], { pick: T.pick, mpick: T.market_pick, bet: vbest,
-                                       dead: dead, nf: mnorm(T.ladder), held: posOn });
-
       /* ---- WHEN TO ACT, MEASURED -----------------------------------------
          This section used to reason: our accuracy is flat by hour, prices are
          assumed to harden through the day, therefore bet in the morning. The
@@ -55916,8 +55833,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           consider(tvb2, r, 'for', r.ask, r.ours || 0);
           consider(tvb2, r, 'against', r.nask, 1 - (r.ours || 0));
         });
-        var trows = vLadder(TM.ladder, { pick: TM.pick, mpick: TM.market_pick, bet: tv,
-                                         nf: mnorm(TM.ladder) });
         var when = new Date(TM.date + 'T12:00:00');
         var dayname = ['SUN','MON','TUE','WED','THU','FRI','SAT'][when.getDay()];
         var dayfull = DOW2[when.getDay()];
@@ -56008,7 +55923,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           /* the ranges, their odds and their prices ride at the bottom of the
              plan, inside its tint (user, 2026-09-06: "bring this bar into the
              bottom of the plan into the green area") */
-          + '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);">' + trows + '</div>'
+          /* the ladder chart that sat here left 2026-09-06: it repeated the
+             axis above (same ranges, odds and prices) a screen apart */
           + '</div>';
         tomorrow = tmHdr1 + tmFc1 + tmPlan1;
         tmParts = [tmHdr1, tmFc1, '', tmPlan1];
