@@ -278,7 +278,7 @@ window.bvDF = function(c){ return c == null ? null : c * 9 / 5; };
    left open idly. */
 window.bvLightning = (function(){
   var HOSTS = ['wss://ws1.blitzortung.org/', 'wss://ws7.blitzortung.org/', 'wss://ws8.blitzortung.org/'];
-  var KEEP = 20 * 60000;
+  var KEEP = 60 * 60000;       /* an hour retained (was 20 min): the 3- and 12-hour views draw a storm's track (2026-09-07) */
   var ws = null, host = 0, retry = null, want = {}, strikes = [];
   /* Blitzortung ships each frame LZW-dictionary encoded */
   function lzw(b){
@@ -305,7 +305,7 @@ window.bvLightning = (function(){
            consumer could ask for, and let each filter its own view */
         if (j.lon < -82 || j.lon > -66 || j.lat < 36 || j.lat > 47) return;
         strikes.push([j.lon, j.lat, Date.now()]);
-        if (strikes.length > 1500) strikes.splice(0, strikes.length - 1500);
+        if (strikes.length > 4000) strikes.splice(0, strikes.length - 4000);
       };
       sk.onclose = sk.onerror = function(){
         if (ws === sk){ ws = null; host++; }        // rotate hosts on failure
@@ -50771,6 +50771,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<span id="cw-wide-tag-main" style="display:block;font:800 9px system-ui,sans-serif;"></span>'
         + '<span id="cw-wide-tag-sub" style="display:none;font:700 8px system-ui,sans-serif;color:rgba(255,255,255,.82);margin-top:2px;"></span>'
         + '</div>'
+        /* LIGHTNING STATUS (user 2026-09-07: "i want to see live lightning").
+           The painter had been on every radar view since 09-02, but a quiet
+           sky drew nothing and read as nothing wired. This says the feed is
+           live and where the nearest strike is. */
+        + '<div id="cw-ltg" style="position:absolute;left:8px;bottom:6px;z-index:4;display:none;font:700 8.5px system-ui,sans-serif;'
+        + 'letter-spacing:.08em;color:rgba(255,255,255,.85);background:rgba(8,10,16,.58);padding:2px 7px;border-radius:4px;'
+        + 'pointer-events:none;white-space:nowrap;max-width:60%;overflow:hidden;text-overflow:ellipsis;"></div>'
         + '<div id="cw-time" style="position:absolute;right:8px;top:6px;z-index:4;font:700 9px system-ui,sans-serif;letter-spacing:.08em;color:rgba(255,255,255,.9);background:rgba(8,12,22,.6);border-radius:6px;padding:3px 8px;"></div>'
         + '<div id="cw-attrib" style="position:absolute;right:8px;bottom:6px;z-index:4;font:500 8px system-ui,sans-serif;color:rgba(30,30,50,.6);background:rgba(255,255,255,.6);padding:1px 6px;border-radius:4px;">\u00a9 OpenStreetMap \u00b7 Protomaps \u00b7 NOAA NCEI \u00b7 NOAA KOKX super-res \u00b7 MTA \u00b7 Blitzortung \u00b7 Viele 1865</div>'
         /* the water-cycle loader owns the blue until the first compose
@@ -51533,14 +51540,46 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        view that draws it is on screen, closes on a hidden tab, and only this
        corner of the continent is retained. */
     function cwLtgOpen(){ if (window.bvLightning) window.bvLightning.want('city', true); }
+    /* the chip's words, from the strikes in the view's window: pure so it can be tested */
+    function cwLtgText(A, now, windowMin){
+      if (!A.length) return 'LIGHTNING \u00b7 LIVE \u00b7 QUIET WITHIN 300 MI, LAST ' + windowMin + ' MIN';
+      var cLat = 40.75, cLon = -73.95, best = null, newest = 0;
+      for (var i = 0; i < A.length; i++){
+        var dx = (A[i][0] - cLon) * 84400 * Math.cos(cLat * Math.PI / 180), dy = (A[i][1] - cLat) * 111200;
+        var d = Math.hypot(dx, dy);
+        if (!best || d < best.d) best = { d: d, b: (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360, t: A[i][2] };
+        if (A[i][2] > newest) newest = A[i][2];
+      }
+      var pts = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      var mi = best.d / 1609.34, ago = Math.max(0, Math.round((now - newest) / 60000));
+      return 'LIGHTNING \u00b7 ' + A.length + (A.length === 1 ? ' STRIKE' : ' STRIKES') + ' \u00b7 NEAREST '
+        + (mi < 10 ? mi.toFixed(1) : Math.round(mi)) + ' MI ' + pts[Math.round(best.b / 22.5) % 16]
+        + ' \u00b7 LATEST ' + (ago < 1 ? 'JUST NOW' : ago + ' MIN AGO');
+    }
+    window._cwLtgText = cwLtgText;            /* harness hook: the chip's words with fake strikes */
+    function cwLtgStatus(){
+      var el = document.getElementById('cw-ltg');
+      if (!el) return;
+      var wd = cw.wide ? cwWideDef() : null;
+      var on = cw.radarOn || (wd && wd.lightning);
+      if (!on || !window.bvLightning){ el.style.display = 'none'; return; }
+      el.style.display = '';
+      var AGE = cw.wide ? CW_LTG_AGE_WIDE : CW_LTG_AGE;
+      if (!window.bvLightning.live()){ el.textContent = 'LIGHTNING \u00b7 CONNECTING\u2026'; el.style.color = 'rgba(255,255,255,.6)'; return; }
+      var A = window.bvLightning.since(-82, 36, -66, 47, AGE);
+      el.textContent = cwLtgText(A, Date.now(), Math.round(AGE / 60000));
+      el.style.color = A.length ? '#f3c264' : 'rgba(255,255,255,.85)';
+    }
     function cwLtgClose(){ if (window.bvLightning) window.bvLightning.want('city', false); }
     var CW_LTG_AGE = 20 * 60000;
     /* one painter, two projections: the wide views hand it lon/lat, the city
        map hands it its own painted-view mapping. Expiry happens here, during
        the draw, so nothing else has to sweep the buffer. */
-    function cwDrawStrikes(g, dpr, proj){
+    var CW_LTG_AGE_WIDE = 60 * 60000;       /* the 3- and 12-hour views keep an hour of strikes: the track, not just the flash */
+    function cwDrawStrikes(g, dpr, proj, maxAge){
       if (!window.bvLightning) return;
-      var A = window.bvLightning.since(-82, 36, -66, 47, CW_LTG_AGE);
+      var AGE = maxAge || CW_LTG_AGE;
+      var A = window.bvLightning.since(-82, 36, -66, 47, AGE);
       if (!A.length) return;
       var now = Date.now();
       g.save(); g.lineCap = 'round';
@@ -51548,7 +51587,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var age = now - A[i][2];
         var p = proj(A[i][0], A[i][1]);
         if (!p) continue;
-        var f = 1 - age / CW_LTG_AGE;          // 1 just struck, 0 about to expire
+        var f = 1 - age / AGE;                 // 1 just struck, 0 about to expire
         var rr = (1.5 + 2.6 * f) * dpr;
         g.globalAlpha = 0.22 + 0.78 * f;
         g.strokeStyle = f > 0.6 ? '#fff6d8' : '#f3c264';
@@ -52541,7 +52580,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (wv.lightning) cwDrawStrikes(g, dpr, function(lo, la){
         var X = px([lo, la]), Y = py([lo, la]);
         return (X < -8 || Y < -8 || X > cvs.width + 8 || Y > cvs.height + 8) ? null : [X, Y];
-      });
+      }, CW_LTG_AGE_WIDE);
       /* the air-mass wash. Painted at grid resolution into a tiny canvas and
          blown up by the compositor, so it arrives as a gradient rather than
          cells. Warm ahead, cool behind, measured against the field's own
@@ -58589,6 +58628,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         else if (cw.radarOn) cwAlertRead();   // the city radar draws them too now
         var wd = cw.wide ? cwWideDef() : null;
         if (cw.radarOn || (wd && wd.lightning)) cwLtgOpen(); else cwLtgClose();
+        cwLtgStatus();
       }, 3000);
       if (cw.floods && window._floodNetLoad) try{ fnArea = 'city'; _floodNetLoad(cwDrawSensors); }catch(e){}
     }
