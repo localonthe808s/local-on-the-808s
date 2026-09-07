@@ -53600,6 +53600,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
     function cwKalshiTap(){
       var K = window._cwKalshi; if (!K || !K.today) return;
       var CITY = cwkCityDef(), isNY = (CITY.key === 'ny');
+      var Tmain = null;   /* the real today, so a swapped-in tomorrow can be told apart */
       if (String(K.today.event || '').indexOf(CITY.ev) !== 0){
         /* the file in hand is another city's: fetch the right one, then draw */
         if (!cwKalshiTap._sw){
@@ -53925,7 +53926,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* the reported high can never come in under a temperature already on the
          board, so any bracket topping out below it is dead, not merely unlikely */
       var obsR = (T.obs_so_far == null) ? null : Math.round(T.obs_so_far);
-      var dead = function(r){ return obsR != null && r.hi != null && r.hi < obsR; };
+      Tmain = T;
+      var dead = function(r){ return T === Tmain && obsR != null && r.hi != null && r.hi < obsR; };
       var nDead = (T.ladder || []).filter(dead).length;
       var rows = '';   /* built once the best bet is known, so it can be marked */
 
@@ -54648,7 +54650,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 /* TODAY, FOR COMPARISON: the hourly readings so far at :51, on the
                    same clock and the same temperature scale (user, 2026-09-06:
                    "add todays line as comparison") */
-                var tod = (T.obs_hours || []).map(function(p){ return [p[0] * 60 + 51, p[1]]; })
+                var tod = ((SDAY === T ? T.obs_hours : []) || []).map(function(p){ return [p[0] * 60 + 51, p[1]]; })
                   .filter(function(p){ return p[1] != null && xOf(p[0]) != null; });
                 if (pts.length > 10){
                   var ys2 = pts.map(function(p){ return p[1]; }).concat(tod.map(function(p){ return p[1]; }));
@@ -55005,14 +55007,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           'won\u2013lost, ' + allBets.length + (allBets.length === 1 ? ' bet' : ' bets')));
       }
       if (bt.n) tiles.push(tile('PAST DAYS', wlDash(bt), pctOf(bt) + ' of ' + bt.n));
-      if (bt.interior_n){
-        var ez = {n: bt.n - bt.interior_n, hits: bt.hits - bt.interior_hits};
-        tiles.push(tile('EASY RANGES', pctOf(ez), ez.hits + ' of ' + ez.n));
-        tiles.push(tile('HARD RANGES', pctOf({n: bt.interior_n, hits: bt.interior_hits}),
-                        bt.interior_hits + ' of ' + bt.interior_n));
-      }
-      /* the 6 PM call tile is gone: it graded the record's evening lock, which nobody bets on (bets placed at 6 PM won 4%) */
-      if (ms.brier != null) tiles.push(tile('BRIER', ms.brier.toFixed(3), 'lower is better'));
+      /* easy/hard ranges and Brier left the tiles 2026-09-06 (they are for the
+         model's keeper, not for a bet); PAST DAYS carries the hard-range rate */
+      if (bt.n && bt.interior_n) tiles[tiles.length - 1] = tile('PAST DAYS', wlDash(bt),
+        pctOf(bt) + ' of ' + bt.n + ' \u00B7 hard ranges ' + pctOf({n: bt.interior_n, hits: bt.interior_hits}));
       if (cal.gap != null) tiles.push(tile('CALIBRATION', (100 * cal.gap).toFixed(1) + ' pts',
                                            'said vs happened, lower is better'));
 
@@ -55037,12 +55035,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + lset.join(SEP) + '</div>';
 
       /* ---- the degree scale: the whole day on one line ---- */
+      var scale = '', verdict = '', scaleLegend = '';
+      /* THE AXIS FOLLOWS THE DAY ON SHOW (user, 2026-09-06: "just one at a
+         time"): today's numbers while the day is live; once it has settled,
+         tomorrow's forecast band and ranges take the same axis, so the sheet
+         is one day top to bottom. Built by swapping T for the day's object. */
+      var scaleFor = function(D){
+        var keepT = T; T = D;
+        try {
       var lo0 = null, hi0 = null;
       (T.ladder || []).forEach(function(r){
         if (r.lo != null) lo0 = (lo0 == null) ? r.lo : Math.min(lo0, r.lo);
         if (r.hi != null) hi0 = (hi0 == null) ? r.hi : Math.max(hi0, r.hi);
       });
-      var scale = '', verdict = '', scaleLegend = '';
       if (lo0 != null && hi0 != null && T.pred != null){
         var s0 = lo0 - 2.5, s1 = hi0 + 2.5;
         [T.now_temp, T.obs_so_far].forEach(function(v){
@@ -55233,6 +55238,15 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         verdict = '<div style="font:.62rem system-ui,sans-serif;color:#63dbb6;margin-top:7px;line-height:1.5;">'
           + bits.join(' ') + '</div>';
       }
+
+
+        } finally { T = keepT; }
+      };
+      var SDAY = (dayDone && T.tomorrow && (T.tomorrow.ladder || []).length) ? T.tomorrow : T;
+      scaleFor(SDAY);
+      if (SDAY !== T) verdict = '';
+      var whereHdr = (SDAY === T) ? 'WHERE THE DAY STANDS'
+        : 'WHERE ' + (dayName(SDAY.date) || 'TOMORROW').toUpperCase() + ' STANDS \u00B7 FORECAST';
 
       /* ---- where the VALUE is, which is not the same as where the odds are ----
          The likeliest bracket is usually the worst bet, because the market has
@@ -55601,14 +55615,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + '<div style="text-align:center;font:700 6.5px system-ui,sans-serif;margin-top:11px;'
                 + 'color:' + (isNow ? '#2fbfa8' : x.h === (bestH || {}).h ? FCC : '#2c7f66')
                 + ';">' + (x.h % 12 || 12) + '</div>'
-                /* and who was closer that hour */
-                + '<div style="height:26px;display:flex;align-items:flex-end;justify-content:center;'
-                + 'gap:2px;margin-top:3px;' + (better ? 'background:rgba(245,165,36,.12);' : '')
-                + 'border-radius:3px 3px 0 0;">'
-                + '<div style="width:26%;max-width:9px;height:' + (2 + o * 21).toFixed(0)
-                + 'px;background:' + FCC + 'cc;border-radius:1px 1px 0 0;"></div>'
-                + '<div style="width:26%;max-width:9px;height:' + (2 + m * 21).toFixed(0)
-                + 'px;background:' + MKC + 'cc;border-radius:1px 1px 0 0;"></div></div>'
+                /* the "who was closer" duel row was removed 2026-09-06: the return
+                   already turns red where the market overtakes us */
                 + '</div></div>';
             }).join('')
           + '</div></div>';
@@ -55850,14 +55858,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
                     + '<b style="color:' + NOC + ';">never above ' + cents(tmax) + '</b>')
                 : '')
-            + line('WHEN', 'Between <b>8 AM and 1 PM</b>, once the morning runs land. Tonight&rsquo;s '
-                + 'numbers come off an older run and the price is thin overnight.')
-            + line('KILLS IT', 'A morning run that moves ' + deg(tv.r.label) + ' '
+            + line('WHEN', 'Between <b>8 AM and 1 PM</b>, once the morning runs land; drop it if a run moves '
+                + deg(tv.r.label) + ' '
                 + (tv.dir === 'against'
                     ? 'above <b>' + pct(1 - tv.ask - feeOf(tv.ask)) + '</b>'
                     : 'below <b>' + pct(tv.ask + feeOf(tv.ask)) + '</b>')
-                + ' \u2014 at that point the price already covers it. The plan is rebuilt '
-                + 'every hour, so re-check before placing.')
+                + ' \u2014 the price already covers it then. Tonight&rsquo;s numbers come off an older run and the price is thin overnight.')
             + (tvb2[0] && tvb2[0].ev > 0
                 ? line('BACKUP', 'If that is filled out, ' + (tvb2[0].dir === 'against' ? 'NO' : 'YES')
                     + ' on ' + deg(tvb2[0].r.label) + ' at ' + cents(tvb2[0].ask) + ' is worth '
@@ -56259,10 +56265,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var out = [];
         if (settledNow){
           var hitLock = T.locked && (T.locked.pick === T.pick);
-          out.push('<b>' + dayName(T.date) + ' is done.</b> The high reached '
-            + D1(T.obs_so_far) + '°, which lands in ' + deg(T.pick) + '.');
-          if (T.locked) out.push('The noon pick was ' + deg(T.locked.pick) + ' — a '
-            + (hitLock ? '<b style="color:#2fbfa8;">win</b>' : '<b style="color:#f2833f;">loss</b>') + '.');
+          /* one line for a settled day (three said the same thing, 2026-09-06) */
+          out.push('<b>' + dayName(T.date) + ' settled at ' + D1(T.obs_so_far) + '\u00B0</b>, inside ' + deg(T.pick)
+            + (T.locked ? ' \u2014 the noon pick of ' + deg(T.locked.pick)
+                + (hitLock ? ' <b style="color:#2fbfa8;">held</b>.' : ' <b style="color:#f2833f;">missed</b>.') : '.'));
           if (TM){
             out.push('Next is <b>' + dayName(TM.date) + '</b>: the forecast is ' + D1(TM.pred)
               + '°, leaning ' + deg(TM.pick)
@@ -56343,7 +56349,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            part of the day is still ahead" answer the same question the opening
            paragraph does -- how is today going -- and answering it twice, in
            two places, made the reader hunt for the half they had not seen. */
-        if (verdict) out.push(verdict.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, ''));
+        if (verdict && !settledNow) out.push(verdict.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, ''));
         /* MODEL VERSUS SENSOR. When the runs are well off the latest reading,
            the lean above is suspect and the sheet must say so before anything
            else is read (Las Vegas in monsoon rain, 2026-09-06). */
@@ -56818,7 +56824,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            and the hour chart at 95% odds left "where's today?" (user,
            2026-09-06, 3 PM with the peak still an hour off). The plan box is
            what a done day switches off, not the picture of the day. */
-        + hdr('WHERE THE DAY STANDS')
+        + hdr(whereHdr)
         + scale + timing
         + '<div id="bv-minute-replay"></div>'
         /* the milestone strip (models in / window shuts / six-hour max / prelim
@@ -56877,9 +56883,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* bookkeeping lives down here and stays quiet: it is how the forecast
            keeps itself honest, not something to read before betting */
         + hdr('RECORD')
-        + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
-        + (strip || '') + '</div>'
-        + betStrip
+        /* the square strip and the plan's-bets strip were folded away 2026-09-06 */
         + tallyLines
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
