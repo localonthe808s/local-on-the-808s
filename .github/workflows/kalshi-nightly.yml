@@ -34,10 +34,13 @@ jobs:
       - name: Commit if changed
         run: |
           set -euo pipefail
-          if git diff --quiet -- _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json; then echo "no change"; exit 0; fi
+          # stage FIRST: a file the study writes for the first time is untracked,
+          # and `git diff --quiet` never sees an untracked file -- trail_study.json
+          # was written every night and never committed (found 2026-09-07)
+          git add _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _kalshi/price_study.json _kalshi/peak_stats.json _kalshi/trail_study.json
           git commit -m "Kalshi nightly refit: hour windows, exit policy and calibration on the three cities"
           for i in 1 2 3; do
             git push && exit 0

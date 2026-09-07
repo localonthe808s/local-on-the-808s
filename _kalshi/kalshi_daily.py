@@ -1880,6 +1880,33 @@ def edge_ok(ev, price):
     return ev >= EDGE_FLOOR or (price is not None and price >= EDGE_PRICE and ev >= EDGE_FLOOR_PRICED)
 
 
+def measured_floor():
+    """THE FLOOR LEARNS (2026-09-07). price_study.py measures the edge floor
+    nightly (edge_floor in price_study.json); when it rests on enough rows the
+    typed constants above give way to it. Guardrails: at least 800 scored
+    hour-rows behind the table, both classes inside their clamps, and a move
+    of at most 5c a night from the values in force, so one odd week cannot
+    swing the floor. Returns what was applied, for the log and the lock."""
+    global EDGE_FLOOR, EDGE_FLOOR_PRICED, EDGE_PRICE
+    try:
+        d = json.load(open(os.path.join(HERE, 'price_study.json'))).get('edge_floor') or {}
+    except Exception:
+        return None
+    if (d.get('n') or 0) < 800 or d.get('min') is None or d.get('priced') is None:
+        return None
+    step = 0.05
+    new_min = min(EDGE_FLOOR + step, max(EDGE_FLOOR - step, float(d['min'])))
+    new_pr = min(EDGE_FLOOR_PRICED + step, max(EDGE_FLOOR_PRICED - step, float(d['priced'])))
+    if not (0.15 <= new_min <= 0.40 and 0.08 <= new_pr <= 0.30):
+        return None
+    changed = (abs(new_min - EDGE_FLOOR) > 1e-9) or (abs(new_pr - EDGE_FLOOR_PRICED) > 1e-9)
+    EDGE_FLOOR, EDGE_FLOOR_PRICED = round(new_min, 2), round(new_pr, 2)
+    if d.get('price'):
+        EDGE_PRICE = float(d['price'])
+    return {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE, 'n': d.get('n'),
+            'measured': bool(d.get('cheap_measured')) and bool(d.get('priced_measured')), 'changed': changed}
+
+
 def _wild(q, market_p):
     """True when our number is too far from the market's to be believed."""
     return market_p is not None and abs(q - market_p) > MAX_DISAGREE
@@ -4070,6 +4097,15 @@ def main():
     bad = 0
     digests = []
     RUN = only_markets() or MARKETS
+    # THE EDGE FLOOR, from last night's study when it has the rows (guarded)
+    try:
+        _mf = measured_floor()
+        if _mf:
+            print('edge floor %s: %sc any price, %sc from %sc (%d rows%s)' % (
+                'measured' if _mf['measured'] else 'defaulted', int(round(100 * _mf['min'])), int(round(100 * _mf['priced'])),
+                int(round(100 * _mf['price'])), _mf['n'] or 0, ', CHANGED from the typed values' if _mf['changed'] else ''))
+    except Exception as e:
+        print('edge floor: typed values kept (%s)' % e)
     # THE TUNED SETTINGS (tune.py, weekly): applied only where a guarded replay
     # chose them; every lock stamps what was in force
     try:

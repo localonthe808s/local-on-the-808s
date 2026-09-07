@@ -341,6 +341,48 @@ def calibration_bands(rows, hours=(7, 13), min_n=150):
     return out
 
 
+EV_BINS = ((0.0, 0.05), (0.05, 0.10), (0.10, 0.15), (0.15, 0.20), (0.20, 0.30), (0.30, 1.01))
+FLOOR_PRICE = 0.30
+
+
+def edge_floor(rows, hours=(7, 13), need_ret=0.15, min_n_priced=100, min_n_cheap=60):
+    """THE EDGE FLOOR, MEASURED (2026-09-07). The bake's floor -- 20c of edge,
+    or 10c once the price is 30c or more -- was read off this table by hand and
+    typed into kalshi_daily.py. This re-reads it every night from the same rows
+    so it moves with the record and nobody has to. Per price class, the floor
+    is the lowest edge bin from which that bin AND every bin above it return at
+    least +0.15 per $1 on enough rows; a lone good bin under a bad one does not
+    count. Clamped to a sane range; the bake applies it only past a row count
+    (see kalshi_daily.measured_floor) and keeps the typed values otherwise."""
+    tab = {}
+    for r in rows:
+        b = r.get('best')
+        if not b or b.get('ret') is None or not (hours[0] <= r['hour'] <= hours[1]):
+            continue
+        cls = 'priced' if b['price'] >= FLOOR_PRICE else 'cheap'
+        for lo, hi in EV_BINS:
+            if lo <= b['ev'] < hi:
+                tab.setdefault((cls, lo), []).append(b['ret'])
+                break
+    out = {'price': FLOOR_PRICE, 'need_ret': need_ret, 'n': sum(len(v) for v in tab.values()), 'bins': {}}
+    for cls, min_n, lo_c, hi_c, default in (('priced', min_n_priced, 0.08, 0.30, 0.10), ('cheap', min_n_cheap, 0.15, 0.40, 0.20)):
+        bins = [(lo, tab.get((cls, lo), [])) for lo, _ in EV_BINS]
+        out['bins'][cls] = {('%.2f' % lo): {'n': len(v), 'ret': round(statistics.mean(v), 3) if v else None} for lo, v in bins}
+        chosen = None
+        for i, (lo, v) in enumerate(bins):
+            above = [(l2, v2) for l2, v2 in bins[i:]]
+            good = all(len(v2) >= min_n and statistics.mean(v2) >= need_ret for l2, v2 in above if l2 < 0.30) \
+                and len(v) >= min_n and statistics.mean(v) >= need_ret
+            if good:
+                chosen = lo
+                break
+        out[cls] = round(min(hi_c, max(lo_c, chosen if chosen is not None else default)), 2)
+        out[cls + '_measured'] = chosen is not None
+    # the bake's names: min = any price, priced = at or above the price line
+    out['min'] = out['cheap']
+    return out
+
+
 def main():
     only = None
     if '--city' in sys.argv:
@@ -382,7 +424,8 @@ def main():
            'blend_by_market': {k: blend_by_hour([r for r in all_rows if r.get('city') == k])
                                for k in per},
            'flip_by_market': {k: pick_flip([r for r in all_rows if r.get('city') == k])
-                              for k in per}}
+                              for k in per},
+           'edge_floor': edge_floor(all_rows)}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
     print('kept %d raw rows for later analysis' % len(all_rows))
