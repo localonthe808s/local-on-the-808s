@@ -53151,7 +53151,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
     /* a handle for the capture harness: open the sheet without hunting for the
        castle on the map (its screen position moves with the viewport) */
     window._cwKalshiOpen = function(){ try { cwKalshiTap(); } catch (e){} };
-    function cwKalshiPanel(title, sub, html, meta, mid){
+    function cwKalshiPanel(title, sub, html, meta, mid, beside){
       var body = document.getElementById('cw-body');
       if (!body) return;
       mtaPanelClose(); cwFeatClose();
@@ -53242,8 +53242,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '-webkit-tap-highlight-color:transparent;">' + c.tab + '</button>';
           }).join('')
         + '</div>'
-        + '<div style="margin-top:9px;"><span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;">'
-        + mtaEsc(title).toUpperCase() + '</span></div>'
+        /* on a phone the date-and-temperature span wraps under the title as one unit */
+        + '<div style="margin-top:9px;' + (narrow ? '' : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;') + '"><span style="font:800 13px system-ui,sans-serif;letter-spacing:.03em;white-space:nowrap;">'
+        + mtaEsc(title).toUpperCase() + '</span>'
+        + (beside ? (narrow ? beside.replace('margin-left:10px', 'margin-left:0') : beside) : '') + '</div>'
         /* the date lines live in this column, right under the title: as a
            sibling of the row they sat below the taller clock-and-positions
            block, leaving a hole under the title (user, 2026-09-06) */
@@ -56429,18 +56431,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          in the most valuable line on the sheet. It now says where the day
          actually is: the date, the high so far, where the forecast has it
          going, and what that leans to. */
-      var headSubL = '<div style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;'
-        + 'color:#63dbb6;">'
+      /* BESIDE THE TITLE: the date and the current temperature, in the date
+         line's small face (user, 2026-09-06: "put temp and date next to the
+         location title but keep the smaller font") */
+      var headBeside = '<span style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;color:#63dbb6;'
+        + 'margin-left:10px;vertical-align:2px;white-space:nowrap;display:inline-block;">'
         + (dayName(T.date) || 'TODAY').toUpperCase() + ', ' + T.date.slice(5).replace('-', '/')
-        + '<span style="color:#22604e;"> | </span>'
-        + (T.obs_so_far == null
-            ? 'NOTHING ON THE BOARD YET'
-            : 'HIGHEST TEMP <span style="color:#2fbfa8;">' + D1(T.obs_so_far) + '\u00B0</span>')
-        + '<span style="color:#22604e;"> | </span>'
-        + (T.pred == null ? ''
-            : (T.obs_so_far != null && T.pred > T.obs_so_far + 0.05
-                ? 'FORECAST TO RISE TO ' : 'FORECAST ')
-              + '<span style="color:' + FCC + ';">' + D1(T.pred) + '\u00B0</span>')
         /* the current temperature, from the two sources that decide the bet:
            the settlement station's own latest reading (the hourly report, or
            the 5-minute sensor once the live poll lands) and TWC's current for
@@ -56453,6 +56449,17 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + (T.twc_now != null
             ? '<span style="color:#22604e;"> \u00B7 </span>TWC <span style="color:#fff;">' + D1(T.twc_now) + '\u00B0</span>'
             : '')
+        + '</span>';
+      var headSubL = '<div style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;'
+        + 'color:#63dbb6;">'
+        + (T.obs_so_far == null
+            ? 'NOTHING ON THE BOARD YET'
+            : 'HIGHEST TEMP <span style="color:#2fbfa8;">' + D1(T.obs_so_far) + '\u00B0</span>')
+        + '<span style="color:#22604e;"> | </span>'
+        + (T.pred == null ? ''
+            : (T.obs_so_far != null && T.pred > T.obs_so_far + 0.05
+                ? 'FORECAST TO RISE TO ' : 'FORECAST ')
+              + '<span style="color:' + FCC + ';">' + D1(T.pred) + '\u00B0</span>')
         + '</div>'
         + (T.pick
             ? '<div style="font:600 8.5px system-ui,sans-serif;color:#45b491;margin-top:2px;">'
@@ -56938,7 +56945,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ' \u00B7 UPDATED '
         + mtaEsc(stamp12(K.updated)) + ' \u00B7 ' + ageTxt(fAge) + '</div>';
 
-      cwKalshiPanel(CITY.title, headSub, body, freshTop, posTop);
+      cwKalshiPanel(CITY.title, headSub, body, freshTop, posTop, headBeside);
       if (!window._cwkTickId) window._cwkTickId = setInterval(cwkTick, 1000);
     }
     function cwGhostTap(ft){
