@@ -53576,10 +53576,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (mid ? '<div style="margin-top:6px;text-align:right;">' + mid + '</div>' : '') + '</div>' : '')
         /* REFRESH, then close. Both share the X's geometry so the pair reads as
            one control cluster rather than a button bolted on. */
-        + '<button id="cw-kalshi-r" aria-label="Refresh data" title="Refresh" style="'
-        + ((meta && !narrow) ? '' : 'margin-left:auto;') + cwkBtnCss + 'flex:0 0 auto;">\u21BB</button>'
-        + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + 'flex:0 0 auto;">'
-        + '&#10005;</button></div>'
+        /* STACKED (user 2026-09-07: "stack the x and refresh vertically so
+           it fits better"): one narrow column, close on top, refresh under it,
+           so the positions block beside them keeps its width. */
+        + '<div style="display:flex;flex-direction:column;gap:6px;flex:0 0 auto;'
+        + ((meta && !narrow) ? '' : 'margin-left:auto;') + '">'
+        + '<button id="cw-kalshi-x" aria-label="Close" style="' + cwkBtnCss + '">&#10005;</button>'
+        + '<button id="cw-kalshi-r" aria-label="Refresh data" title="Refresh" style="' + cwkBtnCss + '">\u21BB</button>'
+        + '</div></div>'
         /* on a phone the clock and the positions stack under the date lines */
         + ((meta && narrow) ? '<div style="margin-top:5px;">' + meta
             + (mid ? '<div style="margin-top:6px;">' + mid.replace(/text-align:right/g, 'text-align:left') + '</div>' : '') + '</div>' : '')
