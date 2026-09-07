@@ -7,10 +7,10 @@
   },
   "current": {
    "skill": true,
-   "bias_hl": null,
+   "bias_hl": 7,
    "sd_mult": 0.75
   },
-  "why": "gain 0.0145, wins both halves",
+  "why": "current stands",
   "n": 67,
   "tested": {
    "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": false}": {
@@ -64,5 +64,131 @@
   },
   "chosen_at": "2026-09-07"
  },
- "_built": "2026-09-07T18:10Z"
+ "_built": "2026-09-07T21:43Z",
+ "ny_high": {
+  "active": null,
+  "current": {
+   "skill": false,
+   "bias_hl": 7,
+   "sd_mult": 1.0
+  },
+  "why": "current stands",
+  "n": 67,
+  "tested": {
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.3765,
+    "hits": 51,
+    "old": 0.3819,
+    "new": 0.3712
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.3689,
+    "hits": 51,
+    "old": 0.3563,
+    "new": 0.3812
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.3656,
+    "hits": 47,
+    "old": 0.3649,
+    "new": 0.3663
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.3635,
+    "hits": 48,
+    "old": 0.3473,
+    "new": 0.3793
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.3856,
+    "hits": 49,
+    "old": 0.3976,
+    "new": 0.3739
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.3737,
+    "hits": 50,
+    "old": 0.3617,
+    "new": 0.3853
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.3735,
+    "hits": 48,
+    "old": 0.3706,
+    "new": 0.3764
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.3692,
+    "hits": 49,
+    "old": 0.3487,
+    "new": 0.3892
+   }
+  },
+  "chosen_at": null
+ },
+ "aus_high": {
+  "active": {
+   "bias_hl": 7,
+   "sd_mult": 1.0,
+   "skill": false
+  },
+  "current": {
+   "skill": false,
+   "bias_hl": null,
+   "sd_mult": 1.0
+  },
+  "why": "gain 0.0078, wins both halves",
+  "n": 67,
+  "tested": {
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.472,
+    "hits": 42,
+    "old": 0.4952,
+    "new": 0.4501
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.4656,
+    "hits": 42,
+    "old": 0.4936,
+    "new": 0.4392
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": false}": {
+    "brier": 0.4586,
+    "hits": 49,
+    "old": 0.4808,
+    "new": 0.4378
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": false}": {
+    "brier": 0.4578,
+    "hits": 49,
+    "old": 0.4853,
+    "new": 0.4318
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.4843,
+    "hits": 43,
+    "old": 0.5052,
+    "new": 0.4646
+   },
+   "{\"bias_hl\": null, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.4897,
+    "hits": 43,
+    "old": 0.5106,
+    "new": 0.4701
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 0.75, \"skill\": true}": {
+    "brier": 0.495,
+    "hits": 45,
+    "old": 0.5226,
+    "new": 0.4689
+   },
+   "{\"bias_hl\": 7, \"sd_mult\": 1.0, \"skill\": true}": {
+    "brier": 0.4931,
+    "hits": 45,
+    "old": 0.5196,
+    "new": 0.4682
+   }
+  },
+  "chosen_at": "2026-09-07"
+ }
 }
