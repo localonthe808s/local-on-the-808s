@@ -57642,6 +57642,42 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var v = cwPainted, R2 = 6378137;
       var px = function(c){ return ((c[0] * Math.PI / 180 * R2) - v.X0) / (v.X1 - v.X0) * cvs.width; };
       var py = function(c){ return (v.Y1 - R2 * Math.log(Math.tan(Math.PI / 4 + c[1] * Math.PI / 360))) / (v.Y1 - v.Y0) * cvs.height; };
+      /* THE FERRY ROUTES (user 2026-09-07: "add the ferry lines to the NYC
+         map ... dont be on geology"). 31 routes from OSM (city_ferries.json).
+         Drawn the way a transit map draws a boat: a pale solid casing, which
+         is what makes a dark route colour read against navy water, and the
+         route's own colour dashed along it -- dashed because a ferry line is
+         a crossing, not a built thing, and because the bake's own faint water
+         trails are dashed. NYC Ferry and the Staten Island Ferry carry their
+         operators' route colours (data-driven, like the MTA's); every other
+         operator's boats draw in one ice blue, thinner, so the city's own
+         system reads first. They leave on the geology view with the station
+         dots and the outfall pipes. Under the bridges: a span crosses OVER
+         the water it spans. */
+      if (window._cwFerries && cwMapMode() && !cw.rock){
+        var FERRY_ICE = 'rgba(159,208,232,.62)';
+        g.lineCap = 'butt'; g.lineJoin = 'round';
+        [0, 1].forEach(function(pass){
+          window._cwFerries.forEach(function(rt){
+            var own = (rt.k === 0);
+            if (pass === 0){                       /* the casing */
+              g.setLineDash([]);
+              g.strokeStyle = own ? 'rgba(226,240,250,.58)' : 'rgba(226,240,250,.22)';
+              g.lineWidth = (own ? 3.2 : 2.0) * dpr;
+            } else {                               /* the route */
+              g.setLineDash([5 * dpr, 3.5 * dpr]);
+              g.strokeStyle = own ? (rt.c || '#cfe6f4') : FERRY_ICE;
+              g.lineWidth = (own ? 1.7 : 1.0) * dpr;
+            }
+            rt.s.forEach(function(seg){
+              g.beginPath();
+              seg.forEach(function(cc, i2){ if (i2) g.lineTo(px(cc), py(cc)); else g.moveTo(px(cc), py(cc)); });
+              g.stroke();
+            });
+          });
+        });
+        g.setLineDash([]);
+      }
       /* the BRIDGES (user 2026-09-01): the ink bake stops its roads at the
          water, so the boroughs floated disconnected. 68 named crossings
          from OSM (city_bridges.json) draw in the bake's own road grammar —
@@ -58803,6 +58839,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           }).catch(function(){});
       }
       /* the bridges, baked from OSM (48KB) */
+      if (!window._cwFerries && !window._cwFerriesReq){
+        window._cwFerriesReq = 1;
+        fetch('city_ferries.json').then(function(r){ return r.json(); })
+          .then(function(j){ if (j && j.f){ window._cwFerries = j.f; cwDrawSensors(); } }).catch(function(){});
+      }
       if (!window._cwBridges && !window._cwBridgesReq){
         window._cwBridgesReq = 1;
         fetch('city_bridges.json').then(function(r){ return r.json(); })
