@@ -55900,7 +55900,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + ((tv && tv.ev > 0) ? 'rgba(46,204,113,.11)' : 'rgba(255,255,255,.055)') + ';">'
           + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
           + '<div style="font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:#359478;">'
-          + 'THE PLAN FOR ' + dayfull.toUpperCase() + '</div>'
+          + 'THE PLAN FOR ' + dayfull.toUpperCase() + ' \u00B7 ' + mtaEsc(String(TM.date).slice(5).replace('-', '/')) + chip(TM.state) + '</div>'
           + (TM.link
               ? '<a href="' + mtaEsc(TM.link) + '"' + APPTAB
                 + ' style="color:#4aa3e0;text-decoration:none;font:800 8px system-ui,sans-serif;'
@@ -56155,7 +56155,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              object seen twice rather than two different components */
           + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
           + '<div style="font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:#359478;">'
-          + 'THE PLAN FOR ' + (dayName(T.date) || 'TODAY').toUpperCase() + '</div>'
+          + 'THE PLAN FOR ' + (dayName(T.date) || 'TODAY').toUpperCase() + ' \u00B7 ' + mtaEsc(String(T.date).slice(5).replace('-', '/')) + chip(T.state) + '</div>'
           + (T.link
               ? '<a href="' + mtaEsc(T.link) + '"' + APPTAB
                 + ' style="color:#4aa3e0;text-decoration:none;font:800 8px system-ui,sans-serif;'
@@ -56881,7 +56881,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var cell = function(x){ return '<div style="min-width:0;">' + (x || '') + '</div>'; };
             /* the one market on show: today until it is settled, then tomorrow */
             var ONE = (settledNow && (tmParts || tomorrow)) ? R4 : L4;
-            return ONE.map(cell).join('') + '</div>';
+            /* just the plan: its title now carries the day, the date and the
+               market state, so the header and forecast line above it were
+               redundant (user, 2026-09-06) */
+            return cell(ONE[3] || ONE.join('')) + '</div>';
           })()
         /* the cities board was removed 2026-09-06 (user): the tabs are the cities */
 
