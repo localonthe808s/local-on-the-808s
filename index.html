@@ -54732,34 +54732,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 chart = svg;
               }
             }
-            /* the pattern over every replayed day */
-            var tl = [];
-            if (S.peak_median_12) tl.push(tile('PEAK LANDS', mtaEsc(S.peak_median_12),
-              'median of ' + S.timed_n + ' timed day' + (S.timed_n === 1 ? '' : 's')));
-            if (S.timed_n) tl.push(tile('AFTER 1:51 PM', S.after_six_n + ' of ' + S.timed_n,
-              'past the six-hour group', S.after_six_n > S.timed_n / 2 ? '#f2833f' : '#fff'));
-            if (S.hidden_n != null) tl.push(tile('HOURLY MISSED IT', S.hidden_n + ' of ' + S.n,
-              'settled above every :51 report' + (S.hidden_mean != null ? ' · by ' + S.hidden_mean.toFixed(1) + '° on average' : ''),
-              S.hidden_n > S.n / 2 ? '#f2833f' : '#fff'));
-            var AP = S.airports || {};
-            var apKeys = Object.keys(AP).filter(function(k){ return AP[k].n; });
-            if (apKeys.length){
-              var top = apKeys.sort(function(a, b){ return AP[b].led_n / AP[b].n - AP[a].led_n / AP[a].n; })[0];
-              tl.push(tile('AIRPORTS FIRST', names[top] + ' ' + AP[top].led_n + ' of ' + AP[top].n,
-                apKeys.filter(function(k){ return k !== top; }).map(function(k){
-                  return names[k] + ' ' + AP[k].led_n + ' of ' + AP[k].n; }).join(' · ')
-                + (AP[top].lead_median != null ? ' · median ' + (AP[top].lead_median > 0 ? dur(AP[top].lead_median) + ' ahead' : dur(AP[top].lead_median) + ' behind') : '')));
-            }
-            if (tl.length){
-              html += '<div style="display:grid;grid-template-columns:repeat(' + Math.min(4, tl.length) + ',minmax(0,1fr));'
-                + 'gap:8px 12px;margin-top:8px;">' + tl.join('') + '</div>';
-            }
-            html += '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:6px;">'
-              + mtaEsc(CITY.station).toUpperCase() + '’S ONE-MINUTE RECORD, NCEI VIA IEM · WHOLE DEGREES · '
-              + (M.lag_days != null ? 'RUNS ' + M.lag_days + ' DAY' + (M.lag_days === 1 ? '' : 'S') + ' BEHIND · ' : '')
-              + S.n + ' SETTLED DAY' + (S.n === 1 ? '' : 'S') + ' REPLAYED'
-              + (S.archive_off_by ? ' · THE ARCHIVE DISAGREED WITH THE CLIMATE REPORT BY A DEGREE ON ' + S.archive_off_by : '')
-              + (S.n < 10 ? ' · THIN, READ AS A SKETCH' : '') + '</div>';
+            /* the four tiles (peak lands / after the six-hour group / hourly
+               missed it / airports first) and the archive footer were removed
+               2026-09-06 (user: "remove the visual, not the data"). The same
+               numbers drive the bake's peak clock (peak_stats.json) and the
+               briefing's "peak is behind us" line. */
             el.innerHTML = '<div style="margin:0 6px;">' + chart
               + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;margin-top:6px;">'
               + 'MINUTE REPLAY \u00B7 WHITE LINE, THE LAST SETTLED DAY MINUTE BY MINUTE \u00B7 <span style="color:#2fbfa8;">TEAL, TODAY\u2019S HOURLY READINGS SO FAR</span></div>' + sent + html + '</div>';
@@ -56808,7 +56785,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + hdr('WHERE THE DAY STANDS')
         + scale + timing
         + '<div id="bv-minute-replay"></div>'
-        + (typeof track === 'string' ? track : '') + verdict
+        /* the milestone strip (models in / window shuts / six-hour max / prelim
+           / close) is no longer drawn (user, 2026-09-06); its times still feed
+           the briefing and the late-peak line */
+        + verdict
 
         /* TODAY LEFT, TOMORROW RIGHT.  The two boards answer one question
            together -- is the market drifting toward us or away from us
