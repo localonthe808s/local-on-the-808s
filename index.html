@@ -58262,6 +58262,251 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (!/FALLING NOW|RAIN IN ~/.test(el.textContent)) el.textContent = cwUmbModel;
         }).catch(function(){});
     }
+    /* ═══ NYC FERRY, the same board in a different fleet (user 2026-09-07:
+       "a similar arrival based view for ferries like the subway but have it in
+       a NYC FERRY SCHEDULE line that expands to take over the subway times").
+
+       Both halves of the operator's own GTFS are needed and neither is
+       optional. The realtime trip feed carries ONLY trip_id, stop_id and a
+       timestamp -- no route, no headsign -- so a live prediction is meaningless
+       without the static trip table, baked to _ferrysched.js (51 landings, 9
+       routes, 984 trips, lazy-injected like _mtastops.js). And the feed answers
+       without an Access-Control-Allow-Origin header, so unlike the MTA's it has
+       to come through proxy.bluishvoid.com; the host was allowlisted there at
+       a 25 s TTL, the same cache the subway feed uses.
+
+       Where the subway board has no schedule to fall back on, this one does:
+       a sailing the feed has not started predicting yet still shows, dimmed,
+       from the timetable. A ferry every half hour with nothing on the board
+       would read as no service. ═══ */
+    var FERRY_RT_URL = 'https://proxy.bluishvoid.com/?url=' + encodeURIComponent(
+      'https://nycferry.connexionz.net/rtt/public/utility/gtfsrealtime.aspx/tripupdate');
+    var cwFerryOn = false, ferryRosterReq = 0, ferryRT = { at: 0, by: null, pend: null };
+
+    function ferryRoster(cb){
+      if (window.BV_FERRY){ cb(window.BV_FERRY); return; }
+      if (ferryRosterReq === 2){ cb(null); return; }
+      if (ferryRosterReq === 1){ setTimeout(function(){ ferryRoster(cb); }, 400); return; }
+      ferryRosterReq = 1;
+      var sc = document.createElement('script');
+      sc.src = '_ferrysched.js?v=1';
+      sc.onload = function(){ ferryRosterReq = window.BV_FERRY ? 0 : 2; cb(window.BV_FERRY || null); };
+      sc.onerror = function(){ ferryRosterReq = 2; cb(null); };
+      document.head.appendChild(sc);
+    }
+    /* the same hand-rolled GTFS-RT walk the subway uses, one field map along:
+       FeedMessage.entity=2 -> TripUpdate=3 -> trip=1 (trip_id=1),
+       stop_time_update=2 -> stop_id=4, arrival=2 / departure=3 -> time=2.
+       Departure wins when both are present -- a boat you can still board. */
+    function ferryDecode(buf){
+      var b = new Uint8Array(buf), by = {};
+      mtaFields(b, 0, b.length, function(f, v, s, e){
+        if (f !== 2) return;
+        mtaFields(b, s, e, function(f2, v2, s2, e2){
+          if (f2 !== 3) return;
+          var trip = '', stus = [];
+          mtaFields(b, s2, e2, function(f3, v3, s3, e3){
+            if (f3 === 1){
+              mtaFields(b, s3, e3, function(f4, v4, s4, e4){
+                if (f4 === 1){ trip = ''; for (var q = s4; q < e4; q++) trip += String.fromCharCode(b[q]); }
+              });
+            } else if (f3 === 2) stus.push([s3, e3]);
+          });
+          if (!trip) return;
+          stus.forEach(function(se){
+            var sid = '', arr = 0, dep = 0;
+            mtaFields(b, se[0], se[1], function(f4, v4, s4, e4){
+              if (f4 === 4){ sid = ''; for (var q = s4; q < e4; q++) sid += String.fromCharCode(b[q]); }
+              else if (f4 === 2 || f4 === 3){
+                mtaFields(b, s4, e4, function(f5, v5){
+                  if (f5 === 2){ if (f4 === 3) dep = v5; else arr = v5; }
+                });
+              }
+            });
+            var t = dep || arr;
+            if (sid && t){ (by[trip] = by[trip] || {})[sid] = t; }
+          });
+        });
+      });
+      return by;
+    }
+    function ferryFeed(cb){
+      if (ferryRT.by && Date.now() - ferryRT.at < 25000){ cb(ferryRT.by); return; }
+      if (ferryRT.pend){ ferryRT.pend.push(cb); return; }
+      ferryRT.pend = [cb];
+      fetch(FERRY_RT_URL, { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.arrayBuffer() : null; })
+        .then(function(ab){
+          if (ab){ ferryRT.by = ferryDecode(ab); ferryRT.at = Date.now(); window._cwFerryOk = Date.now(); }
+          else window._cwFerryBad = Date.now();
+        })
+        /* a dead feed must never read as no service: the schedule still draws */
+        .catch(function(){ window._cwFerryBad = Date.now(); })
+        .then(function(){ var ps = ferryRT.pend; ferryRT.pend = null; ps.forEach(function(p){ try{ p(ferryRT.by); }catch(e){} }); });
+    }
+    /* which service_ids run on a given local date: the weekday bitmask and the
+       date window, then calendar_dates' additions and removals on top */
+    function ferryServices(F, d){
+      var ymd = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+      var dow = (d.getDay() + 6) % 7;                 /* GTFS weeks start Monday */
+      var out = {};
+      for (var k in F.c){
+        var c = F.c[k];
+        if (((c[0] >> dow) & 1) && ymd >= c[1] && ymd <= c[2]) out[k] = 1;
+      }
+      for (var k2 in (F.x || {})){
+        (F.x[k2] || []).forEach(function(e){
+          if (e[0] !== ymd) return;
+          if (e[1] === 1) out[k2] = 1; else delete out[k2];
+        });
+      }
+      return out;
+    }
+    function ferryNear(F, lat, lon, n){
+      var R2 = 6378137;
+      var hX = lon * Math.PI / 180 * R2, hY = R2 * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+      var out = [];
+      for (var id in F.s){
+        var st = F.s[id];
+        var sX = st[2] * Math.PI / 180 * R2, sY = R2 * Math.log(Math.tan(Math.PI / 4 + st[1] * Math.PI / 360));
+        out.push({ id: id, st: st, d: Math.hypot(sX - hX, sY - hY) });
+      }
+      return out.sort(function(a, b){ return a.d - b.d; }).slice(0, n || 4);
+    }
+    function ferryChip(rid, F, px){
+      var r = (F.r || {})[rid] || ['', '#5b8f7d'];
+      return '<span title="' + mtaEsc(r[0]) + '" style="display:inline-flex;align-items:center;justify-content:center;'
+        + 'height:' + px + 'px;padding:0 4px;border-radius:3px;background:' + r[1] + ';color:#fff;'
+        + 'font:800 ' + Math.round(px * 0.62) + 'px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(rid) + '</span>';
+    }
+    /* every sailing from one landing today, live time where the feed has the
+       trip and the timetable's where it does not */
+    function ferrySailings(F, stopId, rt, now){
+      var svc = ferryServices(F, now), nowMin = now.getHours() * 60 + now.getMinutes();
+      var out = [];
+      for (var tid in F.t){
+        var t = F.t[tid];
+        if (!svc[t[2]]) continue;
+        var flat = t[4];
+        for (var i = 0; i < flat.length; i += 2){
+          if (flat[i] !== stopId) continue;
+          /* A BOAT THAT ENDS HERE IS NOT A DEPARTURE. The first draft listed
+             the last stop of a trip as a sailing, so East 34th Street offered
+             boats to East 34th Street. You can only board where the trip
+             continues. */
+          if (i >= flat.length - 2) continue;
+          /* AND IT IS LABELLED BY WHERE IT ENDS UP, not by its headsign: the
+             GTFS gives "Wall St./Pier 11", "Wall St./Pier 11 (ER A)" and
+             "Wall St/Pier 11 (ER B)" for one destination, which split a
+             landing into three rows saying the same thing. The route chip
+             already carries which branch it is. */
+          var lastId = flat[flat.length - 2];
+          var dest = (F.s[lastId] || [])[0] || F.h[t[1]] || '';
+          var mins = flat[i + 1], live = rt && rt[tid] && rt[tid][stopId];
+          var at;
+          if (live){ var lv = new Date(live * 1000); at = lv.getHours() * 60 + lv.getMinutes(); }
+          else at = mins;
+          if (at < nowMin - 2) continue;               /* gone */
+          out.push({ rid: t[0], dest: dest, dir: t[3], min: at, live: !!live });
+        }
+      }
+      return out.sort(function(a, b){ return a.min - b.min; });
+    }
+    function ferryTime(m){
+      var h = Math.floor(m / 60) % 24, mm = m % 60;
+      return ((h % 12) || 12) + ':' + (mm < 10 ? '0' : '') + mm;
+    }
+    /* the board, in the subway's own row grammar so the two read as one
+       instrument: identity docked left, sailings grouped by where the boat is
+       headed, live times solid and timetable times dimmed */
+    function ferryBoard(F, rt, h, now){
+      var near = ferryNear(F, h.lat, h.lon, 4), sections = [];
+      near.forEach(function(p){
+        var sail = ferrySailings(F, p.id, rt, now);
+        var groups = [], gi = {}, rts = [], seen = {};
+        sail.forEach(function(s2){
+          if (!seen[s2.rid]){ seen[s2.rid] = 1; rts.push(s2.rid); }
+          var k = s2.dest;
+          if (gi[k] == null){ gi[k] = groups.length; groups.push([s2.dest, s2.dir, []]); }
+          if (groups[gi[k]][2].length < 3) groups[gi[k]][2].push(s2);
+        });
+        var mi = Math.round(p.d / 80);                  /* ~80 m a minute on foot */
+        var sec = '<span data-mta-row style="display:flex;align-items:center;gap:20px;padding:5px 0;'
+          + (sail.length ? '' : 'opacity:.5;') + '">'
+          + '<span style="flex:none;width:200px;display:inline-flex;flex-direction:column;gap:1px;">'
+          + '<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 5px;">'
+          + '<span style="font:800 10.5px system-ui,sans-serif;letter-spacing:.04em;line-height:1.2;">'
+          + mtaEsc(p.st[0]).toUpperCase() + '</span>'
+          + '<span style="display:inline-flex;gap:2px;align-items:center;">'
+          + rts.map(function(r){ return ferryChip(r, F, 11); }).join('') + '</span></span>'
+          + (h.addr
+              ? '<span style="font:600 7.5px system-ui,sans-serif;color:rgba(43,34,244,.55);letter-spacing:.07em;white-space:nowrap;">'
+                + (mi < 2 ? 'AT THE PIER' : '~' + mi + ' MIN WALK') + '</span>'
+              : '')
+          + '</span>'
+          + '<span style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:3px 24px;align-items:center;">';
+        if (!groups.length){
+          sec += '<span style="grid-column:1 / -1;color:rgba(43,34,244,.4);font:700 9px system-ui,sans-serif;letter-spacing:.06em;">NO MORE BOATS TODAY</span>';
+        }
+        groups.forEach(function(gp, gidx){
+          sec += '<span style="display:flex;align-items:flex-start;gap:7px;">'
+            + '<span data-dirlbl style="flex:none;min-width:62px;padding-top:3px;color:rgba(43,34,244,.6);font:800 8px system-ui,sans-serif;letter-spacing:.09em;white-space:nowrap;">'
+            + '→ ' + mtaEsc(gp[0]).toUpperCase() + '</span>'
+            + '<span style="flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:3px 7px;">'
+            + gp[2].map(function(s3){
+                return '<span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;'
+                  + 'font:700 10px system-ui,sans-serif;font-variant-numeric:tabular-nums;'
+                  + (s3.live ? '' : 'opacity:.55;') + '">'
+                  + ferryChip(s3.rid, F, 10)
+                  + '<span>' + ferryTime(s3.min) + '</span></span>';
+              }).join('')
+            + '</span></span>';
+        });
+        sec += '</span></span>';
+        sections.push(sec);
+      });
+      return sections;
+    }
+    /* THE LINE ITSELF. Collapsed it is not a button but a reading: the nearest
+       landing and when the next boat leaves it, so the row earns its space on
+       a board about to be taken over. */
+    function ferryLine(h){
+      var F = window.BV_FERRY, teaser = '', now = new Date();
+      /* pulled in on the board's first paint, not on the first tap: a line
+         that says NEXT 7:54 has to know it before it is opened */
+      if (!F && !ferryRosterReq) ferryRoster(function(){ cwHoodMta(); });
+      if (!cwFerryOn && F){
+        try {
+          var p = ferryNear(F, h.lat, h.lon, 1)[0];
+          if (p){
+            var s2 = ferrySailings(F, p.id, ferryRT.by, now)[0];
+            teaser = mtaEsc(p.st[0]).toUpperCase() + (s2 ? ' · NEXT ' + ferryTime(s2.min) : ' · NO MORE BOATS TODAY');
+          }
+        } catch (e){}
+      }
+      return '<span id="cw-ferry-line" data-mta-row style="display:flex;align-items:center;gap:10px;'
+        + 'padding:5px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;">'
+        + '<span style="font:800 9px system-ui,sans-serif;letter-spacing:.1em;color:' + (cwFerryOn ? '#0b7fa8' : 'rgba(43,34,244,.72)') + ';white-space:nowrap;">'
+        + '⚑ NYC FERRY SCHEDULE</span>'
+        + '<span style="flex:1;min-width:0;font:700 8.5px system-ui,sans-serif;letter-spacing:.06em;color:rgba(43,34,244,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+        + (cwFerryOn ? '' : teaser) + '</span>'
+        + '<span style="flex:none;font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:rgba(43,34,244,.6);white-space:nowrap;">'
+        + (cwFerryOn ? 'SUBWAY TIMES ▴' : 'OPEN ▾') + '</span></span>';
+    }
+    /* the tap: flip the flag, redraw the board the ferry has taken over, and
+       pull both halves in if this is the first open */
+    function ferryWire(h){
+      var ln = document.getElementById('cw-ferry-line');
+      if (!ln) return;
+      ln.addEventListener('click', function(e){
+        e.stopPropagation();
+        cwFerryOn = !cwFerryOn;
+        if (cwFerryOn){
+          ferryRoster(function(){ ferryFeed(function(){ cwHoodMta(); }); });
+        }
+        cwHoodMta();
+      });
+    }
     var cwHoodAt = 0, cwMtaAt = 0;
     /* the hood pill's subway board: the 3 nearest station complexes AT ONCE
        (every line, both directions) — the NEXT STATION cycler is gone.
@@ -58460,7 +58705,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         sec += '</span></span>';
         sections.push(sec);
       });
-      if (!sections.length){
+      if (!sections.length && !cwFerryOn){
         el2.style.display = 'none';
         var smU = document.getElementById('cw-card-sm');
         if (smU){ smU.style.flex = ''; smU.style.borderRadius = ''; }
@@ -58479,8 +58724,25 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<span id="cw-live-clock"></span>'
         + '<span id="cw-live-ago" style="font-size:.46rem;font-weight:800;letter-spacing:.07em;color:rgba(43,34,244,.42);"></span>'
         + '</span></span>'
-        + '<span style="display:flex;flex-direction:column;">' + sections.join('') + '</span>'
-        + '<span style="position:absolute;right:10px;bottom:3px;font:500 8px system-ui,sans-serif;color:rgba(43,34,244,.4);">© MTA · GTFS REALTIME</span>';
+        /* THE TAKEOVER (user 2026-09-07): the ferry board replaces the
+           subway's rows in the same frame rather than opening a second one --
+           the two are the same instrument reading different fleets, and the
+           widget has one board's worth of room. The line that does the
+           swapping sits under whichever board is showing. */
+        + '<span style="display:flex;flex-direction:column;">'
+        + (cwFerryOn
+            ? (window.BV_FERRY
+                ? ferryBoard(window.BV_FERRY, ferryRT.by, h, new Date()).join('')
+                : '<span data-mta-row style="padding:6px 0;color:rgba(43,34,244,.45);font:700 9px system-ui,sans-serif;letter-spacing:.08em;">READING THE SAILINGS…</span>')
+            : sections.join(''))
+        + ferryLine(h)
+        + '</span>'
+        + '<span style="position:absolute;right:10px;bottom:3px;font:500 8px system-ui,sans-serif;color:rgba(43,34,244,.4);">'
+        + (cwFerryOn
+            ? '\u00a9 NYC FERRY \u00b7 GTFS' + (ferryRT.by ? ' REALTIME \u00b7 DIM = TIMETABLE' : ' \u00b7 TIMETABLE')
+            : '\u00a9 MTA \u00b7 GTFS REALTIME')
+        + '</span>';
+      ferryWire(h);
       cwLiveClock();
       el2.style.display = 'block';
       /* straighten the first-chip column dynamically (user 2026-08-31):

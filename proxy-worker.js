@@ -70,7 +70,12 @@ const CACHE_RULES = {
   'soho.nascom.nasa.gov':         3600,
   'apod.nasa.gov':                3600,
   'images-assets.nasa.gov':       86400,
-  'djlorenz.github.io':           86400
+  'djlorenz.github.io':           86400,
+  // ── NYC Ferry (2026-09-07): GTFS-RT trip updates + the static schedule zip.
+  //    The feed answers fine but sends no Access-Control-Allow-Origin, so the
+  //    city widget's ferry board has to come through here. 25 s matches the
+  //    MTA feed cache the subway board already uses. ──
+  'nycferry.connexionz.net':      25
 };
 
 const DEFAULT_TTL = 300;
