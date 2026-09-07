@@ -55702,13 +55702,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (measured
               ? hourChart
                 + winBand
-                + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;'
-                + 'color:#2c7f66;margin-top:7px;">'
-                /* the hour study only exists for New York (price_study by_market);
-                   the other cities fall back to it and must say so */
-                + ((isNY || T.hours_own) ? 'MEASURED OVER ' + days + ' SETTLED DAYS' + (isNY ? '' : ' \u00B7 ' + CITY.tab + '\u2019S OWN QUOTES')
-                        : 'NEW YORK\u2019S HOURS, MEASURED OVER ' + days + ' SETTLED DAYS \u00B7 '
-                          + CITY.tab + '\u2019S OWN STUDY NOT YET RUN') + '</div>'
+                /* the "measured over N settled days" line was removed 2026-09-06
+                   (user); a city without its own hour study still says so */
+                + ((isNY || T.hours_own) ? ''
+                    : '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:7px;">'
+                      + 'NEW YORK\u2019S HOURS \u00B7 ' + CITY.tab + '\u2019S OWN STUDY NOT YET RUN</div>')
               : '')
           /* the closing paragraph is gone. It explained where the chart came from
              and what it means: the forecast improves all day, the market
