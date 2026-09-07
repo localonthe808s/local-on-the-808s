@@ -55939,7 +55939,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     : 'below <b>' + pct(tv.ask + feeOf(tv.ask)) + '</b>')
                 + ' \u2014 the price already covers it then. Tonight&rsquo;s numbers come off an older run and the price is thin overnight.')
             + timingLine(W0, TM.models ? Object.keys(TM.models).map(function(k){ return TM.models[k]; }) : null)
-            + (tvb2[0] && tvb2[0].ev > 0
+            + (tvb2[0] && kEdgeOk(tvb2[0].ev, tvb2[0].ask)      /* the backup clears the same floor */
                 ? line('BACKUP', 'If that is filled out, ' + (tvb2[0].dir === 'against' ? 'NO' : 'YES')
                     + ' on ' + deg(tvb2[0].r.label) + ' at ' + cents(tvb2[0].ask) + ' is worth '
                     + cents(tvb2[0].ev) + ' per $1.')
