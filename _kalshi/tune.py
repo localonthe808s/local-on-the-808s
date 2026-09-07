@@ -38,6 +38,27 @@ KNOBS = collections.OrderedDict([
     ('sd_floor',   [0.25, 0.40]),        # K.SD_FLOOR, the least spread the ladder may claim
 ])
 CFG_KNOBS = ('skill', 'bias_hl', 'sd_mult')
+# THE LISTS GROW ON THEIR OWN (2026-09-07). A knob chosen at the END of its
+# list is a knob whose best value may lie beyond it, so the next week's list
+# for that city gains one more step in that direction, within a sane bound.
+# Kept per city in tuned.json ('lists'); the defaults above are the seed.
+STEP = {'bias_hl': (7, 3, 60), 'sd_mult': (0.25, 0.5, 2.0), 'bias_k': (7, 7, 90), 'swing_damp': (0.05, 0.0, 0.30), 'sd_floor': (0.15, 0.10, 1.0)}
+
+
+def grown_lists(prev_lists, cur):
+    lists = {k: list(v) for k, v in KNOBS.items()}
+    for k, v in (prev_lists or {}).items():
+        if k in lists and isinstance(v, list) and v:
+            lists[k] = v
+    for k, (step, lo, hi) in STEP.items():
+        vals = [x for x in lists[k] if x is not None]
+        if not vals or cur.get(k) is None:
+            continue
+        if cur[k] >= max(vals) and max(vals) + step <= hi + 1e-9:
+            lists[k].append(round(max(vals) + step, 2))
+        elif cur[k] <= min(vals) and min(vals) - step >= lo - 1e-9:
+            lists[k].append(round(min(vals) - step, 2))
+    return lists
 MIN_DAYS = 45
 MIN_GAIN = 0.006
 PASSES = 2
@@ -105,6 +126,7 @@ def tune(cfg, prev):
     if prev.get(key, {}).get('active'):
         cur.update({k: v for k, v in prev[key]['active'].items() if k in KNOBS})
     memo, tested, changes = {}, {}, []
+    lists = grown_lists(prev.get(key, {}).get('lists'), cur)
 
     def scored(st):
         k = key_of(st)
@@ -123,7 +145,7 @@ def tune(cfg, prev):
         return {'active': prev.get(key, {}).get('active'), 'why': 'only %d days' % len(base), 'n': len(base)}
     for p in range(PASSES):
         moved = False
-        for knob, vals in KNOBS.items():
+        for knob, vals in lists.items():
             best = None
             for v in vals:
                 if v == cur[knob]:
@@ -145,7 +167,8 @@ def tune(cfg, prev):
             break
     sc = score(base, sorted(base))
     tested[key_of(cur)] = {'brier': round(sc['brier'], 4) if sc['brier'] is not None else None, 'hits': sc['hits'], 'vs': 'incumbent'}
-    return {'active': cur, 'defaults': defaults_of(cfg), 'why': ('; '.join(changes) if changes else 'current stands'),
+    return {'active': cur, 'defaults': defaults_of(cfg), 'lists': grown_lists(lists, cur),
+            'why': ('; '.join(changes) if changes else 'current stands'),
             'n': len(base), 'brier': round(sc['brier'], 4) if sc['brier'] is not None else None, 'hits': sc['hits'],
             'replays': len([v for v in memo.values() if v]), 'tested': tested,
             'chosen_at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d') if changes else prev.get(key, {}).get('chosen_at')}

@@ -55891,7 +55891,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
          MAX_DISAGREE: past half the board, our Brier against the market's is
          0.56 to 0.11. That far out we are not finding an edge, we are broken. */
-      var KMIN_PRICE = 0.10, KMAX_DISAGREE = 0.50, KMIN_EDGE = 0.04;   /* mirrors MIN_EDGE in the bake */
+      var KMIN_PRICE = 0.10, KMAX_DISAGREE = (T.max_disagree != null ? T.max_disagree : 0.50), KMIN_EDGE = 0.04;   /* mirrors the bake; the cap is measured nightly now (2026-09-07) */
       /* THE FLOOR IS PRICE-AWARE (2026-09-07), from the bake's measurement:
          under 20c of edge the morning bets returned about nothing and lost
          outright under a 30c price; the floor is 20c, or 10c from 30c up. */
@@ -56810,7 +56810,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     : blocked
                     ? '<b style="color:#f2833f;">The model wants ' + (blocked.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(blocked.r.label)
                       + ' at ' + cents(blocked.px) + ', ' + cents(blocked.ev) + ' of apparent edge, and the rules refuse it.</b> '
-                      + 'We sit <b>' + Math.round(100 * blocked.gap) + ' points</b> from the market on that range. Past 50 points our record says we are not finding an edge, we are broken '
+                      + 'We sit <b>' + Math.round(100 * blocked.gap) + ' points</b> from the market on that range. Past ' + Math.round(100 * KMAX_DISAGREE) + ' points our record says we are not finding an edge, we are broken '
                       + '\u2014 Brier 0.56 against the market\u2019s 0.11. The market has seen something the runs have not. Do not place it. '
                     : vbest && vbest.ev > -0.5
                     ? 'The best gap on the board is <b>' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))

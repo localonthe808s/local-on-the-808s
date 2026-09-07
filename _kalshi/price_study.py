@@ -383,6 +383,46 @@ def edge_floor(rows, hours=(7, 13), need_ret=0.15, min_n_priced=100, min_n_cheap
     return out
 
 
+GAP_BINS = (0.3, 0.4, 0.5, 0.6, 0.7)
+
+
+def disagree_cap(rows, hours=(7, 13), min_n=60):
+    """THE DISAGREEMENT CAP, MEASURED (2026-09-07). The bake refuses a rung
+    where our probability and the market's differ by more than MAX_DISAGREE
+    (typed: 50 points). Measured here from the same replayed rows: the return
+    of the plan's bet by how far we stood from the market on it, morning
+    window. The cap is the lower edge of the first gap bin, ascending from 30
+    points, that either LOSES on average or has too few rows to say -- so it
+    tightens the moment wide disagreements start losing, and loosens only on
+    sixty-plus rows of them paying. Clamped and rate-limited in the bake."""
+    tab = {lo: [] for lo in GAP_BINS}
+    n = 0
+    for r in rows:
+        b = r.get('best')
+        if not b or b.get('ret') is None or not (hours[0] <= r['hour'] <= hours[1]):
+            continue
+        i = b['i']
+        ours, mkt = r['ours'][i], r['mkt'][i]
+        if b['side'] == 'no':
+            ours, mkt = 1 - ours, 1 - mkt
+        g = abs(ours - mkt)
+        n += 1
+        for lo in GAP_BINS:
+            if lo <= g < lo + 0.1:
+                tab[lo].append(b['ret'])
+                break
+    cap = None
+    for lo in GAP_BINS:
+        v = tab[lo]
+        if len(v) < min_n or statistics.mean(v) < 0:
+            cap = lo
+            break
+    if cap is None:
+        cap = GAP_BINS[-1] + 0.1
+    return {'cap': round(cap, 2), 'n': n, 'min_n': min_n,
+            'bins': {('%.1f' % lo): {'n': len(v), 'ret': round(statistics.mean(v), 3) if v else None} for lo, v in tab.items()}}
+
+
 def main():
     only = None
     if '--city' in sys.argv:
@@ -425,7 +465,8 @@ def main():
                                for k in per},
            'flip_by_market': {k: pick_flip([r for r in all_rows if r.get('city') == k])
                               for k in per},
-           'edge_floor': edge_floor(all_rows)}
+           'edge_floor': edge_floor(all_rows),
+           'disagree_cap': disagree_cap(all_rows)}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
     print('kept %d raw rows for later analysis' % len(all_rows))

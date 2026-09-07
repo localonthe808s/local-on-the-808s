@@ -1912,6 +1912,26 @@ def _wild(q, market_p):
     return market_p is not None and abs(q - market_p) > MAX_DISAGREE
 
 
+def measured_cap():
+    """THE CAP LEARNS (2026-09-07), the same way the edge floor does:
+    price_study.py measures it nightly (disagree_cap); the bake applies it on
+    800+ morning rows, clamped to 30-70 points, moving at most 5 points a
+    night from the value in force. Typed value kept otherwise."""
+    global MAX_DISAGREE
+    try:
+        d = json.load(open(os.path.join(HERE, 'price_study.json'))).get('disagree_cap') or {}
+    except Exception:
+        return None
+    if (d.get('n') or 0) < 800 or d.get('cap') is None:
+        return None
+    new = min(MAX_DISAGREE + 0.05, max(MAX_DISAGREE - 0.05, float(d['cap'])))
+    if not (0.30 <= new <= 0.70):
+        return None
+    changed = abs(new - MAX_DISAGREE) > 1e-9
+    MAX_DISAGREE = round(new, 2)
+    return {'cap': MAX_DISAGREE, 'n': d.get('n'), 'changed': changed}
+
+
 
 
 def best_bet(rows, ps):
@@ -4019,6 +4039,7 @@ def _run_market(cfg, ticker_cache=TICKER_CACHE):
             'bet': best_bet(rows, ps),
             'calib': _CALIB.get(cfg['key']) or None,
             'edge_floor': {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE},
+            'max_disagree': MAX_DISAGREE,
             'regime': metar_regime(cfg),
             'brake': record.get('brake'),
             'twc_in': twc_in,
@@ -4141,6 +4162,12 @@ def main():
                 int(round(100 * _mf['price'])), _mf['n'] or 0, ', CHANGED from the typed values' if _mf['changed'] else ''))
     except Exception as e:
         print('edge floor: typed values kept (%s)' % e)
+    try:
+        _mc = measured_cap()
+        if _mc:
+            print('disagreement cap measured: %d points (%d rows%s)' % (int(round(100 * _mc['cap'])), _mc['n'] or 0, ', CHANGED from the typed value' if _mc['changed'] else ''))
+    except Exception as e:
+        print('disagreement cap: typed value kept (%s)' % e)
     # THE TUNED SETTINGS (tune.py, weekly): applied only where a guarded replay
     # chose them; every lock stamps what was in force
     try:
