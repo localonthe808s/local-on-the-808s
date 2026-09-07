@@ -51197,6 +51197,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           scan(window._ghostData && window._ghostData.streams, false);
           if (hit) offer(hd / mpp, 10, cwGhostTap, hit);
         }
+        if (cw.rock && cwMapMode() && window._cwFaults){
+          var fh = null, fhd = Infinity;
+          window._cwFaults.forEach(function(f){
+            var cs = f.c;
+            for (var i3 = 1; i3 < cs.length; i3++){
+              var ax3 = toX(cs[i3-1][0]), ay3 = toY(cs[i3-1][1]), bx3 = toX(cs[i3][0]), by3 = toY(cs[i3][1]);
+              var dx3 = bx3 - ax3, dy3 = by3 - ay3, L3 = dx3*dx3 + dy3*dy3;
+              var t3 = L3 ? Math.max(0, Math.min(1, ((X-ax3)*dx3 + (Y-ay3)*dy3) / L3)) : 0;
+              var d3 = Math.hypot(ax3 + t3*dx3 - X, ay3 + t3*dy3 - Y);
+              if (d3 < fhd){ fhd = d3; fh = f; }
+            }
+          });
+          if (fh) offer(fhd / mpp, 9, cwFaultTap, fh);
+        }
         if (cand) cand.fn(cand.arg);
         else if (cw.rock && cwMapMode()) cwRockTap(X, Y);
       });
@@ -52903,7 +52917,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var at = document.getElementById('cw-attrib');
       if (at){
         if (!at.getAttribute('data-base')) at.setAttribute('data-base', at.textContent);
-        at.textContent = at.getAttribute('data-base') + (cw.rock ? ' · Macrostrat' : '');
+        at.textContent = at.getAttribute('data-base') + (cw.rock ? ' · Macrostrat · USGS' : '');   /* the faults are USGS Baskerville sheets */
       }
       if (!cw.rock || !cwMapMode()){
         cvs.style.display = 'none';
@@ -52914,6 +52928,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         window._cwBorosReq = 1;
         fetch('city_boroughs.json?v=3').then(function(r2){ return r2.json(); })
           .then(function(j){ if (j && j.b){ window._cwBoros = j.b; window._cwBorosHi = j.hi || null; cwRockDraw(); } }).catch(function(){});
+      }
+      /* THE FAULTS (user 2026-09-07): traced off the USGS Baskerville bedrock
+         sheets (I-2306 Manhattan, I-2003 Bronx) -- see city_faults.json.
+         Drawn on the vector canvas so they stay crisp at any zoom. */
+      if (!window._cwFaults && !window._cwFaultsReq){
+        window._cwFaultsReq = 1;
+        fetch('city_faults.json?v=1').then(function(r2){ return r2.json(); })
+          .then(function(j){ if (j && j.f){ window._cwFaults = j.f; cwDrawSensors(); } }).catch(function(){});
       }
       var body = document.getElementById('cw-body');
       var r = body ? body.getBoundingClientRect() : null;
@@ -52963,6 +52985,27 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         });
         cvs2.style.display = '';
       });
+    }
+    function cwFaultTap(f){
+      var el = document.getElementById('cw-info');
+      if (!el) return;
+      mtaPanelClose(); cwFeatClose();
+      var km = f.len_m ? (f.len_m >= 1000 ? (f.len_m / 1000).toFixed(1) + ' km' : f.len_m + ' m') : '';
+      el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        + '<span style="display:inline-block;width:22px;height:0;border-top:' + (f.k === 'certain' ? '2px solid' : '2px dashed') + ' #1a1614;"></span>'
+        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(f.n ? f.n : (f.t === 'thrust' ? 'THRUST FAULT' : 'FAULT')).toUpperCase() + '</span>'
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '') + '</span>'
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">USGS ' + mtaEsc(f.src || '') + '</span>'
+        + '<button id="cw-fault-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button></div>'
+        + '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:3px;line-height:1.45;">'
+        + (f.n === '125th Street fault zone'
+            ? 'The largest break in Manhattan\u2019s bedrock: a zone about 500 ft wide of fractures and gouge trending northwest across the island, buried under 50\u2013200 ft of glacial fill. The subway dives to follow the bedrock here.'
+            : f.n === 'Dyckman Street fault' ? 'A northwest-trending cross fault through Inwood; the valley it made is filled with glacial-lake silt below sea level.'
+            : f.n === 'Mosholu fault' ? 'One of the Bronx\u2019s northwest-trending faults, followed by Mosholu Parkway.'
+            : 'Traced from the bedrock sheet: high-angle faults here mostly show a few inches of offset, many with a right-lateral sense; no movement has been observed since the Mesozoic.')
+        + '</div>';
+      var xb = document.getElementById('cw-fault-x');
+      if (xb) xb.onclick = function(e){ e.stopPropagation(); cwInfoDefault(); };
     }
     function cwRockTap(X, Y){
       var R2 = 6378137;
@@ -57343,6 +57386,37 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             g.stroke();
           });
         });
+      }
+      /* THE FAULTS, on the geology view: the sheet's own certainty kept --
+         a solid line where the survey drew it solid, dashed where it was
+         approximately located (edges encode certainty). Ink with a pale halo
+         so they read on every unit colour, clipped to the boroughs like the
+         rock itself. */
+      if (cw.rock && cwMapMode() && window._cwFaults){
+        g.save();
+        var boF = window._cwBorosHi || window._cwBoros;
+        if (boF){
+          g.beginPath();
+          boF.forEach(function(b){ (b.r || []).forEach(function(ring){
+            ring.forEach(function(c, i2){ if (i2) g.lineTo(px(c), py(c)); else g.moveTo(px(c), py(c)); });
+            g.closePath(); }); });
+          g.clip();
+        }
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        [0, 1].forEach(function(pass){
+          window._cwFaults.forEach(function(f){
+            g.beginPath();
+            f.c.forEach(function(c, i2){ if (i2) g.lineTo(px(c), py(c)); else g.moveTo(px(c), py(c)); });
+            if (pass === 0){ g.setLineDash([]); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 4.2 * dpr; }
+            else {
+              g.setLineDash(f.k === 'certain' ? [] : [7 * dpr, 5 * dpr]);
+              g.strokeStyle = '#1a1614'; g.lineWidth = 1.9 * dpr;
+            }
+            g.stroke();
+          });
+        });
+        g.setLineDash([]);
+        g.restore();
       }
       /* the CSO OUTFALLS (user 2026-09-01): the sewage runoff stains in the
          bake pour from these 435 permitted pipes (NYS DEC data). Drawn as a
