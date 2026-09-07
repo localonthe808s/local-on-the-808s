@@ -53659,6 +53659,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         });
       })();
       var T = K.today, R = K.record || {}, H = K.history || [];
+      var sgn = function(x){ return (x >= 0 ? '+' : '\u2212') + Math.abs(x).toFixed(2); };   /* +0.56 / \u22120.10 */
       var pct = function(x){ return (100 * (x || 0)).toFixed(0) + '%'; };
       var deg = function(x){ return mtaEsc(String(x == null ? '—' : x).replace(/°/g, '')); };
       /* temperatures to a tenth. The gauge reports whole degrees, so a settled
@@ -55002,6 +55003,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         pctOf(bt) + ' of ' + bt.n + ' \u00B7 hard ranges ' + pctOf({n: bt.interior_n, hits: bt.interior_hits}));
       if (cal.gap != null) tiles.push(tile('CALIBRATION', (100 * cal.gap).toFixed(1) + ' pts',
                                            'said vs happened, lower is better'));
+      /* the overnight drafts, graded against the settlement (logged from
+         2026-09-07): whether the evening plan pays, and how often noon
+         reversed it */
+      if (R.eve && R.eve.n) tiles.push(tile('OVERNIGHT PLANS', R.eve.wins + '\u2013' + (R.eve.n - R.eve.wins),
+        (R.eve.ret != null ? sgn(R.eve.ret) + '/$ \u00B7 ' : '') + 'noon reversed ' + R.eve.reversed + ' of ' + R.eve.n));
 
       /* the two qualifiers the tiles cannot carry: how far back this reaches,
          and which of it is not final. Amber is the whole point of the second. */
@@ -55393,6 +55399,62 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          MAX_DISAGREE: past half the board, our Brier against the market's is
          0.56 to 0.11. That far out we are not finding an edge, we are broken. */
       var KMIN_PRICE = 0.10, KMAX_DISAGREE = 0.50, KMIN_EDGE = 0.04;   /* mirrors MIN_EDGE in the bake */
+      /* THE FLOOR IS PRICE-AWARE (2026-09-07), from the bake's measurement:
+         under 20c of edge the morning bets returned about nothing and lost
+         outright under a 30c price; the floor is 20c, or 10c from 30c up. */
+      var KEF = T.edge_floor || { min: 0.20, priced: 0.10, price: 0.30 };
+      var kEdgeOk = function(ev, px){ return ev >= KEF.min || (px != null && px >= KEF.price && ev >= KEF.priced); };
+      var KEF_TXT = cents(KEF.min) + ' (' + cents(KEF.priced) + ' from ' + cents(KEF.price) + ' up)';
+      /* the hold rule, this city's own measurement */
+      var holdRule = (function(){
+        var EX = T.exit;
+        if (!EX || !EX.hold || EX.hold.ret == null) return null;
+        var alt = ['exit12','exit13','exit14','exit15','exit16','exit17','take_profit','stop_loss']
+          .map(function(k){ return EX[k] && EX[k].ret; }).filter(function(x){ return x != null; });
+        var best = alt.length ? Math.max.apply(null, alt) : null;
+        return { ret: EX.hold.ret, n: EX.n, win: EX.hold.win, lessAll: (best != null && best < EX.hold.ret), best: best };
+      })();
+      var holdTxt = function(){
+        if (!holdRule) return 'It leaves only on the bail reading below.';
+        return 'Held to settlement, ' + CITY.tab + '\u2019s morning bets returned <b>' + sgn(holdRule.ret) + ' per $1</b>'
+          + (holdRule.n ? ' on ' + holdRule.n + ' bets' : '')
+          + (holdRule.win != null ? ' (' + Math.round(100 * holdRule.win) + '% won)' : '')
+          + (holdRule.lessAll ? '; every exit rule returned less.' : holdRule.best != null ? '; the best exit rule returned ' + sgn(holdRule.best) + '.' : '.')
+          + ' It leaves only on the bail reading below.';
+      };
+      /* TIMING, MEASURED (2026-09-07). Two things the record knows that the
+         plan did not say: (1) at which hours the market's odds beat ours --
+         Austin's do all morning, so a morning bet there is against a better
+         forecaster; (2) how often the mid-morning runs move the pick between
+         8 and 11 and what each hour paid when they did. The live gate is the
+         spread of today's runs: when they agree, the early price is the
+         better one; when they do not, the later bet paid more in New York. */
+      var timingLine = function(atH, runs){
+        var out = [];
+        var e = null, isNow = (atH === clockH);
+        (T.by_hour || []).forEach(function(x){ if (x.h === atH) e = x; });
+        if (e && e.mkt != null && e.ours != null && e.mkt < e.ours)
+          out.push('<b style="color:#f2833f;">At ' + hr12(atH) + ' the market\u2019s odds have beaten ours on the record</b> (Brier '
+            + e.mkt.toFixed(3) + ' against ' + e.ours.toFixed(3) + '): a bet placed ' + (isNow ? 'now' : 'then') + ' is against a better forecaster.');
+        var F = T.flip;
+        if (F && F.rate != null && atH != null && atH < F.h_late){
+          var later = (F.moved_ret_late != null && F.moved_ret_early != null && F.moved_ret_late > F.moved_ret_early + 0.15);
+          var vals = Array.isArray(runs) ? runs.filter(function(x){ return typeof x === 'number'; }) : [];
+          var spread = vals.length >= 3 ? (Math.max.apply(null, vals) - Math.min.apply(null, vals)) : null;
+          out.push('The mid-morning runs moved the pick between ' + hr12(F.h_early) + ' and ' + hr12(F.h_late)
+            + ' on <b>' + Math.round(100 * F.rate) + '%</b> of days'
+            + (later
+                ? '; on those days the ' + hr12(F.h_late) + ' bet paid ' + sgn(F.moved_ret_late) + ' against ' + sgn(F.moved_ret_early)
+                  + ' per $1, while a steady pick had the better price at ' + hr12(F.h_early) + '.'
+                : '; the ' + hr12(F.h_early) + ' price was the better one either way.')
+            + (spread != null
+                ? (spread <= 1.0
+                    ? ' <b style="color:' + YESC + ';">Today\u2019s runs agree within ' + spread.toFixed(1) + '\u00B0 \u2014 a steady day.</b>'
+                    : ' <b style="color:#f2833f;">Today\u2019s runs are ' + spread.toFixed(1) + '\u00B0 apart' + (later ? ' \u2014 wait for ' + hr12(F.h_late) : '') + '.</b>')
+                : ''));
+        }
+        return out.length ? kvLine('TIMING', out.join(' ')) : '';
+      };
       var kTradable = function(r, dir, px, q){
         if (px == null || px < KMIN_PRICE || px >= 1) return false;
         var mp = r.market;
@@ -55409,7 +55471,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (px != null && px >= KMIN_PRICE && px < 1 && r.market != null){
             var evb = p - px - feeOf(px);
             var gap = Math.abs(p - ((dir === 'against') ? 1 - r.market : r.market));
-            if (evb >= KMIN_EDGE && gap > KMAX_DISAGREE && (!blocked || evb > blocked.ev))
+            if (kEdgeOk(evb, px) && gap > KMAX_DISAGREE && (!blocked || evb > blocked.ev))
               blocked = { r: r, dir: dir, ev: evb, gap: gap, px: px };
           }
           return;
@@ -55447,7 +55509,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var px = o[1], q = o[2];
             if (!kTradable(r, o[0], px, q)) return;
             var ev = q - px - feeOf(px);
-            if (ev < KMIN_EDGE) return;           // under four cents is not a bet
+            if (!kEdgeOk(ev, px)) return;         // under the measured floor is not a bet
             var k = stakeOf(q, px);
             if (!k) return;
             book.push({ r: r, dir: o[0], ask: px, q: q, ev: ev,
@@ -55843,7 +55905,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var tmax = tv ? breakeven(tq) : null;
         var line = kvLine;
         var steps = '';
-        if (tv && tv.ev >= KMIN_EDGE){
+        if (tv && kEdgeOk(tv.ev, tv.ask)){
           var sideC = (tv.dir === 'against') ? NOC : YESC;
           /* THE CAVEAT GOES ABOVE THE BET, not seven rows under it. "This is
              close to a coin flip between two ranges" is not a footnote to a
@@ -55876,6 +55938,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     ? 'above <b>' + pct(1 - tv.ask - feeOf(tv.ask)) + '</b>'
                     : 'below <b>' + pct(tv.ask + feeOf(tv.ask)) + '</b>')
                 + ' \u2014 the price already covers it then. Tonight&rsquo;s numbers come off an older run and the price is thin overnight.')
+            + timingLine(W0, TM.models ? Object.keys(TM.models).map(function(k){ return TM.models[k]; }) : null)
             + (tvb2[0] && tvb2[0].ev > 0
                 ? line('BACKUP', 'If that is filled out, ' + (tvb2[0].dir === 'against' ? 'NO' : 'YES')
                     + ' on ' + deg(tvb2[0].r.label) + ' at ' + cents(tvb2[0].ask) + ' is worth '
@@ -55886,7 +55949,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           steps = '<div style="font:800 13px system-ui,sans-serif;color:#45b491;">NO BET LINED UP</div>'
             + line('WHY NOT', (tv
                 ? 'The best gap on ' + dayfull + '&rsquo;s board is <b>' + (tv.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(tv.ev))
-                  + '</b> after the fee, under the ' + cents(KMIN_EDGE) + ' floor a bet has to clear. '
+                  + '</b> after the fee, under the ' + KEF_TXT + ' floor a bet has to clear. '
                 : 'No range on ' + dayfull + '&rsquo;s board is priced under what it is estimated to be worth once the fee is counted. ')
                 + 'Sitting out is a position.')
             + line('WHEN', 'Worth another look after <b>8 AM</b> \u2014 the morning runs are much '
@@ -56058,7 +56121,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
       var play = '';
       if (vbest){
-        var pg = vbest.ev >= KMIN_EDGE;
+        var pg = kEdgeOk(vbest.ev, vbest.ask);
         var pq = (vbest.dir === 'against') ? 1 - (vbest.r.ours || 0) : (vbest.r.ours || 0);
         var pmax = pg ? breakeven(pq) : null;
         var sideC = (vbest.dir === 'against') ? NOC : YESC;
@@ -56216,6 +56279,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                         + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
                         + '<b style="color:' + NOC + ';">never above ' + cents(pmax) + '</b>')
                     : '')
+                + timingLine(clockH, T.models ? Object.keys(T.models).map(function(k){ return T.models[k]; }) : null)
                 + (book.length > 1
                     ? kvLine('ALSO', book.slice(1).map(function(b){
                           return '<b style="color:' + (b.dir === 'against' ? NOC : YESC) + ';">'
@@ -56242,7 +56306,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     : '')
               : kvLine(held.length ? 'HELD' : 'WHY NOT', (held.length
                     ? 'You already hold <b>' + held.join('</b> and <b>') + '</b>. Nothing else on the board clears the '
-                      + cents(KMIN_EDGE) + ' floor'
+                      + KEF_TXT + ' floor'
                       + (vbest && vbest.ev > -0.5
                           ? ' \u2014 the best gap left is ' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))
                             + ', ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label) + ' at ' + cents(vbest.ask)
@@ -56257,7 +56321,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     : vbest && vbest.ev > -0.5
                     ? 'The best gap on the board is <b>' + (vbest.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(vbest.ev))
                       + '</b> after the fee, ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label)
-                      + ' at ' + cents(vbest.ask) + ' \u2014 under the ' + cents(KMIN_EDGE) + ' floor a bet has to clear. '
+                      + ' at ' + cents(vbest.ask) + ' \u2014 under the ' + KEF_TXT + ' floor a bet has to clear. '
                     : 'No range is priced under what it is estimated to be worth once the fee is counted. ')
                     + (held.length
                         ? 'The panel keeps watching: if a real gap opens later it will say so here, but the default for a day with a position on it is to leave it alone.'
@@ -56735,7 +56799,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                         L.push('No new line on the board clears the floor; the position you hold is the play.');
                       }
                       /* 6. the rule */
-                      L.push('Held to settlement, positions like this returned <b>+0.56 per $1</b> on 215 morning bets; every exit rule returned less. It leaves only on the bail reading below.');
+                      L.push(holdTxt());
                       return '<div style="margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);">'
                         + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">CONFIDENCE \u00B7 RE-TESTED EVERY BAKE</div>'
                         + '<ul style="margin:3px 0 0;padding-left:14px;font:600 9px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
@@ -56751,7 +56815,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                           : ' \u2014 THE PRICE IS NOT A REASON') + '.</b> '
                       + (sh.verdict === 'SELL'
                           ? mtaEsc(sh.why).replace(/&lt;/g, '<').replace(/&gt;/g, '>') + '. Salvage <b>$' + sh.sell.toFixed(2) + '</b> at the ' + cents(sh.out) + ' bid. '
-                          : 'A held position exits only on a reading, never on the bid: measured on 215 morning bets, holding returned +0.56 per $1 and every exit rule less. '
+                          : 'A held position exits only on a reading, never on the bid. ' + holdTxt().replace(' It leaves only on the bail reading below.', ' ')
                             + 'Sell now would keep <b>$' + sh.sell.toFixed(2) + '</b>; ')
                       + (sh.verdict === 'SELL' ? '' : 'holding is worth <b>$' + sh.hold.toFixed(2) + '</b> at settlement by ')
                       + (sh.w < 1

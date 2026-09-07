@@ -1476,5 +1476,46 @@
     "n": 43
    }
   }
+ },
+ "flip_by_market": {
+  "aus_high": {
+   "n": 52,
+   "moved": 18,
+   "rate": 0.346,
+   "moved_ret_early": 0.644,
+   "moved_ret_late": -0.109,
+   "steady_ret_early": 0.206,
+   "steady_ret_late": 0.024,
+   "steady_price_early": 0.394,
+   "steady_price_late": 0.416,
+   "h_early": 8,
+   "h_late": 11
+  },
+  "las_high": {
+   "n": 57,
+   "moved": 18,
+   "rate": 0.316,
+   "moved_ret_early": 0.16,
+   "moved_ret_late": 0.231,
+   "steady_ret_early": 0.482,
+   "steady_ret_late": 0.406,
+   "steady_price_early": 0.481,
+   "steady_price_late": 0.496,
+   "h_early": 8,
+   "h_late": 11
+  },
+  "ny_high": {
+   "n": 52,
+   "moved": 25,
+   "rate": 0.481,
+   "moved_ret_early": 0.201,
+   "moved_ret_late": 0.504,
+   "steady_ret_early": 0.728,
+   "steady_ret_late": 0.711,
+   "steady_price_early": 0.451,
+   "steady_price_late": 0.486,
+   "h_early": 8,
+   "h_late": 11
+  }
  }
 }

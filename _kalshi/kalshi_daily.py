@@ -177,6 +177,7 @@ WORKERS = 4                               # markets in flight at once (see main)
 BIAS_K  = int(os.environ.get('BV_BIAS_K', '30') or 30)   # days in the rolling bias window (BV_BIAS_K for backlog tests) (21 -> 30 on 2026-09-06: Brier .499 -> .491 with the skill weights, 20 cities)
 BIAS_MIN = 7                              # need this many before trusting it
 LOCK_HOUR = 12                            # noon ET: morning obs in hand, peak ahead
+EVE_HOUR = 17                             # the overnight plan is logged from 5 PM local
 FINAL_HOUR = 18                           # the actionable call, still 6 h before close
 
 # Five-model consensus.  Every one of these beats our old single source, and
@@ -1846,6 +1847,22 @@ MIN_PRICE = 0.10
 # looking like instructions. A cent is the tick; two cents is inside the
 # noise of a quote; four is the floor below which nothing is worth typing.
 MIN_EDGE = 0.04
+# THE EDGE FLOOR IS PRICE-AWARE (2026-09-07). Measured on 3,237 replayed
+# hour-rows at real quotes: under 20c of edge the 7 AM-1 PM bets return about
+# nothing in every city and LOSE outright under a 30c price (New York -0.22
+# to -0.42 per $1, Las Vegas -0.62 to -1.00, Austin -0.78 to -0.87); at 20c
+# and over they return +0.7 to +1.7. The floor is 20c, or 10c once the price
+# is 30c or more. On the record it keeps the total profit and lifts return
+# per dollar from +0.44 / +0.35 / +0.17 to +0.68 / +0.60 / +0.61 on a third
+# fewer bets. MIN_EDGE stays as the tick floor the panel's prose refers to.
+EDGE_FLOOR = 0.20
+EDGE_FLOOR_PRICED = 0.10
+EDGE_PRICE = 0.30
+
+
+def edge_ok(ev, price):
+    """Whether an edge at this price clears the measured floor."""
+    return ev >= EDGE_FLOOR or (price is not None and price >= EDGE_PRICE and ev >= EDGE_FLOOR_PRICED)
 
 
 def _wild(q, market_p):
@@ -1872,7 +1889,7 @@ def best_bet(rows, ps):
             if _wild(q, mp):
                 continue
             ev = q - price - fee_of(price)
-            if ev < MIN_EDGE:
+            if not edge_ok(ev, price):
                 continue
             if best is None or ev > best['ev']:
                 cost = price + fee_of(price)
@@ -1902,7 +1919,7 @@ def lock_book(rows, ps):
                 continue
             ev = q - price - fee_of(price)
             cost = price + fee_of(price)
-            if ev < MIN_EDGE or cost >= 1:
+            if not edge_ok(ev, price) or cost >= 1:
                 continue
             out.append({'dir': side, 'label': r['label'], 'price': round(price, 4),
                         'q': round(q, 4), 'ev': round(ev, 4), 'fee': round(fee_of(price), 4),
@@ -1937,7 +1954,7 @@ def book_value(rows, ps, bankroll=None):
             if _wild(q, mp):
                 continue
             e = q - price - fee_of(price)
-            if e < MIN_EDGE:
+            if not edge_ok(e, price):
                 continue
             cost = price + fee_of(price)
             if cost >= 1:
@@ -2305,7 +2322,18 @@ def measured_calib(cfg):
     d = _STUDY[0] if _STUDY else None
     if not d:
         return None
-    return (d.get('calib_by_market') or {}).get(cfg['key']) or d.get('calib')
+    # A CITY BAND UNDER 150 ROWS TAKES THE POOLED HAIRCUT (2026-09-07). The
+    # per-market tables existed for every city, so the pooled table -- which
+    # already carried the long-shot haircuts (0.1: 5 pts, 0.2: 10, 0.3: 6) --
+    # was never read, and the bands that lose money (outcomes we call 20-35%
+    # land 0-20% in every city) went unprotected because none had 150 rows.
+    pool = d.get('calib') or {}
+    mine = (d.get('calib_by_market') or {}).get(cfg['key']) or {}
+    out = dict(pool)
+    for k, b in mine.items():
+        if (b.get('n') or 0) >= 150:
+            out[k] = b
+    return out or None
 
 
 _CALIB = {}
@@ -3059,6 +3087,10 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
                            for r, pp in zip(trows, tps)],
                 'link': (cfg['url'] + '/' + event_ticker(cfg, tdate).lower())
                         if cfg.get('url') else None,
+                # the bet and the book the panel used to compute for itself, so
+                # the overnight plan is written down and can be graded
+                'bet': best_bet(trows, tps),
+                'book': lock_book(trows, tps),
             }
             tom.update({k: v for k, v in t_prep.items() if k not in ('pred', 'sd')})
         elif not trows:
@@ -3070,6 +3102,22 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
 
     log = load_log(OUT)
     hist = {h['date']: h for h in log.get('history', [])}
+
+    # THE OVERNIGHT PLAN, LOGGED (2026-09-07). Tomorrow's bet was arithmetic in
+    # the panel and never written down, so nothing could say whether the
+    # evening draft pays or how often the morning reverses it. The first bake
+    # at or after EVE_HOUR local writes it once into tomorrow's entry; the
+    # day's scoring grades it beside the noon lock (eve_result, eve_hit).
+    if tom and tom.get('bet') and now.hour >= EVE_HOUR:
+        e2 = hist.get(tom['date']) or {'date': tom['date'], 'event': tom['event']}
+        if 'eve' not in e2:
+            e2['eve'] = {'at': now.strftime('%H:%M'), 'pred': tom.get('pred'), 'sd': tom.get('sd'),
+                         'pick': tom.get('pick'), 'p': tom.get('p'),
+                         'market_pick': tom.get('market_pick'), 'market_p': tom.get('market_p'),
+                         'bet': tom['bet'], 'book': tom.get('book')}
+            hist[tom['date']] = e2
+            print('%s overnight plan logged for %s: %s %s at %.2f' % (
+                cfg['key'], tom['date'], tom['bet']['dir'], tom['bet']['label'], tom['bet']['price']))
 
     if '--backfill' in sys.argv:
         added = 0
@@ -3344,6 +3392,12 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         g = grade_bet(h['lock'].get('bet'), truth)
         if g:
             h['bet_result'] = g
+        if h.get('eve') and h['eve'].get('bet'):
+            ge = grade_bet(h['eve']['bet'], truth)
+            if ge:
+                h['eve_result'] = ge
+            h['eve_hit'] = (h['eve'].get('pick') == truth)
+            h['eve_reversed'] = (h['eve'].get('pick') != h['lock'].get('pick'))
         if h['lock'].get('book'):
             h['book_results'] = []
             _num = _den = 0.0
@@ -3433,6 +3487,15 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     }
     st = record['money']['staked']
     record['money']['roi'] = round(100.0 * record['money']['pl'] / st, 1) if st else None
+    # the overnight plans, graded: does the evening draft pay, and how often
+    # does the morning reverse it
+    _eve = [h for h in hist.values() if h.get('eve_result') and h.get('actual') is not None]
+    if _eve:
+        _es = sum(h['eve_result']['staked'] for h in _eve)
+        record['eve'] = {'n': len(_eve), 'wins': sum(1 for h in _eve if h['eve_result']['won']),
+                         'hits': sum(1 for h in _eve if h.get('eve_hit')),
+                         'reversed': sum(1 for h in _eve if h.get('eve_reversed')),
+                         'ret': round(sum(h['eve_result']['pl'] for h in _eve) / _es, 3) if _es else None}
 
     # THE PUBLISHED FORECASTS, SCORED. Same days, same truth, same hour: our
     # morning number against TWC's own forecast and the NWS point forecast.
@@ -3723,6 +3786,10 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             # settled days. Falls back to the assumed accuracy curve otherwise.
             'exit': measured_exit(cfg),
             'calib': _CALIB.get(cfg['key']) or None,
+            'edge_floor': {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE},
+            # how often the mid-morning runs move the pick between 8 and 11,
+            # and what each hour's bet returned on those days (price_study)
+            'flip': (((_STUDY[0] if _STUDY else None) or {}).get('flip_by_market') or {}).get(cfg['key']),
             # whether the hour study above is this market's own or a fallback
             # (price_study by_market), so the panel can label it honestly
             'hours_own': bool(((_STUDY[0] if _STUDY else None) or {}).get('by_market', {}).get(cfg['key'])),
@@ -3739,6 +3806,10 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'link': (cfg['url'] + '/' + event_ticker(cfg, today).lower())
                     if cfg.get('url') else None,
             'n_models': len(models_for(cfg)),
+            # each run's own peak for today, bias removed: the panel's timing
+            # gate reads their spread (agreeing runs = a steady pick)
+            'models': {m: round(max((fc.get(tkey) or {}).values()) - biases[m], 1)
+                       for m, fc in fcm.items() if fc.get(tkey) and biases.get(m) is not None},
             'trail_days': sum(1 for h in hist.values() if h.get('trail')),
             'tomorrow': tom,
         },
@@ -3749,6 +3820,12 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     if dry:
         print(json.dumps(doc['today'], indent=2)[:2600])
         print('\nrecord:', json.dumps(record))
+        # BV_DRY_OUT=/path/KEY.json writes the whole document a dry run would
+        # have published, so a change can be inspected (and previewed on the
+        # panel) without touching the live files or sending alerts
+        if os.environ.get('BV_DRY_OUT'):
+            with open(os.environ['BV_DRY_OUT'].replace('KEY', cfg['key']), 'w') as f:
+                json.dump(doc, f, separators=(',', ':'))
         return 0
     with open(OUT, 'w') as f:
         json.dump(doc, f, separators=(',', ':'))

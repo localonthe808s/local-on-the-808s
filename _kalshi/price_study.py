@@ -380,7 +380,9 @@ def main():
            'calib_by_market': {k: calibration_bands([r for r in all_rows if r.get('city') == k])
                                for k in per},
            'blend_by_market': {k: blend_by_hour([r for r in all_rows if r.get('city') == k])
-                               for k in per}}
+                               for k in per},
+           'flip_by_market': {k: pick_flip([r for r in all_rows if r.get('city') == k])
+                              for k in per}}
     with open(os.path.join(HERE, 'price_rows.json'), 'w') as f:
         json.dump(all_rows, f, separators=(',', ':'))
     print('kept %d raw rows for later analysis' % len(all_rows))
@@ -402,6 +404,32 @@ def main():
             ('%+.3f' % e['ret']) if e['ret'] is not None else '  -   ',
             ('%.0f%%' % (100 * e['winrate'])) if e['winrate'] is not None else '-'))
     return 0
+
+
+def pick_flip(rows, h_early=8, h_late=11):
+    """How often the best bet at h_late is a different bet from h_early (the
+    mid-morning runs moved the pick), and what each hour's bet returned on the
+    days it did and did not. Measured 2026-09-07: New York's pick moved on 25
+    of 52 days; on those the 8 AM bet paid +0.20 and the 11 AM bet +0.50, while
+    on the steady days 8 AM had the better price for the same return."""
+    by = collections.defaultdict(dict)
+    for r in rows:
+        b = r.get('best')
+        if b and (b.get('ev') or 0) >= 0.04:
+            by[r['date']][r['hour']] = b
+    same, diff = [], []
+    for d in by.values():
+        if h_early in d and h_late in d:
+            a, b = d[h_early], d[h_late]
+            (same if (a['i'] == b['i'] and a['side'] == b['side']) else diff).append((a['ret'], b['ret'], a['price'], b['price']))
+    def m(xs, i):
+        return round(statistics.mean(x[i] for x in xs), 3) if xs else None
+    n = len(same) + len(diff)
+    return {'n': n, 'moved': len(diff), 'rate': round(len(diff) / n, 3) if n else None,
+            'moved_ret_early': m(diff, 0), 'moved_ret_late': m(diff, 1),
+            'steady_ret_early': m(same, 0), 'steady_ret_late': m(same, 1),
+            'steady_price_early': m(same, 2), 'steady_price_late': m(same, 3),
+            'h_early': h_early, 'h_late': h_late}
 
 
 def blend_by_hour(rows):
