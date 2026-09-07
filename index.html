@@ -54761,8 +54761,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       };
       setTimeout(bvMinuteReplay, 0);
 
-      var qcBox = hdr('SYSTEM')
-        + '<div style="margin-top:2px;display:grid;grid-template-columns:' + (PHONE ? '1fr' : '1fr 1fr') + ';gap:0 22px;align-items:start;">' + qcL.join('') + '</div>'
+      var qcBox = '<div style="margin-top:9px;border-top:1px solid rgba(0,210,152,.12);"></div>'
+        + '<div style="margin-top:4px;display:grid;grid-template-columns:' + (PHONE ? '1fr' : '1fr 1fr') + ';gap:0 22px;align-items:start;">' + qcL.join('') + '</div>'
         /* filled in asynchronously from the worker; see bvLeadStudy below */
         + '<div id="bv-lead-study"></div>';
       /* the zone label travels with the data, so a second city reads correctly */
@@ -54946,7 +54946,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               return t12(h + ':00') + ' <b style="color:' + (e[1] && e[0] / e[1] >= 0.6 ? YESC : '#63dbb6') + ';">'
                 + e[0] + '/' + e[1] + '</b>';
             }).join(SEP)
-          + (nmax < 20 ? ' \u00B7 <span style="opacity:.7;">what the bake said at each hour, scored; too few days to judge yet</span>' : '')
+          + ''
           + '</div>';
       })();
       var PB = R.published || {};
@@ -55029,10 +55029,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var tallyLines =
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));'
         + 'gap:11px 14px;margin-top:9px;">' + tiles.join('') + '</div>'
-        + (notes.length
-            ? '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.03em;'
-              + 'margin-top:9px;">' + notes.join(SEP) + '</div>'
-            : '')
+        /* the "measured over" note left 2026-09-06 (user: "say less at the top") */
         + realLine + moneyLine + pubLine + liveHoursLine
         + '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
         + 'margin-top:5px;line-height:1.6;">'
@@ -56889,7 +56886,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* bookkeeping lives down here and stays quiet: it is how the forecast
            keeps itself honest, not something to read before betting */
         + hdr('RECORD')
-        /* the square strip and the plan's-bets strip were folded away 2026-09-06 */
+        /* the bar of settled days, bare -- no explainer (user, 2026-09-06) */
+        + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
+        + (strip || '') + '</div>'
         + tallyLines
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
