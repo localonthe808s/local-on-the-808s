@@ -53870,10 +53870,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          information. */
       var vLadder = function(lad, opt){
         opt = opt || {};
-        var H = 88;
+        /* SHORT (user, 2026-09-06: "could this be shorter?"): the bars are
+           scaled to the tallest one, so the plot is as tall as its biggest
+           probability needs and no taller */
+        var H = 44;
         var nf = opt.nf, pick = opt.pick, mpick = opt.mpick, bet = opt.bet;
+        var tallest = Math.max(0.05, Math.max.apply(null, (lad || []).map(function(r){
+          var mk = nf ? nf(r.market) : r.market;
+          return Math.max(r.ours || 0, mk == null ? 0 : mk); })));
         var col = function(r){
-          var mine = r.ours || 0, mkt = nf ? nf(r.market) : r.market;
+          var mine = (r.ours || 0) / tallest, mkt0 = nf ? nf(r.market) : r.market, mkt = (mkt0 == null) ? null : mkt0 / tallest;
           var out = opt.dead ? opt.dead(r) : false;
           var win = (r.label === pick), mwin = (r.label === mpick);
           var on = bet && bet.ev > 0 && bet.r === r;
@@ -53905,9 +53911,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'color:' + (held.side === 'yes' ? YESC : NOC) + ';margin-top:2px;">HELD '
                 + held.side.toUpperCase() + '</div>' : '')
             + '<div style="font:800 9px system-ui,sans-serif;margin-top:3px;color:'
-            + (win ? FCC : '#63dbb6') + ';">' + (out ? 'OUT' : pct(mine)) + '</div>'
+            + (win ? FCC : '#63dbb6') + ';">' + (out ? 'OUT' : pct(r.ours || 0)) + '</div>'
             + '<div style="font:' + (mwin ? '800' : '600') + ' 9px system-ui,sans-serif;color:'
-            + (mwin ? MKC : '#359478') + ';">' + (mkt == null ? '\u2014' : pct(mkt)) + '</div>'
+            + (mwin ? MKC : '#359478') + ';">' + (mkt0 == null ? '\u2014' : pct(mkt0)) + '</div>'
             + '<div style="display:flex;gap:2px;justify-content:center;margin-top:4px;">'
             + '<div style="flex:1;font:800 8px system-ui,sans-serif;padding:2px 0;'
             + 'border-radius:3px;color:' + YESC + ';background:' + YESC
@@ -53920,16 +53926,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + '</div>';
         };
         return '<div style="display:grid;grid-template-columns:repeat(' + lad.length
-          + ',1fr);gap:3px;margin-top:7px;">' + lad.map(col).join('') + '</div>'
-          + '<div style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;'
-          + 'margin-top:5px;color:#2c7f66;">'
-          + '<span style="color:' + FCC + ';">\u25AE BLUISH</span>&nbsp;&nbsp;'
-          /* the "THEN YES / NO, WHAT ONE CONTRACT COSTS" tail is gone. The two
-             swatches stay -- with two series a legend is not optional, it is
-             the only thing naming which bar is whose -- but the prices below
-             each column are already green for YES and red for NO, the same
-             pair used everywhere else on the panel. */
-          + '<span style="color:' + MKC + ';">\u25AE KALSHI</span></div>';
+          + ',1fr);gap:3px;margin-top:7px;">' + lad.map(col).join('') + '</div>';
+          /* the swatch legend left 2026-09-06 (user): the amber/teal pair is
+             the same one the odds under each column already wear */
       };
 
       /* ---- the ladder: our probability against the market's price ---- */
@@ -55042,15 +55041,45 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (R.provisional) notes.push('<span style="color:#f2833f;">' + R.provisional
         + (R.provisional > 1 ? ' days await' : ' day awaits') + ' settlement</span>');
 
+      /* ONE REVIEW BLOCK (user, 2026-09-06: "merge RECORD and EOD -- long-term
+         and short-term reviews and reflection"). Three parts under the strip:
+         THE DAY, the bake's account of the latest settled day; THE RUN, the
+         headline numbers over every settled day with the money and hour lines;
+         REFLECTION, the lessons the bake wrote from both. */
+      var subHd = function(t){
+        return '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">' + t + '</div>';
+      };
+      var ulOf = function(xs){
+        return '<ul style="margin:4px 0 0;padding-left:14px;font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.55;">'
+          + xs.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul>';
+      };
+      var RV = R.review || {};
+      var dayLines = (RV.day && RV.day.length) ? RV.day
+        : (RV.lines || []).filter(function(x){ return x.indexOf('<b>Lesson:</b>') !== 0; });
+      var lessonLines = (RV.lessons || []).concat(RV.run || []);
+      if (!RV.lessons && (RV.lines || []).length)
+        lessonLines = RV.lines.filter(function(x){ return x.indexOf('<b>Lesson:</b>') === 0; })
+          .map(function(x){ x = x.replace('<b>Lesson:</b> ', ''); return x.charAt(0).toUpperCase() + x.slice(1); });
       var tallyLines =
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));'
-        + 'gap:11px 14px;margin-top:9px;">' + tiles.join('') + '</div>'
-        /* the "measured over" note left 2026-09-06 (user: "say less at the top") */
+        '<div style="margin-top:7px;padding:8px 10px 9px;border-radius:8px;background:rgba(255,255,255,.04);">'
+        + (dayLines.length
+            ? subHd('THE DAY \u00B7 ' + dayLabel2(RV.date) + (RV.final ? '' : ' \u00B7 PRELIMINARY, THE OFFICIAL REPORT COMES ~3 AM'))
+              + ulOf(dayLines)
+            : '')
+        + '<div style="margin-top:' + (dayLines.length ? 9 : 0) + 'px;">'
+        + subHd('THE RUN' + (bt.n ? ' \u00B7 ' + bt.n + ' SETTLED DAYS' : ''))
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));'
+        + 'gap:11px 14px;margin-top:5px;">' + tiles.join('') + '</div>'
         + realLine + moneyLine + pubLine + liveHoursLine
         + '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
         + 'margin-top:5px;line-height:1.6;">'
         + '<b style="color:#45b491;">' + (dayName(T.date) || 'TODAY') + '</b> '
-        + lset.join(SEP) + '</div>';
+        + lset.join(SEP) + '</div>'
+        + '</div>'
+        + (lessonLines.length
+            ? '<div style="margin-top:9px;">' + subHd('REFLECTION') + ulOf(lessonLines) + '</div>'
+            : '')
+        + '</div>';
 
       /* ---- the degree scale: the whole day on one line ---- */
       var scale = '', verdict = '', scaleLegend = '';
@@ -56922,19 +56951,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         /* the bar of settled days, bare -- no explainer (user, 2026-09-06) */
         + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
         + (strip || '') + '</div>'
-        + tallyLines
-        /* END OF DAY: the bake's review of the latest settled day, replaced each
-           night once the report is in (user, 2026-09-06). Its lines are the
-           bake's own markup. */
-        + (function(){
-            var RV = R.review;
-            if (!RV || !(RV.lines || []).length) return '';
-            return '<div style="margin-top:9px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04);">'
-              + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">END OF DAY \u00B7 '
-              + dayLabel2(RV.date) + (RV.final ? '' : ' \u00B7 PRELIMINARY, THE OFFICIAL REPORT COMES ~3 AM') + '</div>'
-              + '<ul style="margin:4px 0 0;padding-left:14px;font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.55;">'
-              + RV.lines.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></div>';
-          })()
+        + tallyLines              /* the day, the run, the reflection -- one block */
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
         + '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.05em;margin-top:8px;">'

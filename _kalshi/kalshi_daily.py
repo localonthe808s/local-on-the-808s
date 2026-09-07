@@ -2378,7 +2378,7 @@ def measured_hours(cfg):
     return out or None
 
 
-def compose_review(cfg, hist, obh, cli, fills_by_day, now):
+def compose_review(cfg, hist, obh, cli, fills_by_day, now, record=None):
     """The latest settled day's takeaways, as short lines with a lesson each."""
     tkey = now.date().isoformat()
     cands = sorted(k for k, h in hist.items()
@@ -2459,8 +2459,72 @@ def compose_review(cfg, hist, obh, cli, fills_by_day, now):
             L.append('<b>Lesson:</b> the forecast was within a degree and still missed the range \u2014 a rounding-line day; the plan\u2019s coin-flip warning is the right read on those.')
         else:
             L.append('<b>Lesson:</b> the forecast was within %.1f\u00B0 and the range held; nothing to change.' % abs(err))
-    return {'date': k, 'final': final, 'lines': L,
+    day = [x for x in L if not x.startswith('<b>Lesson:</b>')]
+    lessons = [x.replace('<b>Lesson:</b> ', '') for x in L if x.startswith('<b>Lesson:</b>')]
+    lessons = [x[:1].upper() + x[1:] for x in lessons]
+    return {'date': k, 'final': final, 'lines': L, 'day': day, 'lessons': lessons,
+            'run': compose_run_review(cfg, record or {}),
             'built': now.strftime('%Y-%m-%dT%H:%M')}
+
+
+def compose_run_review(cfg, record):
+    """THE LONG VIEW, in words: what the settled record says about the
+    system and what it changes. Read by the panel beside the day's review
+    (user, 2026-09-06: "longterm and shortterm reviews and reflection").
+    Every line is a measured thing from `record`, never an opinion."""
+    R = []
+    bt = record.get('backtest') or {}
+    lv = record.get('live') or {}
+    if bt.get('n'):
+        R.append('Over <b>%d settled days</b> the top range held %d times (%d%%)%s; the mean miss is %.2f\u00B0%s.' % (
+            bt['n'], bt.get('hits', 0), round(100.0 * bt.get('hits', 0) / bt['n']),
+            (', %d%% on the hard interior ranges' % round(100.0 * bt['interior_hits'] / bt['interior_n'])) if bt.get('interior_n') else '',
+            bt.get('mae') or 0,
+            (' and the runs read <b>%.2f\u00B0 %s</b> on average, which the bias window takes out' % (abs(bt['bias']), 'warm' if bt['bias'] > 0 else 'cold')) if abs(bt.get('bias') or 0) >= 0.2 else ''))
+    if lv.get('n'):
+        R.append('Live, since the first real lock: <b>%d of %d</b> days right, mean miss %.2f\u00B0.' % (lv.get('hits', 0), lv['n'], lv.get('mae') or 0))
+    cal = record.get('calibration') or {}
+    bins = cal.get('bins') or []
+    if cal.get('gap') is not None and bins:
+        tot = sum(b['n'] for b in bins) or 1
+        signed = sum(b['n'] * (b['said'] - b['happened']) for b in bins) / tot
+        R.append('Calibration gap <b>%.1f pts</b>: the stated odds run %s%s.' % (
+            100 * cal['gap'],
+            'a little high' if signed > 0.01 else 'a little low' if signed < -0.01 else 'close to true',
+            ' \u2014 confident calls are landing more often than they are priced, so the plan under-sizes them' if signed < -0.01
+            else ' \u2014 the plan sizes on the stated odds, so a high reading is money bet that is not there' if signed > 0.01 else ''))
+    D = record.get('discipline') or {}
+    mn = record.get('money') or {}
+    if D.get('days') and D.get('plan_ret') is not None:
+        line = 'The noon plan held to settlement returned <b>%+.2f per $1</b> over %d days (%d won).' % (D['plan_ret'], D['days'], D.get('plan_wins', 0))
+        if mn.get('n'):
+            line += ' Real fills: <b>%+.2f</b> on $%.2f.' % (mn['pl'], mn.get('staked', 0))
+            if D['plan_ret'] > 0 and mn['pl'] < 0:
+                line += ' The gap between the two is discipline, not forecasting: the plan pays when it is left alone.'
+        R.append(line)
+    lh = record.get('live_hours') or {}
+    if lh:
+        hs = sorted(int(h) for h in lh)
+        ok = sum(lh[str(h)][0] for h in hs); tot = sum(lh[str(h)][1] for h in hs)
+        worst = min(hs, key=lambda h: (lh[str(h)][0] / lh[str(h)][1]) if lh[str(h)][1] else 1)
+        wr = lh[str(worst)]
+        # name the weak hour only when the hours actually differ
+        weak = (tot and wr[1] and wr[0] < wr[1] and ok > 0 and (wr[0] / wr[1]) < (ok / tot) - 0.05)
+        R.append('Hour by hour the live lean has been right <b>%d of %d</b> checks%s.' % (
+            ok, tot, (' \u2014 weakest at %d %s (%d/%d), so a bet placed then leans on less' % ((worst % 12) or 12, 'AM' if worst < 12 else 'PM', wr[0], wr[1])) if weak else ''))
+    pub = record.get('published') or {}
+    if pub.get('n', 0) >= 5:
+        parts = []
+        for key, name in (('ours', 'ours'), ('twc', 'TWC'), ('nws', 'NWS')):
+            o = pub.get(key) or {}
+            if o.get('mae') is not None:
+                parts.append('%s %.2f\u00B0' % (name, o['mae']))
+        if parts:
+            R.append('Morning forecasts over %d days, mean miss: %s.' % (pub['n'], ', '.join(parts)))
+    vm = record.get('vs_market') or {}
+    if vm.get('n', 0) >= 3:
+        R.append('Head to head at noon over %d priced days: ours %d, the market %d.' % (vm['n'], vm.get('ours', 0), vm.get('market', 0)))
+    return R
 
 
 def run_market(cfg, ticker_cache=TICKER_CACHE):
@@ -3461,7 +3525,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # takeaways the system can learn from"). Rules, not opinions: every line
     # names a measured thing and what the model does about it.
     try:
-        record['review'] = compose_review(cfg, hist, obh, _cli, _fills_by_day if '_fills_by_day' in dir() else {}, now)
+        record['review'] = compose_review(cfg, hist, obh, _cli, _fills_by_day if '_fills_by_day' in dir() else {}, now, record)
     except Exception as e:
         print('review: skipped (%s)' % e)
     # These were hardcoded from a refit and went stale the moment the model
