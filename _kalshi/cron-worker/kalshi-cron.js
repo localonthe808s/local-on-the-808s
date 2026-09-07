@@ -452,9 +452,15 @@ function foldLead(sum, snap) {
     if (!r.day || !r.key) continue;
     const id = `${r.key}|${r.day}`;
     const d = (sum.days[id] = sum.days[id] || {});
+    // TWC's since-7-AM field carries YESTERDAY'S maximum until 7 AM local, so
+    // a night-time sighting of it is not a lead (it printed "led IEM by 1196
+    // min" for a value set the day before, 2026-09-06). The market's zone:
+    const tz = { ny_high: 'America/New_York', las_high: 'America/Los_Angeles', aus_high: 'America/Chicago' }[r.key] || 'America/New_York';
+    const lh = Number(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).format(new Date(r.t)));
     for (const src of LEAD_SOURCES) {
       const v = r[src];
       if (typeof v !== 'number') continue;
+      if (src === 'max7' && lh < 7) continue;
       const cur = d[src];
       // strictly higher restarts the clock; equal keeps the FIRST sighting
       if (!cur || v > cur.v + 1e-9) d[src] = { v, at: r.t };

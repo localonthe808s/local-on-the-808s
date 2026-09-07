@@ -54200,7 +54200,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : T1(a.max7) + '\u00B0') + '</b>'
                   + (a.last != null ? ' <span style="opacity:.7;">(' + T1(a.last) + '\u00B0 at ' + mtaEsc(a.at || '') + ')</span>' : '');
               });
-              rows.push(qcRow(QCG, 'AIRPORTS 5-MIN', parts.join(' \u00B7 '),
+              rows.push(qcRow(QCG, 'AIRPORTS', parts.join(' \u00B7 '),
                 'highest 5-minute reading since 7 AM at LGA, JFK, EWR \u2014 the park\u2019s own is not public'));
             }
             el.innerHTML = hdr('LEAD STUDY')
