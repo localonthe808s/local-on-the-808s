@@ -53664,16 +53664,23 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var state = cwLiveRain
         ? '<span style="color:#c2410c;font-weight:800;">LIKELY SPILLING NOW</span> · rain is falling on the city'
         : 'Probably quiet — no rain on the city right now';
-      cwFeatPanel('OUTFALL ' + (p2[3] || '—'), 'NYS DEC · COMBINED SEWER',
-        '<div style="font:700 11px system-ui,sans-serif;margin-top:6px;">DISCHARGES TO ' + mtaEsc(wb).toUpperCase() + '</div>'
-        + (plant ? '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.05em;margin-top:3px;">'
-            + mtaEsc(plant).toUpperCase() + ' · ' + how + '</div>' : '')
-        + '<div style="font:.62rem system-ui,sans-serif;color:#334;margin-top:7px;line-height:1.5;">' + state + '. '
-        + 'NYC has no public live feed of which pipes are open, so this is inferred from the radar, not measured.</div>'
-        + '<div style="font:.62rem system-ui,sans-serif;color:#334;margin-top:6px;line-height:1.5;">'
-        + 'Most of the city carries sewage and street runoff in the same pipe. In rain the combined flow outruns the treatment plant, '
-        + 'and the excess leaves here rather than backing up into basements — by design. It takes surprisingly little rain: '
-        + 'a heavy shower can be enough. That is why the water darkens after a storm, and why the city asks you to stay out of it for 48 hours.</div>');
+      /* INTO THE INFO BAR (user 2026-09-07), the same reading surface the
+         stations and the faults use; the popup over the map is gone. */
+      var el = document.getElementById('cw-info');
+      if (!el) return;
+      mtaPanelClose(); cwFeatClose();
+      el.style.display = '';
+      el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        + '<span style="display:inline-block;width:14px;height:5px;background:' + (cwLiveRain ? '#ff2016' : '#e4483c') + ';border:1px solid rgba(26,20,18,.85);border-radius:1px 3px 3px 1px;"></span>'
+        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">OUTFALL ' + mtaEsc(p2[3] || '\u2014') + ' \u00b7 DISCHARGES TO ' + mtaEsc(wb).toUpperCase() + '</span>'
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">NYS DEC \u00b7 COMBINED SEWER' + (plant ? ' \u00b7 ' + mtaEsc(plant).toUpperCase() : '') + '</span>'
+        + '<button id="cw-cso-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button></div>'
+        + '<div style="font:700 9.5px system-ui,sans-serif;margin-top:3px;">' + state + '</div>'
+        + '<div style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.06em;margin-top:2px;">' + how + ' \u00b7 NO PUBLIC LIVE FEED SAYS WHICH PIPES ARE OPEN; THIS IS READ OFF THE RADAR</div>'
+        + '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:3px;line-height:1.45;">'
+        + 'Sewage and street runoff share one pipe here. In rain the flow outruns the plant and the excess leaves at this mouth rather than backing into basements \u2014 by design, and a heavy shower is enough. That is why the water darkens after a storm and the city asks you to stay out of it for 48 hours.</div>';
+      var xb = document.getElementById('cw-cso-x');
+      if (xb) xb.onclick = function(e){ e.stopPropagation(); cwInfoDefault(); };
     }
     /* THE PAGE FETCHED THIS ONCE, AT BOOT.  start() pulls kalshi_ny.json and
        kalshi_rain.json behind a one-shot guard, so a tab left open all morning
@@ -57523,7 +57530,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            reads as a stub rather than a pipe; a real outfall is far longer
            than it is wide. Now 10 by 2.9, about 3.4:1, with a lighter outline
            and a narrower headwall so 435 of them stop shouting. */
-        var L = 10 * dpr, halfIn = 0.85 * dpr, halfOut = 1.45 * dpr;
+        /* SIZED TO THE GROUND (user 2026-09-07: "too large on launch"). A
+           fixed 10 px made 435 pipes shout at the home framing and shrink to
+           nothing zoomed in. The barrel is now 90 m of ground: about 2 px
+           at launch on a desktop, a real pipe shape by the third zoom step;
+           clamped so it never vanishes and never becomes a slab. */
+        var mppC = (v.X1 - v.X0) / cvs.width;
+        var Lg = Math.max(3.4, Math.min(11, 90 / mppC)) * dpr;    /* 3.4 px floor: a tick at launch, a pipe by the third zoom */
+        var L = Lg, halfIn = Math.max(0.5, 0.085 * Lg / dpr) * dpr, halfOut = Math.max(0.8, 0.145 * Lg / dpr) * dpr;
         window._cwCSO.forEach(function(c){
           var x = px(c), y = py(c);
           if (x < -14 || y < -14 || x > cvs.width + 14 || y > cvs.height + 14) return;
