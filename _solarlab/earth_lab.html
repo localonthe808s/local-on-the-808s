@@ -1025,11 +1025,19 @@ function renderJunk(ms){
               shape === 'bracket' ? 8 : 7;
         mn = shape === 'muffler' || shape === 'saw' ? 5 : 2.2;
       }
-      /* no two clones: every piece gets its own size, girth and tumble.
-         The streak class stays velocity-true (it IS motion); hardware
-         tumbles on a seeded angle, which breaks the parallel-lattice look
-         a shared orbital direction stamps across a cloud. */
-      cap *= 0.65 + jit(i, 37) * 0.75;
+      /* SHRAPNEL, NOT SPARE SATELLITES (user 2026-09-07: "space junk should
+         be tinier shrapnel"). The silhouettes were drawn at the scale that
+         made each shape readable on its own, and the result was backwards:
+         measured on the ISS shell the median piece ran 4.7 units against a
+         satellite glyph's 4.9-8.1 span, and a muffler reached 19.6 -- more
+         than twice a whole spacecraft. Catalogued fragments are centimetres
+         to tens of centimetres; a bus is metres. So every class is scaled
+         down here rather than in the shape tables, which keeps the seeded
+         variety, the tumble and the hand-cut edges exactly as they were.
+         Streaks shrink least: they are motion, and thin. */
+      var JUNK_SZ = [0.50, 0.30, 0.26];
+      cap *= JUNK_SZ[cls] * (0.65 + jit(i, 37) * 0.75);
+      mn *= JUNK_SZ[cls];
       if (L > cap){ dx *= cap/L; dy *= cap/L; L = cap; }
       if (L < mn){ dx *= mn/Math.max(L, .01); dy *= mn/Math.max(L, .01); L = mn; }
       if (cls > 0){
