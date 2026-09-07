@@ -54300,8 +54300,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* equity, finally: cash from the exchange plus what the book is worth
          now. The worker deliberately returns cost basis and stops there --
          market value needs these live prices, which only the page has. */
-      if (bookKnown && window._cwPot && window._cwPot.cash != null){
-        window._cwPot.equity = Math.round((window._cwPot.cash + bookVal) * 100) / 100;
+      /* THE POT IS THE WHOLE ACCOUNT, whichever tab is open: cash, plus the
+         positions on this market at the bid, plus positions elsewhere at what
+         they cost. It used to be set only when a position sat on THIS market,
+         so a tab with none fell back to sizing in contracts ("Buy 1 contract
+         at 48c" on Monday's plan, 2026-09-06). */
+      if (window._cwPot && window._cwPot.cash != null){
+        var onTk = {};
+        (T.ladder || []).forEach(function(r){ if (r.ticker) onTk[r.ticker] = true; });
+        var elsewhere = 0;
+        (window._cwPot.positions || []).forEach(function(h){
+          if (h.contracts > 0 && !onTk[h.ticker]) elsewhere += (h.cost != null ? h.cost : (h.traded || 0));
+        });
+        window._cwPot.equity = Math.round((window._cwPot.cash + bookVal + elsewhere) * 100) / 100;
       }
 
       var qcL = [];
