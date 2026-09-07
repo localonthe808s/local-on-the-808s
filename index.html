@@ -56506,6 +56506,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var bookPL = bookVal - bookCost;
         posTop = '<div style="display:block;text-align:right;">'
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
+          /* nothing on THIS market, while the book sits elsewhere: say so as a
+             row of its own (user, 2026-09-06) */
+          + (bookKnown ? '' : '<div style="font:700 9px system-ui,sans-serif;color:#7b8496;margin-top:2px;white-space:nowrap;">NONE OPEN ON ' + CITY.tab + '</div>')
           + bookRows.map(function(k){
               var h = posOn[k], up = (h.pl || 0) >= 0;
               return '<div style="font:700 9px system-ui,sans-serif;color:#fff;margin-top:2px;white-space:nowrap;">'
@@ -56531,7 +56534,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + 'BOOK ' + (bookPL >= 0 ? '+' : '\u2212') + '$' + Math.abs(bookPL).toFixed(2) + '</div>'
               : '')
           + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
-          + (bookKnown ? 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW' : 'NOTHING ON THIS MARKET \u00B7 THE BOOK IS ELSEWHERE') + '</div>'
+          + (bookKnown ? 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW' : 'THE BOOK IS ON ANOTHER TAB \u00B7 TAP A ROW TO OPEN IT') + '</div>'
           + '</div>';
       }
       /* IN THE MIDDLE OF THE TOP, not tucked under the clock: the date line on
