@@ -55787,8 +55787,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + '</div>';
           var prepFc = '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;letter-spacing:.02em;min-height:2.8em;">'
             + 'FORECAST ' + predRange(TM.pred, tsd) + '</div>';
-          prep = prepFc + cols + tplan;
-          tmParts = [null, prepFc, cols, tplan];
+          tplan = tplan.replace(/<\/div>$/, '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);">' + cols + '</div></div>');
+          prep = prepFc + tplan;
+          tmParts = [null, prepFc, '', tplan];
         }
         var tmHdr0 = hdr('TOMORROW · ' + dn0.slice(0,3).toUpperCase() + ' '
                        + TM.date.slice(5).replace('-', '/')).replace('</div>', chip(TM.state) + '</div>');
@@ -55896,9 +55897,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + ' style="color:#4aa3e0;text-decoration:none;font:800 8px system-ui,sans-serif;'
                 + 'letter-spacing:.06em;">OPEN &rarr;</a>'
               : '')
-          + '</div>' + steps + '</div>';
-        tomorrow = tmHdr1 + tmFc1 + trows + tmPlan1;
-        tmParts = [tmHdr1, tmFc1, trows, tmPlan1];
+          + '</div>' + steps
+          /* the ranges, their odds and their prices ride at the bottom of the
+             plan, inside its tint (user, 2026-09-06: "bring this bar into the
+             bottom of the plan into the green area") */
+          + '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);">' + trows + '</div>'
+          + '</div>';
+        tomorrow = tmHdr1 + tmFc1 + tmPlan1;
+        tmParts = [tmHdr1, tmFc1, '', tmPlan1];
       }
 
       /* ---- THE PLAY: what to do, and when, above everything else ---------- */
