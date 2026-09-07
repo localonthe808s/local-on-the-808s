@@ -50,6 +50,9 @@ def settings_of(cfg):
 
 def replay_with(cfg, st):
     c = copy.deepcopy(cfg); c.update(st)
+    # the replay only rescores the record when the bake is asked to backfill
+    if '--backfill' not in sys.argv:
+        sys.argv.append('--backfill')
     doc = R.replay(c)
     return {h['date']: h for h in doc.get('history', []) if h.get('actual') is not None and 'lock' in h}
 
