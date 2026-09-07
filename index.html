@@ -56890,6 +56890,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
         + (strip || '') + '</div>'
         + tallyLines
+        /* END OF DAY: the bake's review of the latest settled day, replaced each
+           night once the report is in (user, 2026-09-06). Its lines are the
+           bake's own markup. */
+        + (function(){
+            var RV = R.review;
+            if (!RV || !(RV.lines || []).length) return '';
+            return '<div style="margin-top:9px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04);">'
+              + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">END OF DAY \u00B7 '
+              + dayLabel2(RV.date) + (RV.final ? '' : ' \u00B7 PRELIMINARY, THE OFFICIAL REPORT COMES ~3 AM') + '</div>'
+              + '<ul style="margin:4px 0 0;padding-left:14px;font:600 9.5px system-ui,sans-serif;color:#dffcf1;line-height:1.55;">'
+              + RV.lines.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></div>';
+          })()
         + (PHONE ? kalshiBtn(T.link, 'OPEN ON KALSHI &rarr;') : '')
         + qcBox
         + '<div style="font:600 8px system-ui,sans-serif;color:#359478;letter-spacing:.05em;margin-top:8px;">'

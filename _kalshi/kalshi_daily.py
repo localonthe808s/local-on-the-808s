@@ -2378,6 +2378,91 @@ def measured_hours(cfg):
     return out or None
 
 
+def compose_review(cfg, hist, obh, cli, fills_by_day, now):
+    """The latest settled day's takeaways, as short lines with a lesson each."""
+    tkey = now.date().isoformat()
+    cands = sorted(k for k, h in hist.items()
+                   if k < tkey and h.get('actual') is not None and h.get('lock'))
+    if not cands:
+        return None
+    k = cands[-1]
+    h = hist[k]
+    lk = h['lock']
+    a = float(h['actual'])
+    final = (h.get('truth_source') == 'settlement')
+    L = []
+    c = (cli or {}).get(k) or {}
+    at = c.get('at')
+    hit = bool(h.get('hit'))
+    err = h.get('err')
+    # 1. the outcome against the noon lean
+    L.append('Settled <b>%.0f\u00B0</b>%s, in <b>%s</b>. The noon lean was <b>%s</b> at %.0f%% \u2014 %s%s.' % (
+        a, (' at ' + at) if at else '', h.get('actual_bracket') or '?', lk.get('pick') or '?', 100 * (lk.get('p') or 0),
+        '<b style="color:#2fbfa8;">held</b>' if hit else '<b style="color:#f2833f;">missed</b>',
+        (' (forecast %.1f, off by %.1f\u00B0)' % (lk['pred'], abs(err))) if (err is not None and lk.get('pred') is not None) else ''))
+    # 2. the market at noon
+    mp, mh = lk.get('market_pick'), h.get('market_hit')
+    if mp:
+        if mp == lk.get('pick'):
+            L.append('The market agreed at noon (%s at %.0f%%)%s.' % (mp, 100 * (lk.get('market_p') or 0),
+                     ' and both were right' if hit else ' and both were wrong'))
+        else:
+            L.append('The market disagreed at noon, on <b>%s</b> \u2014 %s. Morning disagreements have favoured the forecast in the record; afternoon ones favour the market.' % (
+                mp, 'the market was right' if mh else ('we were right' if hit else 'neither was right')))
+    # 3. where the day was decided, and what the hourly stream showed
+    hrs = obh.get(k) or {}
+    hmax = max(hrs.values()) if hrs else None
+    six_txt = ''
+    if at:
+        try:
+            t = datetime.datetime.strptime(str(at).replace(' ', ''), '%I:%M%p')
+            late = (t.hour * 60 + t.minute) > (13 * 60 + 51)
+            six_txt = ' \u2014 after the 1:51 PM six-hour group' if late else ' \u2014 inside the 1:51 PM six-hour group'
+        except ValueError:
+            pass
+    if hmax is not None:
+        gap = a - hmax
+        L.append('The high was set%s%s; the hourly reports topped out at %.0f\u00B0%s.' % (
+            (' at ' + at) if at else '', six_txt, hmax,
+            (', <b>%.0f\u00B0 under the settlement</b> \u2014 a peak between reports that the 5-minute feed or a corroborated TWC maximum would have seen' % gap) if gap >= 1 else ''))
+    elif at:
+        L.append('The high was set at %s%s.' % (at, six_txt))
+    # 4. the official forecasts
+    pub = h.get('published') or {}
+    fc = []
+    if pub.get('twc') is not None:
+        fc.append('TWC %.0f (off %.0f)' % (pub['twc'], abs(pub['twc'] - a)))
+    if pub.get('nws') is not None:
+        fc.append('NWS %.0f (off %.0f)' % (pub['nws'], abs(pub['nws'] - a)))
+    if fc:
+        L.append('Morning forecasts: ' + ', '.join(fc) + '; ours %.1f (off %.1f).' % (lk.get('pred') or 0, abs((lk.get('pred') or 0) - a)))
+    # 5. the plan and the fills
+    br = h.get('book_results') or []
+    if br:
+        won = sum(1 for b in br if b.get('won'))
+        L.append('The noon book: %d of %d lines paid%s.' % (won, len(br),
+                 (', <b>%+.2f per $1</b> held to settlement' % h['plan_ret']) if h.get('plan_ret') is not None else ''))
+    elif h.get('bet_result'):
+        b = h['bet_result']
+        L.append('The noon bet %s (%+.2f on $%.2f).' % ('paid' if b.get('won') else 'lost', b.get('pl', 0), b.get('staked', 0)))
+    f = (fills_by_day or {}).get(k)
+    if f and f.get('staked'):
+        L.append('Real fills that day: <b>%+.2f</b> on $%.2f.' % (f['pl'], f['staked']))
+        if h.get('plan_ret') is not None and h['plan_ret'] > 0 and f['pl'] < 0:
+            L.append('<b>Lesson:</b> the plan paid and the fills did not \u2014 the loss came from stepping off the plan, not from the forecast.')
+    # 6. the model lesson
+    if err is not None:
+        if abs(err) >= 1.0:
+            L.append('<b>Lesson:</b> the runs ran %s by %.1f\u00B0; the %s bias window pulls that in from tomorrow.' % (
+                'cold' if err < 0 else 'warm', abs(err), 'recency-weighted' if cfg.get('bias_hl') else ('%d-day' % BIAS_K)))
+        elif not hit:
+            L.append('<b>Lesson:</b> the forecast was within a degree and still missed the range \u2014 a rounding-line day; the plan\u2019s coin-flip warning is the right read on those.')
+        else:
+            L.append('<b>Lesson:</b> the forecast was within %.1f\u00B0 and the range held; nothing to change.' % abs(err))
+    return {'date': k, 'final': final, 'lines': L,
+            'built': now.strftime('%Y-%m-%dT%H:%M')}
+
+
 def run_market(cfg, ticker_cache=TICKER_CACHE):
     dry = '--dry' in sys.argv
     _TL.cfg = cfg
@@ -3370,6 +3455,15 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             }
     except Exception as e:
         print('discipline: skipped (%s)' % e)
+    # END OF DAY REVIEW. Written from the day's own numbers once it has settled
+    # (or from the preliminary report after the local day is over), replaced
+    # each night, shown at the bottom of RECORD (user, 2026-09-06: "critical
+    # takeaways the system can learn from"). Rules, not opinions: every line
+    # names a measured thing and what the model does about it.
+    try:
+        record['review'] = compose_review(cfg, hist, obh, _cli, _fills_by_day if '_fills_by_day' in dir() else {}, now)
+    except Exception as e:
+        print('review: skipped (%s)' % e)
     # These were hardcoded from a refit and went stale the moment the model
     # improved: the file advertised 40/68 and MAE 1.44 long after the fresh-run
     # switch had taken it to 48/66 and 1.04, understating itself by 14 points.
