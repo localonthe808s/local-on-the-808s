@@ -57136,7 +57136,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     ? ' <b style="color:' + (up ? YESC : NOC) + ';">' + (up ? '+' : '\u2212') + '$' + Math.abs(h.pl).toFixed(2) + '</b>'
                     : ' <span style="color:#7b8496;">no bid</span>')
                 + (function(){
-                    var hw = dayDone ? null : cwkHoldWord(sellHold(h));
+                    /* shown until the market closes, decided day or not (user
+                       2026-09-07): a held position is still a decision until
+                       it settles, and the word says whether the readings
+                       have turned on it */
+                    var hw = cwkHoldWord(sellHold(h));
                     if (!hw) return '';
                     return ' <span title="' + mtaEsc(hw.title) + '" style="font:800 6.5px system-ui,sans-serif;letter-spacing:.07em;color:' + hw.col
                       + ';border:1px solid ' + hw.col + '66;border-radius:999px;padding:1px 5px;vertical-align:middle;">'
@@ -57193,7 +57197,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + bookRows.map(function(k, i){
                     var h = posOn[k], yes = (h.side === 'yes'), on = (i === posSel);
                     var plTxt = (h.pl == null) ? '' : ' \u00B7 ' + ((h.pl || 0) >= 0 ? '+' : '\u2212') + '$' + Math.abs(h.pl || 0).toFixed(2);
-                    var hw = dayDone ? null : cwkHoldWord(sellHold(h));
+                    var hw = cwkHoldWord(sellHold(h));
                     return '<button type="button" class="cwk-postab" data-pos="' + i + '"' + (hw ? ' title="' + mtaEsc(hw.title) + '"' : '') + ' style="' + cwkPosTabCss(on, yes) + '">'
                       + '<b style="color:' + (yes ? YESC : NOC) + ';">' + h.side.toUpperCase() + '</b> ' + deg(k) + plTxt
                       + (hw ? ' <span style="color:' + hw.col + ';border:1px solid ' + hw.col + '66;border-radius:999px;padding:0 5px;margin-left:3px;">' + hw.txt + '</span>' : '')
