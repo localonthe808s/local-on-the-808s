@@ -54742,7 +54742,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* 5. the consensus behind the forecast */
       var nMod = T.n_models || 0;
       qcL.push(qcRow(nMod >= 4 ? QCG : nMod >= 2 ? QCA : QCR, 'MODELS',
-        nMod + ' IN THE CONSENSUS', nMod >= 4 ? '' : 'upstream models are missing'));
+        nMod + ' IN THE CONSENSUS' + (T.twc_in ? ' \u00b7 TWC\u2019S FORECAST JOINED' : ''), nMod >= 4 ? (T.twc_in ? 'its morning number beats the consensus on the record' : '') : 'upstream models are missing'));
 
 
       /* 7. the lock. Past noon with nothing locked means the run that writes

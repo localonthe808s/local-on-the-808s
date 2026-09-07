@@ -3074,6 +3074,22 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             model_resid = {'hour': _hh, 'expected': round(_e, 1), 'observed': round(_hobs[_hh], 1),
                            'diff': round(_hobs[_hh] - _e, 1)}
 
+    # TWC'S OWN FORECAST JOINS WHEN THE RECORD SAYS SO (2026-09-07). Its daily
+    # maximum has been logged against ours every morning since 09-06; once
+    # twenty graded mornings show it beating the consensus by 0.15 F of mean
+    # miss in this city, the two are averaged. Measured, per city, from the
+    # previous bake's record.published -- never switched on by hand.
+    twc_in = False
+    try:
+        _pub = ((load_log(OUT).get('record') or {}).get('published') or {})
+        _po, _pt = (_pub.get('ours') or {}), (_pub.get('twc') or {})
+        if fadj is not None and _twcf is not None and (_pt.get('n') or 0) >= 20 \
+                and _po.get('mae') is not None and _pt.get('mae') is not None and _pt['mae'] <= _po['mae'] - 0.15:
+            fadj = round(0.5 * fadj + 0.5 * float(_twcf), 2)
+            twc_in = True
+            print('%s TWC forecast joins the consensus (%.2f vs ours %.2f over %d mornings)' % (cfg['key'], _pt['mae'], _po['mae'], _pt['n']))
+    except Exception as e:
+        print('twc roster check skipped (%s)' % e)
     cands = [x for x in (obs_far, fadj) if x is not None]
     if not cands:
         print('no forecast and no observations yet')
@@ -3334,6 +3350,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'pick': rows[best]['label'], 'ticker': rows[best]['ticker'],
             'p': round(ps[best], 4), 'pred': round(pred, 2), 'sd': round(sd, 2),
             'as_of': '%02d:00 %s' % (hour, cfg.get('tzlabel', 'ET')),
+            'params': {'skill': bool(cfg.get('skill', True)), 'bias_hl': cfg.get('bias_hl'), 'sd_mult': cfg.get('sd_mult', 1.0)},
             # the hour the PRICES were read. A lock is rebuilt as-of its own
             # hour, but the market quotes can only ever be live ones -- so if the
             # run happens well after the lock hour the forecast is honest and the
@@ -3942,6 +3959,8 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'edge_floor': {'min': EDGE_FLOOR, 'priced': EDGE_FLOOR_PRICED, 'price': EDGE_PRICE},
             'regime': metar_regime(cfg),
             'brake': record.get('brake'),
+            'twc_in': twc_in,
+            'params': {'skill': bool(cfg.get('skill', True)), 'bias_hl': cfg.get('bias_hl'), 'sd_mult': cfg.get('sd_mult', 1.0)},
             # the live plan-stability figure once the bake trail has two weeks
             # (trail_study.py); the panel prefers it over the archive replay
             'flip_live': (lambda st: ({'rate': round(1 - st['stable_to_11'][0] / float(st['stable_to_11'][1]), 3),
@@ -4051,6 +4070,19 @@ def main():
     bad = 0
     digests = []
     RUN = only_markets() or MARKETS
+    # THE TUNED SETTINGS (tune.py, weekly): applied only where a guarded replay
+    # chose them; every lock stamps what was in force
+    try:
+        _tuned = json.load(open(os.path.join(HERE, 'tuned.json')))
+        for cfg in RUN:
+            a = (_tuned.get(cfg['key']) or {}).get('active')
+            if a and (_tuned.get(cfg['key']) or {}).get('n', 0) >= 45:
+                cfg.update({k: a[k] for k in ('skill', 'bias_hl', 'sd_mult') if k in a})
+                print('%s tuned: %s' % (cfg['key'], a))
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print('tuned.json skipped (%s)' % e)
     prev_markets = []
     if RUN is not MARKETS:
         print('fast lane: %s only' % ', '.join(c['key'] for c in RUN))

@@ -1,0 +1,45 @@
+# SELF-TUNING, WEEKLY (2026-09-07). Replays the current model over the frozen
+# record with each per-city setting flipped and keeps a change only under the
+# guardrails in _kalshi/tune.py. Sunday morning, after the nightly refit.
+name: Kalshi weekly tune
+on:
+  schedule:
+    - cron: '30 9 * * 0'          # 09:30Z Sunday = 5:30 AM ET
+  workflow_dispatch: {}
+concurrency:
+  group: kalshi-tune
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install signing library
+        run: pip install --quiet cryptography
+      - name: Replay each setting over the record, keep a change only under the guardrails
+        run: |
+          set -o pipefail
+          python3 -u _kalshi/tune.py 2>&1 | tee /tmp/tune.txt
+      - name: Commit the tuned settings if they changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- _kalshi/tuned.json && [ -z "$(git status --porcelain -- _kalshi/tuned.json)" ]; then echo "no change"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _kalshi/tuned.json
+          git commit -m "Kalshi weekly tune: per-city settings re-chosen under the guardrails"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main && git rebase origin/main || { git rebase --abort; git reset --hard origin/main; git add _kalshi/tuned.json; git commit -m "Kalshi weekly tune"; }
+          done
+          exit 1
+      - name: Put it in the run summary
+        if: always()
+        run: |
+          { echo '## Kalshi weekly tune'; echo; echo '```'; grep -v -e '^---' -e 'offset measured' -e '^wrote ' -e 'LOCKED' -e 'backfilled' -e 'no open market' /tmp/tune.txt || cat /tmp/tune.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
