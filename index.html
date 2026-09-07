@@ -52994,16 +52994,26 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var km = f.len_m ? (f.len_m >= 1000 ? (f.len_m / 1000).toFixed(1) + ' km' : f.len_m + ' m') : '';
       el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
         + '<span style="display:inline-block;width:26px;height:0;border-top:' + ((f.r === 3 ? 4 : f.r === 2 ? 3 : 2) + 'px ' + (f.k === 'certain' ? 'solid' : 'dashed')) + ' #7a1416;box-shadow:0 0 0 1px rgba(255,255,255,.8);"></span>'
-        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(f.n ? f.n : (f.t === 'thrust' ? 'THRUST FAULT' : f.r === 3 ? 'MAJOR FAULT' : f.r === 2 ? 'FAULT' : 'MINOR FAULT')).toUpperCase() + '</span>'
-        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '')
-        + (f.w ? ' \u00b7 ' + (f.r >= 2 ? 'DRAWN HEAVY' : 'DRAWN LIGHT') + ' ON THE SHEET' : '') + '</span>'
+        /* THE NAME FIRST (user 2026-09-07: "show their names"): the label the
+           survey printed along the trace where it printed one, else the fault
+           is called by the ground it runs under -- FAULT UNDER MORRIS HEIGHTS
+           -- and the sub-line says the sheet left it unnamed. The class
+           (major / thrust / minor) moves into the sub-line. */
+        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">'
+        + mtaEsc(f.n ? f.n : ((f.t === 'thrust' ? 'THRUST' : 'FAULT') + (f.loc ? ' UNDER ' + f.loc : ''))).toUpperCase() + '</span>'
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">'
+        + (f.t === 'thrust' ? 'THRUST' : f.r === 3 ? 'MAJOR' : f.r === 2 ? 'FAULT' : 'MINOR')
+        + ' \u00b7 ' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '')
+        + (f.n ? '' : ' \u00b7 UNNAMED ON THE SHEET')
+        + (f.n && f.loc ? ' \u00b7 UNDER ' + mtaEsc(f.loc).toUpperCase() : '') + '</span>'
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">USGS ' + mtaEsc(f.src || '') + '</span>'
         + '<button id="cw-fault-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button></div>'
         + '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:3px;line-height:1.45;">'
         + (f.n === '125th Street fault zone'
             ? 'The largest break in Manhattan\u2019s bedrock: a zone about 500 ft wide of fractures and gouge trending northwest across the island, buried under 50\u2013200 ft of glacial fill. The subway dives to follow the bedrock here.'
             : f.n === 'Dyckman Street fault' ? 'A northwest-trending cross fault through Inwood; the valley it made is filled with glacial-lake silt below sea level.'
-            : f.n === 'Mosholu fault' ? 'One of the Bronx\u2019s northwest-trending faults, followed by Mosholu Parkway.'
+            : f.n === "Cameron's Line" ? 'The Taconic suture: a thrust that carried the Hartland schists westward over the Manhattan Formation about 450 million years ago. The sheets follow it from the Bronx down the east side of Manhattan to the Upper Bay; in City Water Tunnel No. 3 it is a shear zone less than six inches wide.'
+            : f.n === 'Inwood Hill thrust' ? 'A thrust with open teeth on the sheet, lying several hundred feet below Cameron\u2019s Line through Inwood and Washington Heights, so the two draw almost on top of each other.'
             : 'Traced from the bedrock sheet: high-angle faults here mostly show a few inches of offset, many with a right-lateral sense; no movement has been observed since the Mesozoic.')
         + '</div>';
       var xb = document.getElementById('cw-fault-x');
