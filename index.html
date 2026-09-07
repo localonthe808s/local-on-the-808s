@@ -55334,18 +55334,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (k.haircut > 0.005
               ? ' <span style="color:#9fd9c4;">Sized as if it were ' + pct(q - k.haircut)
                 + ', because bets we have called ' + pct(q) + ' have won a little less often than that.</span>' : ''))
-          /* THE ORDER, AS ONE STRING TO COPY. What the plan says and what gets
-             typed into Kalshi were different things on 2026-09-05. This is the
-             order in the exchange's own words, one tap to the clipboard. */
-          + '<button type="button" class="cwk-btn2" data-copy="'
-          + mtaEsc((dir === 'against' ? 'NO' : 'YES') + ' on ' + String(r.label).replace(/°/g, '')
-              + ' - ' + $(risk) + ' - limit ' + Math.round(100 * price) + 'c (' + cnt(n) + ')')
-          + '" data-done="COPIED — THE ORDER, IN KALSHI’S WORDS" style="display:inline-flex;'
-          + 'align-items:center;margin:4px 0 2px 69px;padding:5px 10px;border-radius:7px;background:transparent;'
-          + 'border:1px dashed rgba(74,163,224,.45);color:#4aa3e0;font:800 9px system-ui,sans-serif;'
-          + 'letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;">COPY ORDER · '
-          + (dir === 'against' ? 'NO' : 'YES') + ' ' + deg(r.label) + ' · ' + $(risk) + ' AT ' + cents(price)
-          + '</button>';
+          /* the COPY ORDER button was removed 2026-09-06 (user) */
+          + '';
       };
 
       var vbest = null;
@@ -56871,7 +56861,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             var ONE = (settledNow && (tmParts || tomorrow)) ? R4 : L4;
             return ONE.map(cell).join('') + '</div>';
           })()
-        + cities
+        /* the cities board was removed 2026-09-06 (user): the tabs are the cities */
 
         /* bookkeeping lives down here and stays quiet: it is how the forecast
            keeps itself honest, not something to read before betting */
