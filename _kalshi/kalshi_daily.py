@@ -2948,7 +2948,11 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
     # sheet; and when it is near-certain AND the 5-minute feed is in hand, the
     # remaining spread is the 5-minute gap even if the runs still hope for more.
     peak_done = None
-    _bh = (_pk.get('by_hour') or {}).get(str(now.hour))
+    _bhs = _pk.get('by_hour') or {}
+    # the archive table runs 10:00-21:00; past its last hour the day is only
+    # more decided, so the last row stands in (New York at 10 PM had no row,
+    # so no peak-behind-us figure and no day-decided collapse)
+    _bh = _bhs.get(str(now.hour)) or (_bhs.get(str(max(int(h) for h in _bhs))) if _bhs and now.hour > max(int(h) for h in _bhs) else None)
     if _bh:
         _lastv = None
         _hobs2 = {h: v for h, v in (obh.get(tkey) or {}).items() if h0 <= h <= now.hour and v is not None}
@@ -2965,6 +2969,29 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
         if pd is not None and pd >= 0.85 and _est5 is not None and not binding_now:
             sd = min(sd, max(EXACT_FLOOR_SD_MIN, _gap5_sd + 0.15))
             print('%s peak behind us %.0f%% at %d:00 with the 5-minute feed in hand: spread %.2f' % (cfg['key'], 100 * pd, now.hour, sd))
+    # THE DAY IS DECIDED. The six-hour group is the ASOS's own maximum over
+    # its window -- exact, not sampled -- so once the group that carried the
+    # day's high has landed, every hourly reading since has stayed a degree
+    # under it, and the one-minute archive puts the peak behind us, what is
+    # left is the rounding of that exact figure. New York 2026-09-06 at
+    # 10 PM: the 2-8 PM group read 75.9, the station 66 and falling, and the
+    # sheet still said 79% on 75-76 with a fifth of the mass above 76.5, the
+    # hidden-peak spread applied to a peak that was no longer hidden.
+    day_decided = False
+    _sw = SIX_WINDOW.get(cfg['key'])
+    if _six is not None and _sw and now.hour >= _sw[1] and peak_done and peak_done.get('cooling') \
+            and (peak_done.get('p') or 0) >= 0.95:
+        _after = [v for h, v in (obh.get(tkey) or {}).items() if h > _sw[1] and v is not None]
+        _since_ok = all(v <= _six - 0.5 for v in _after)
+        _hourly_ok = (rmax is None or rmax <= _six + 0.5)
+        if _since_ok and _hourly_ok:
+            day_decided = True
+            # the exact figure: the group, or the settlement sensor's own 5-minute
+            # maximum where that runs higher (the group is whole-degree Celsius)
+            _exact = max(x for x in (_six, _own5) if x is not None)
+            pred, obs_far, sd = _exact, _exact, 0.15
+            print('%s day decided: the %d-%d group read %.1f, readings since a degree under, peak behind us %.0f%% -- spread %.2f'
+                  % (cfg['key'], _sw[0], _sw[1], _six, 100 * (peak_done.get('p') or 0), sd))
     res_lock = residuals(fcm, bias_of, daily, obh, LOCK_HOUR, tkey, h0_of)
     sd_lock, _ = spread(res_lock, LOCK_HOUR, binding_now)
 
@@ -3661,7 +3688,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'now_at': ob_last[0][0][11:16] if ob_last else None,
             'fc_peak': round(fpeak, 2) if fpeak is not None else None,
             'peak_hour': peak_hour,
-            'peak_done': peak_done,
+            'peak_done': peak_done, 'day_decided': day_decided,
             'own5_gap': _gap5,
             'ours': [round(p, 4) for p in ps],
             'pick': rows[best]['label'], 'p': round(ps[best], 4),

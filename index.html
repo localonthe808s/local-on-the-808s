@@ -53807,6 +53807,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          off an old model run (20% off). Compact, because this is read with an
          order form open -- the word, the number, and the one thing qualifying
          it. */
+      /* THE LIVE RECORD GATES THE GRADE AND THE SIZE. Austin's Monday plan
+         read STRONG on the same sheet that showed Austin live at 0 of 2 days
+         and 0 of 7 hourly checks; the grade used the backtest and the edge
+         only. With two or more live days and fewer than half right, the edge
+         is cut in half and the stake with it, until the live count recovers
+         (2026-09-06). */
+      var liveGate = (function(){
+        var lv = R.live || {};
+        if ((lv.n || 0) >= 2 && (lv.hits || 0) / lv.n < 0.5)
+          return { f: 0.5, txt: 'cut 50%, live ' + (lv.hits || 0) + ' of ' + lv.n + ' days right' };
+        return null;
+      })();
       var convictionOf = function(ev, pred, ladder, stale){
         if (ev == null) return '';
         var near = null;
@@ -53818,7 +53830,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           });
         });
         var onLine = near && near.d <= 0.35;
-        var g = ev * (onLine ? 0.6 : 1) * (stale ? 0.8 : 1);
+        var g = ev * (onLine ? 0.6 : 1) * (stale ? 0.8 : 1) * (liveGate ? liveGate.f : 1);
         var txt = g >= 0.12 ? 'STRONG' : g >= 0.06 ? 'FAIR' : 'THIN';
         var col = (txt === 'STRONG') ? YESC : (txt === 'FAIR') ? FCC : '#45b491';
         return '<b style="color:' + col + ';">' + txt + '</b>'
@@ -53830,7 +53842,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               : (near ? ' <span style="color:#2c7f66;">\u00B7</span> ' + near.d.toFixed(1)
                         + '\u00B0 clear of the nearest line' : ''))
           + (stale ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + FCC
-                     + ';">cut 20%, old run</span>' : '');
+                     + ';">cut 20%, old run</span>' : '')
+          + (liveGate ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + NOC
+                     + ';">' + liveGate.txt + '</span>' : '');
       };
 
       var payBarOf = function(price){
@@ -55330,7 +55344,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var c = price + feeOf(price);
         var qs = qSized(q);
         if (!(c > 0 && c < 1) || qs <= c) return null;
-        return { quarter: (qs - c) / (1 - c) / 4, cost: c, haircut: q - qs };
+        /* the live-record gate halves the size as well as the grade */
+        return { quarter: (qs - c) / (1 - c) / 4 * (liveGate ? liveGate.f : 1), cost: c, haircut: q - qs };
       };
       /* AT THIS SIZE THE UNIT IS CONTRACTS, NOT PERCENT.  "5.9% of bankroll"
          is a useless instruction on a $10 pot -- it is 59 cents, which buys two
@@ -55908,7 +55923,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
                     + '<b style="color:' + NOC + ';">never above ' + cents(tmax) + '</b>')
                 : '')
-            + line('WHEN', 'Between <b>8 AM and 1 PM</b>, once the morning runs land; drop it if a run moves '
+            /* the window is this market's own measured one (the hour chart's
+               BEST WINDOW), not New York's pasted into every city (2026-09-06) */
+            + line('WHEN', 'Between <b>' + hr12(W0) + ' and ' + hr12(W1) + '</b>'
+                + (measured ? ', the hours this market has paid in' : '')
+                + (W0 <= 8 ? ', once the morning runs land' : ', with the morning runs in') + '; drop it if a run moves '
                 + deg(tv.r.label) + ' '
                 + (tv.dir === 'against'
                     ? 'above <b>' + pct(1 - tv.ask - feeOf(tv.ask)) + '</b>'
