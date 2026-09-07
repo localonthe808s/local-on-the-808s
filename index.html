@@ -55058,7 +55058,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            labels carry both percentages. Every marker carries its time: the
            reading's, the peak's, and the hour the runs put the forecast peak. */
         var mnf = mnorm(T.ladder);
-        var HB = 30;                        /* px reserved under the axis for labels */
+        var HB = 42;                        /* px reserved under the axis for labels: range, odds, prices */
         var edges = '';
         (T.ladder || []).forEach(function(r, ix){
           var a = xp(r.lo == null ? s0 : r.lo - 0.5);
@@ -55090,7 +55090,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'transform:translateX(-50%);white-space:nowrap;font:700 6.5px system-ui,sans-serif;">'
             + '<span style="color:' + (isLead ? FCC : '#9a7a3a') + ';">' + pct(pO) + '</span>'
             + '<span style="color:#22604e;"> · </span>'
-            + '<span style="color:' + (isMkt ? MKC : '#3f6c8f') + ';">' + (pM == null ? '—' : pct(pM)) + '</span></div>';
+            + '<span style="color:' + (isMkt ? MKC : '#3f6c8f') + ';">' + (pM == null ? '—' : pct(pM)) + '</span></div>'
+            /* the market's prices, merged up from the ladder chart (user,
+               2026-09-06): YES ask and NO ask, the bake's pick outlined */
+            + (function(){
+                var bt = T.bet, onY = bt && bt.label === r.label && bt.dir !== 'against', onN = bt && bt.label === r.label && bt.dir === 'against';
+                var cellS = function(on, c){ return 'display:inline-block;min-width:26px;padding:1px 4px;border-radius:4px;font:700 6.5px system-ui,sans-serif;color:' + c + ';'
+                  + (on ? 'border:1px solid ' + c + ';background:' + c + '22;' : 'border:1px solid transparent;'); };
+                return '<div style="position:absolute;left:' + mid.toFixed(1) + '%;bottom:' + (HB - 36) + 'px;'
+                  + 'transform:translateX(-50%);white-space:nowrap;' + (isOut ? 'opacity:.4;' : '') + '">'
+                  + '<span style="' + cellS(onY, YESC) + '">' + cents(r.ask) + '</span>'
+                  + '<span style="' + cellS(onN, NOC) + 'margin-left:2px;">' + cents(r.nask) + '</span></div>';
+              })();
         });
         /* our range, our best guess, and what the park has already recorded */
         var band = '<div style="position:absolute;left:' + xp(T.pred - sd).toFixed(1) + '%;'
@@ -55183,7 +55194,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + 'color:' + u[2] + ';white-space:nowrap;">' + u[0] + '</div>';
         });
         var topRoom = fcNear ? (crowded ? 38 : 26) : (crowded ? 26 : 14);
-        scale = '<div style="position:relative;height:96px;margin:' + topRoom + 'px 6px 0;">'
+        scale = '<div style="position:relative;height:108px;margin:' + topRoom + 'px 6px 0;">'
           + edges
           + '<div style="position:absolute;left:0;right:0;top:11px;height:3px;border-radius:2px;'
           + 'background:rgba(0,210,152,.16);"></div>' + band + omark + nmark + fmark + '</div>';
@@ -56847,7 +56858,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + T.date.slice(5).replace('-', '/')).replace('</div>', chip(T.state) + '</div>'),
               '<div style="font:700 10px system-ui,sans-serif;color:#63dbb6;margin-top:6px;'
                 + 'letter-spacing:.02em;min-height:2.8em;">FORECAST ' + predRange(T.pred, T.sd) + obs + '</div>',
-              rows, play];
+              '', play];                    /* today's ladder chart merged into the axis above (2026-09-06) */
             var R4 = tmParts || [tomorrow, '', '', ''];
             var cell = function(x){ return '<div style="min-width:0;">' + (x || '') + '</div>'; };
             /* the one market on show: today until it is settled, then tomorrow */
