@@ -98,7 +98,8 @@ jobs:
           EP="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           files=(_kalshi/trail_out/*.jsonl)
           if [ ${#files[@]} -eq 0 ]; then echo "no trail rows this run"; exit 0; fi
-          aws s3 ls "s3://bluishvoid-bg/kalshi/trail/" --endpoint-url "$EP" > /dev/null
+          # reachability, not existence: `s3 ls` on an EMPTY prefix exits 1 (the first day had no objects)
+          aws s3api head-bucket --bucket bluishvoid-bg --endpoint-url "$EP" > /dev/null
           for f in "${files[@]}"; do
             k="kalshi/trail/$(basename "$f")"
             tmp="$(mktemp)"
