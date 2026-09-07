@@ -2720,7 +2720,42 @@ def trail_row(doc, now):
     }
 
 
+# THE TUNABLE CONSTANTS (2026-09-07). Three module-level knobs the weekly
+# tuner may now set PER CITY: cfg['_globals'] carries them, run_market puts
+# them in force for that city's run and restores them after, and every lock
+# stamps them in params. Their typed values remain the defaults.
+TUNABLE_GLOBALS = {'bias_k': 'BIAS_K', 'swing_damp': 'SWING_DAMP', 'sd_floor': 'SD_FLOOR'}
+
+
+def apply_globals(cfg):
+    saved = {}
+    for k, name in TUNABLE_GLOBALS.items():
+        if k in (cfg.get('_globals') or {}) and cfg['_globals'][k] is not None:
+            saved[name] = globals()[name]
+            globals()[name] = type(globals()[name])(cfg['_globals'][k])
+    return saved
+
+
+def restore_globals(saved):
+    for name, v in saved.items():
+        globals()[name] = v
+
+
+def params_of(cfg):
+    p = {'skill': bool(cfg.get('skill', True)), 'bias_hl': cfg.get('bias_hl'), 'sd_mult': cfg.get('sd_mult', 1.0)}
+    p.update({k: v for k, v in (cfg.get('_globals') or {}).items() if k in TUNABLE_GLOBALS})
+    return p
+
+
 def run_market(cfg, ticker_cache=TICKER_CACHE):
+    saved = apply_globals(cfg)
+    try:
+        return _run_market(cfg, ticker_cache)
+    finally:
+        restore_globals(saved)
+
+
+def _run_market(cfg, ticker_cache=TICKER_CACHE):
     dry = '--dry' in sys.argv
     _TL.cfg = cfg
     _CALIB[cfg['key']] = measured_calib(cfg) or {}
@@ -3377,7 +3412,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'pick': rows[best]['label'], 'ticker': rows[best]['ticker'],
             'p': round(ps[best], 4), 'pred': round(pred, 2), 'sd': round(sd, 2),
             'as_of': '%02d:00 %s' % (hour, cfg.get('tzlabel', 'ET')),
-            'params': {'skill': bool(cfg.get('skill', True)), 'bias_hl': cfg.get('bias_hl'), 'sd_mult': cfg.get('sd_mult', 1.0)},
+            'params': params_of(cfg),
             # the hour the PRICES were read. A lock is rebuilt as-of its own
             # hour, but the market quotes can only ever be live ones -- so if the
             # run happens well after the lock hour the forecast is honest and the
@@ -3987,7 +4022,7 @@ def run_market(cfg, ticker_cache=TICKER_CACHE):
             'regime': metar_regime(cfg),
             'brake': record.get('brake'),
             'twc_in': twc_in,
-            'params': {'skill': bool(cfg.get('skill', True)), 'bias_hl': cfg.get('bias_hl'), 'sd_mult': cfg.get('sd_mult', 1.0)},
+            'params': params_of(cfg),
             # the live plan-stability figure once the bake trail has two weeks
             # (trail_study.py); the panel prefers it over the archive replay
             'flip_live': (lambda st: ({'rate': round(1 - st['stable_to_11'][0] / float(st['stable_to_11'][1]), 3),
@@ -4114,6 +4149,9 @@ def main():
             a = (_tuned.get(cfg['key']) or {}).get('active')
             if a and (_tuned.get(cfg['key']) or {}).get('n', 0) >= 45:
                 cfg.update({k: a[k] for k in ('skill', 'bias_hl', 'sd_mult') if k in a})
+                g = {k: a[k] for k in TUNABLE_GLOBALS if k in a}
+                if g:
+                    cfg['_globals'] = g
                 print('%s tuned: %s' % (cfg['key'], a))
     except FileNotFoundError:
         pass

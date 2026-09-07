@@ -569,6 +569,47 @@ function localDate(offsetDays) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
     year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
+// THE JOB WATCHDOG (2026-09-07). The nightly refit and the weekly tune are
+// what make the system learn, and a failed run reported itself only through
+// GitHub's e-mail. Once a day at 13:00Z the worker asks GitHub for each
+// study's newest run and pages the phone when it failed or never ran -- the
+// same token that dispatches the bake, the same ntfy topic as the position
+// alerts. Keyed by day so a failure pages once, not every tick.
+const WATCHED = [
+  { wf: 'kalshi-nightly.yml', name: 'nightly refit',    maxAgeH: 30 },
+  { wf: 'kalshi-tune.yml',    name: 'weekly tune',      maxAgeH: 8 * 24, weekday: 1 },   // Mondays, after Sunday's run
+  { wf: 'kalshi-nyc.yml',     name: 'five-minute bake', maxAgeH: 1 }
+];
+async function jobWatch(env) {
+  if (!env.NTFY_TOPIC || !env.OBS || !env.GH_TOKEN) return 'watchdog off';
+  const state = (await env.OBS.get(ALERT_KEY, { type: 'json' })) || {};
+  const before = JSON.stringify(state);
+  const today = new Date().toISOString().slice(0, 10);
+  const dow = new Date().getUTCDay();
+  const out = [];
+  for (const w of WATCHED) {
+    if (w.weekday != null && dow !== w.weekday) continue;
+    let r = null;
+    try {
+      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${w.wf}/runs?per_page=1`,
+        { headers: { 'Authorization': `Bearer ${env.GH_TOKEN}`, 'Accept': 'application/vnd.github+json',
+                     'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'bluishvoid-kalshi-cron' } });
+      if (!res.ok) { out.push(`${w.name}: api ${res.status}`); continue; }
+      r = ((await res.json()).workflow_runs || [])[0] || null;
+    } catch (e) { out.push(`${w.name}: ${String(e).slice(0, 60)}`); continue; }
+    const ageH = r ? (Date.now() - Date.parse(r.created_at)) / 36e5 : Infinity;
+    const bad = !r ? 'never ran'
+      : (r.status === 'completed' && r.conclusion !== 'success') ? `last run ${r.conclusion}`
+      : ageH > w.maxAgeH ? `last run ${ageH.toFixed(0)} h ago` : null;
+    if (bad) {
+      await notify(env, state, `job:${w.wf}:${today}`, `Kalshi ${w.name}: ${bad}`,
+        `${w.wf} -- ${bad}. ${r ? r.html_url : ''} The sheet keeps serving the last good study; nothing learns until this is fixed.`, 'high');
+      out.push(`${w.name}: ${bad} (paged)`);
+    } else out.push(`${w.name}: ok`);
+  }
+  if (JSON.stringify(state) !== before) await env.OBS.put(ALERT_KEY, JSON.stringify(state));
+  return out.join(' | ');
+}
 async function alertTick(env) {
   if (!env.NTFY_TOPIC || !env.OBS) return 'alerts off';
   const state = (await env.OBS.get(ALERT_KEY, { type: 'json' })) || {};
@@ -771,6 +812,12 @@ export default {
     // cadence (one KV write per tick against a 1,000/day budget) and the
     // daily job its four minutes an hour.
     const minute = new Date().getUTCMinutes();
+    if (minute === 0 && new Date().getUTCHours() === 13) {
+      ctx.waitUntil((async () => {
+        try { console.log(`[watchdog] ${new Date().toISOString()} ${await jobWatch(env)}`); }
+        catch (e) { console.log(`[watchdog] FAILED ${e}`); }
+      })());
+    }
     if (minute % 5 === 0) {
       ctx.waitUntil((async () => {
         try {
@@ -872,6 +919,7 @@ export default {
       fast_lane_minutes: [0, 10, 15, 25, 30, 40, 45, 55],
       obs_log: env.OBS ? 'KV bound' : 'NO KV BINDING - not logging',
       alerts: env.NTFY_TOPIC ? 'ntfy topic set; New York positions watched every 5 min' : 'off (no NTFY_TOPIC)',
+      watchdog: (env.NTFY_TOPIC && env.GH_TOKEN) ? 'nightly refit, weekly tune and the bake checked at 13:00Z daily; a failed or missing run pages' : 'off',
       now_utc: new Date().toISOString(),
       note: 'Triggering is cron-only. Runs appear at github.com/' + OWNER + '/' + REPO + '/actions'
     };
