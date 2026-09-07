@@ -54486,23 +54486,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 var ks = Object.keys(A).sort(function(a, b){
                   if (lead1(a)) return -1; if (lead1(b)) return 1;
                   return (A[b].max7 || 0) - (A[a].max7 || 0); });
-                topEl.innerHTML = '<div style="margin-top:7px;font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
-                  + (own ? 'THE SETTLEMENT SENSOR, 5-MINUTE READINGS' : 'AIRPORTS, 5-MINUTE READINGS') + (atTxt ? ' \u00B7 AS OF ' + mtaEsc(atTxt) : '') + '</div>'
-                  + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
+                /* the same legend line the live poll draws, without the chart
+                   (this summary carries no series); the poll replaces it */
+                var shortOf = { KNYC: 'CENTRAL PARK', KLGA: 'LAGUARDIA', KJFK: 'JFK', KEWR: 'NEWARK', KLAS: 'HARRY REID', KVGT: 'N. LAS VEGAS', KAUS: 'BERGSTROM', KATT: 'CAMP MABRY' };
+                topEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:6px;font:600 8.5px system-ui,sans-serif;color:#9fd9c4;">'
                   + ks.map(function(k){
                       var a = A[k];
-                      return '<div' + (lead1(k) ? ' style="font-size:11px;"' : '') + '><b style="color:' + (lead1(k) ? '#fff' : '#63dbb6') + ';">' + (names[k] || k) + '</b> '
-                        + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '') + '</span>' : '\u2014')
-                        + (a.max7 != null ? ' <span style="color:#9fd9c4;">\u00B7 high since 7 AM <b>' + T1(a.max7) + '\u00B0</b></span>' : '')
-                        + '</div>';
+                      return '<span><b style="color:' + (lead1(k) ? '#fff' : '#63dbb6') + ';">' + (shortOf[k] || names[k] || k) + '</b> '
+                        + (a.last != null ? '<span style="color:#fff;">' + T1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '') + '</span>' : '\u2014')
+                        + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + T1(a.max7) + '\u00B0</b>' : '')
+                        + '</span>';
                     }).join('')
                   + '</div>'
-                  + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
-                  + (own
-                      ? 'These are the settlement station\u2019s own readings, at most five minutes old \u2014 the number that settles, '
-                        + 'before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor.'
-                      : 'Central Park\u2019s own 5-minute stream is not public; when the three airports '
-                        + 'are peaking between the hourly reports, the park usually is too.') + '</div>';
+                  + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:3px;">'
+                  + (atTxt ? 'AS OF ' + mtaEsc(atTxt) + ' \u00B7 ' : '') + 'the live readings and the drawn day land in a moment.</div>';
               }
               var parts = Object.keys(A).map(function(k){
                 var a = A[k];
@@ -54914,29 +54911,30 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               return (d.s[b].max7 || 0) - (d.s[a].max7 || 0); });
             if (!rows.length) return;
             var atTxt = new Date(d.at).toLocaleTimeString('en-US', { timeZone: CITY.tz, hour: 'numeric', minute: '2-digit' });
-            el2.innerHTML = '<div style="margin-top:7px;font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
-              + (own ? 'THE SETTLEMENT SENSOR, 5-MINUTE READINGS' : 'AIRPORTS, 5-MINUTE READINGS') + ' \u00B7 LIVE, CHECKED ' + mtaEsc(atTxt)
-              + ' \u00B7 REFRESHES EVERY MINUTE</div>'
-              + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
+            /* THE DRAWN DAY, THEN ONE LEGEND LINE (user 2026-09-07: "make it
+               all cleaner, remove redundancies"). The chart's end labels
+               already carry each station's newest reading; the legend adds
+               only what the picture cannot say -- the reading's clock, its
+               age, and the high since 7 AM with its minute. */
+            el2.innerHTML = bvSensChart(d, rows, own, nowMin, el2.clientWidth)
+              + '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:3px;font:600 8.5px system-ui,sans-serif;color:#9fd9c4;">'
               + rows.map(function(k){
                   var a = d.s[k], age = ageOf2(a.at), pv = prev[k];
                   var newHigh = (pv != null && a.max7 != null && a.max7 > pv + 0.05);
                   var big = (k === own || k === 'KNYC');
-                  return '<div' + (big ? ' style="font-size:11px;"' : '') + '><b style="color:' + (big ? '#fff' : '#63dbb6') + ';">'
-                    + (SENS_NAMES[k] || k) + '</b> '
-                    + (a.last != null ? T1(a.last) + '\u00B0 <span style="color:#45b491;">at ' + mtaEsc(a.at || '')
+                  return '<span><b style="color:' + (big ? '#fff' : '#63dbb6') + ';">' + (SENS_SHORT[k] || k) + '</b> '
+                    + (a.last != null ? '<span style="color:#fff;">' + T1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '')
                         + (age != null ? ' \u00B7 ' + (age < 1 ? 'just now' : age + ' min ago') : '') + '</span>' : '\u2014')
-                    + (a.max7 != null ? ' <span style="color:#9fd9c4;">\u00B7 high since 7 AM <b>' + T1(a.max7) + '\u00B0</b>'
-                        + (a.maxAt ? ' at ' + mtaEsc(a.maxAt) : '') + '</span>' : '')
+                    + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + T1(a.max7) + '\u00B0</b>' + (a.maxAt ? ' ' + t12(a.maxAt) : '') : '')
                     + (newHigh ? ' <b style="color:#f2833f;">\u25B2 NEW HIGH</b>' : '')
-                    + '</div>';
+                    + '</span>';
                 }).join('')
               + '</div>'
-              + bvSensChart(d, rows, own, nowMin, el2.clientWidth)
-              + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
+              + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:3px;">'
+              + 'LIVE \u00B7 CHECKED ' + mtaEsc(atTxt) + ' \u00B7 REFRESHES EVERY MINUTE \u00B7 '
               + (own
-                  ? 'These are the settlement station\u2019s own readings \u2014 the number that settles, before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor; the true peak runs about 0.3\u00B0 above the 5-minute samples. The line is every 5-minute reading today; the tick on it is the high since 7 AM.'
-                  : 'The white line is Central Park\u2019s own readings, but HOURLY: its 5-minute stream is not public (the MADIS request is pending). The airports\u2019 lines are every 5-minute reading; when they are peaking between the hourly reports, the park usually is too.')
+                  ? 'the white line is the settlement sensor itself, every 5 minutes; the tick is its high since 7 AM, and the true peak runs about 0.3\u00B0 above the samples.'
+                  : 'white is Central Park\u2019s own HOURLY reports (its 5-minute stream is not public; MADIS pending); teal is the airports every 5 minutes.')
               + '</div>';
             el2.setAttribute('data-live', '1');
             /* the header's NOW: the settlement sensor's newest 5-minute sample
@@ -56780,7 +56778,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       var brief = '';
       (function(){
         var top = (T.ladder || []).filter(function(r){ return r.label === T.pick; })[0];
-        var out = [];
+        var out = [], latePeakTxt = '';
         if (settledNow){
           var hitLock = T.locked && (T.locked.pick === T.pick);
           /* one line for a settled day (three said the same thing, 2026-09-06) */
@@ -56826,26 +56824,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              deciding whether to trust a 2-degree gap against the market
              should see where the two official forecasts stand. Logged on
              the trail every hour from 2026-09-06 so this can be judged. */
-          if (T.twc_fc != null || T.nws_fc != null){
+          /* the two official forecasts moved to the header line (2026-09-07);
+             the one thing worth a bullet is the market siding with TWC */
+          if (T.twc_fc != null && T.market_pick && T.market_pick !== T.pick){
             var rowOf = function(v){
               var rr = Math.round(v);
               return (T.ladder || []).filter(function(r){
                 return (r.lo == null || rr >= r.lo) && (r.hi == null || rr <= r.hi);
               })[0];
             };
-            var bits = [];
-            if (T.twc_fc != null){
-              var tr = rowOf(T.twc_fc), gap = (T.pred == null) ? null : T.twc_fc - T.pred;
-              bits.push('<b>TWC\u2019s own forecast is ' + D1(T.twc_fc) + '\u00B0</b>'
-                + (gap != null && Math.abs(gap) >= 0.95
-                    ? ', ' + Math.abs(gap).toFixed(1) + '\u00B0 ' + (gap < 0 ? 'under' : 'over') + ' ours'
-                    : gap != null ? ', in line with ours' : '')
-                + (tr && T.market_pick && tr.label === T.market_pick && tr.label !== T.pick
-                    ? ' \u2014 <span style="color:' + MKC + ';">the market sits with TWC</span>'
-                    : tr && tr.label === T.pick ? ' \u2014 same range as our lean' : ''));
-            }
-            if (T.nws_fc != null) bits.push('NWS says ' + D1(T.nws_fc) + '\u00B0');
-            out.push(bits.join(' \u00B7 ') + '.');
+            var tr = rowOf(T.twc_fc);
+            if (tr && tr.label === T.market_pick)
+              out.push('<b style="color:' + MKC + ';">The market sits with TWC</b> \u2014 its forecast of ' + D1(T.twc_fc)
+                + '\u00B0 lands in ' + deg(tr.label) + ', the market\u2019s range, not ours.');
           }
           /* A LATE PEAK IS INVISIBLE ALL AFTERNOON. The six-hour group closes
              at 1:51 PM and the preliminary report at 4 PM; a high set after
@@ -56857,10 +56848,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             /* the six-hourly group is the 17:51Z observation in every zone; the
                preliminary report's hour is only known for New York */
             var _off = Math.round((nowET - Date.now()) / 36e5);
-            out.push('<b>Late peak</b> \u2014 the runs put the high near ' + ph + ' PM, after the '
+            latePeakTxt = 'the runs put the high near ' + ph + ' PM, after the '
               + t12((17 + _off) + ':51') + ' six-hour group' + (isNY ? ' and the 4 PM preliminary report' : ' and the afternoon preliminary report')
               + '. Every reading through the '
-              + 'afternoon will run under the final, and the market will price the readings.');
+              + 'afternoon will run under the final, and the market will price the readings.';
           }
         }
         /* THE DAY'S READ BELONGS WITH THE BRIEFING, not four sections down
@@ -56893,8 +56884,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (T.own5_max != null
                 ? 'The settlement sensor\u2019s own 5-minute high is <b>' + D1(T.own5_max) + '\u00B0</b>; the true peak runs about '
                   + D1(T.own5_gap != null ? T.own5_gap : 0.3) + '\u00B0 above it, so the day is known to within a degree now.'
-                : 'The hourly stream hides about a degree; the six-hour group and the climate report show the rest.'));
+                : 'The hourly stream hides about a degree; the six-hour group and the climate report show the rest.')
+            /* the two peak facts disagreed on separate lines (climatology says
+               done, the runs say 4 PM); said together, as one tension */
+            + (latePeakTxt ? ' <b>Yet</b> ' + latePeakTxt : ''));
+          latePeakTxt = '';
         }
+        if (!settledNow && latePeakTxt) out.push('<b>Late peak</b> \u2014 ' + latePeakTxt);
         /* THE CLOCK VERDICT, FIRST. "This is the window" / "past the window" is
            measured (price_study, every settled day) and it decides whether
            anything below is worth acting on; it led the hour chart, a screen
@@ -56955,14 +56951,32 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '</span>';
       var headSubL = '<div style="font:800 9px system-ui,sans-serif;letter-spacing:.04em;'
         + 'color:#63dbb6;">'
+        /* ONE LINE, EVERY HEADLINE NUMBER ONCE (user 2026-09-07: "combine the
+           current temps and graph with the bullets ... remove redundancies").
+           The high so far, TWC's floor and whether an airport backs it, the
+           forecast with its peak hour, and the two official forecasts -- each
+           of which used to be said again in the readings card or a bullet. */
         + (T.obs_so_far == null
             ? 'NOTHING ON THE BOARD YET'
-            : 'HIGHEST TEMP <span style="color:#2fbfa8;">' + D1(T.obs_so_far) + '\u00B0</span>')
+            : 'HIGH SO FAR <span style="color:#2fbfa8;">' + D1(T.obs_so_far) + '\u00B0</span>')
+        + (T.twc_max != null
+            ? '<span style="color:#22604e;"> | </span>TWC '
+              + (T.twc_corroborated
+                  ? '<span style="color:#2fbfa8;">' + D1(T.twc_max) + '\u00B0 FLOOR</span> <span style="color:#45b491;">\u00B7 AN AIRPORT AT ' + D1(T.apt_max) + '\u00B0 BACKS IT</span>'
+                  : '<span style="color:#fff;">' + D1(T.twc_max) + '\u00B0</span> <span style="color:#f2833f;">\u00B7 BLENDED, NO AIRPORT THERE YET' + (T.apt_max != null ? ' (BEST ' + D1(T.apt_max) + '\u00B0)' : '') + '</span>')
+            : '')
         + '<span style="color:#22604e;"> | </span>'
         + (T.pred == null ? ''
             : (T.obs_so_far != null && T.pred > T.obs_so_far + 0.05
                 ? 'FORECAST TO RISE TO ' : 'FORECAST ')
-              + '<span style="color:' + FCC + ';">' + D1(T.pred) + '\u00B0</span>')
+              + '<span style="color:' + FCC + ';">' + D1(T.pred) + '\u00B0</span>'
+              + (T.peak_hour != null && !dayDone ? ' <span style="color:#45b491;">\u00B7 PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') + '</span>' : ''))
+        + ((T.twc_fc != null || T.nws_fc != null)
+            ? '<span style="color:#22604e;"> | </span>'
+              + (T.twc_fc != null ? 'TWC <span style="color:' + MKC + ';">' + D1(T.twc_fc) + '\u00B0</span>' : '')
+              + (T.twc_fc != null && T.nws_fc != null ? '<span style="color:#22604e;"> \u00B7 </span>' : '')
+              + (T.nws_fc != null ? 'NWS <span style="color:#8fb3d9;">' + D1(T.nws_fc) + '\u00B0</span>' : '')
+            : '')
         + '</div>'
         + (T.pick
             ? '<div style="font:600 8.5px system-ui,sans-serif;color:#45b491;margin-top:2px;">'
@@ -57330,34 +57344,17 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }
 
       var body = ''
-        + brief
-        /* THE FRESHEST READINGS ON THE SHEET go here, not at the bottom: the
-           airports' 5-minute maxima arrive from the worker's summary a moment
-           after the sheet opens and are filled in below the briefing. */
+        /* THE HEADLINE CARD (user 2026-09-07): the briefing bullets and the
+           day's readings in one box -- words above, the drawn day below. The
+           TWC line that opened this card is in the header now; the card's own
+           title went with it. */
         + '<div style="margin-top:8px;padding:7px 10px;border-radius:8px;'
         + 'background:rgba(0,210,152,.06);border:1px solid rgba(0,210,152,.16);">'
-        + '<div style="font:800 7.5px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">'
-        + 'EARLY READINGS \u00B7 THE FRESHEST NUMBERS ON THE SHEET</div>'
+        + brief.replace('margin-top:7px;', 'margin-top:0;')
         /* TWC'S OWN CENTRAL PARK READING, at the top where it can be acted on.
            It lived only in the SYSTEM block, and it is the one public field
            that carried Saturday's 79 twenty minutes before the market. Blended,
            not the sensor: a warning, never a floor. */
-        + ((T.twc_now != null || T.twc_max != null)
-            ? '<div style="margin-top:4px;font:600 10px system-ui,sans-serif;color:#fff;">'
-              + '<b style="color:#63dbb6;">TWC, ' + mtaEsc(CITY.station) + '</b> '
-              + (T.twc_now != null ? D1(T.twc_now) + '\u00B0 now' : '')
-              + (T.twc_max != null ? (T.twc_now != null ? ' \u00B7 ' : '') + 'high since 7 AM <b>' + D1(T.twc_max) + '\u00B0</b>' : '')
-              + (T.twc_gap != null ? ' <span style="color:#9fd9c4;">\u00B7 station ' + (T.twc_gap > 0 ? '\u2212' : '+') + D1(Math.abs(T.twc_gap)) + '\u00B0</span>' : '')
-              + (T.twc_corroborated ? ' <b style="color:#2fbfa8;">\u00B7 corroborated by an airport at ' + D1(T.apt_max) + '\u00B0 \u2014 counted as a floor</b>'
-                 : (T.apt_max != null && T.twc_max != null ? ' <span style="color:#f2833f;">\u00B7 no airport has reached it (best ' + D1(T.apt_max) + '\u00B0) \u2014 a warning only</span>' : ''))
-              + ' <span style="color:#45b491;">as of ' + mtaEsc(stamp12(K.updated).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')) + '</span>'
-              + '</div>'
-              + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
-              + (T.twc_corroborated
-                  ? 'A blended field, not the sensor; an airport at the same figure is what makes it a floor.'
-                  : 'A blended field, not the sensor: a warning until an airport reaches the same figure.') + '</div>'
-            : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, ' + mtaEsc(CITY.station) + ' \u2014 no reading yet'
-              + (etH < 7 ? ' (its since-7 AM field holds yesterday until 7 AM)' : '') + '</div>')
         + '<div id="bv-apt5-top"></div>'
         + '</div>'
         + yourBook
