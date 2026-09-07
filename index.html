@@ -50749,7 +50749,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            server sends no CORS header: anything it is drawn into is tainted,
            and nothing may ever read pixels from this one. */
         + '<canvas id="cw-rock" style="' + IMG + 'z-index:0;pointer-events:none;will-change:transform;display:none;"></canvas>'
-        + '<img id="cw-fl" alt="" src="/nyc-basemap-floods.png?v=9" style="' + IMG + 'object-fit:fill;z-index:0;will-change:transform;display:none;">'
+        + '<img id="cw-fl" alt="" src="/nyc-basemap-floods.png?v=10" style="' + IMG + 'object-fit:fill;z-index:0;will-change:transform;display:none;">'
         /* the ghost-water vectors (marsh, ponds, stream courses) draw here
            per painted view at device resolution — crisp at any zoom, the
            hazard map's exact line grammar */
@@ -53171,7 +53171,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       cwFlBuilt = true;
       var Q = [['nw',0,0],['ne',1,0],['sw',0,1],['se',1,1]];
       Promise.all(Q.map(function(q){
-        return _cityTile('/nyc-basemap-floods-z2-' + q[0] + '.png?v=9')
+        return _cityTile('/nyc-basemap-floods-z2-' + q[0] + '.png?v=10')
           .then(function(im){ return { im: im, q: q }; }, function(){ return null; });
       })).then(function(parts){
         parts = parts.filter(Boolean);
@@ -53199,6 +53199,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var idat = g.getImageData(0, 0, cv.width, cv.height), q = idat.data;
           for (var i = 0; i < q.length; i += 4){
             if (q[i + 3] < 30) continue;
+            /* THE SEWER SLICK IS GREEN NOW (user 2026-09-07: "make the sewage
+               runoff in the rivers radioactive green"). The lab's near-black
+               plume and its aura are recoloured IN THE TILES (140,255,30 body,
+               70,190,45 aura); skipped here so the green test below does not
+               turn them into flood blue like the old stormwater lime. */
+            if (q[i + 1] > 150 && q[i + 2] < 70 && q[i] < 170) continue;
             if (q[i + 2] > q[i] + 25){         // blue-dominant = a flood class
               q[i] = 21; q[i + 1] = 162; q[i + 2] = 251;
             } else if (q[i + 1] > q[i] + 20 && q[i + 1] > q[i + 2] + 60){
@@ -53671,7 +53677,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       mtaPanelClose(); cwFeatClose();
       el.style.display = '';
       el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-        + '<span style="display:inline-block;width:14px;height:5px;background:' + (cwLiveRain ? '#ff2016' : '#e4483c') + ';border:1px solid rgba(26,20,18,.85);border-radius:1px 3px 3px 1px;"></span>'
+        + '<span style="display:inline-block;width:14px;height:5px;background:' + (cwLiveRain ? '#a8ff2e' : '#3ae81c') + ';border:1px solid rgba(26,20,18,.85);border-radius:1px 3px 3px 1px;"></span>'
         + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">OUTFALL ' + mtaEsc(p2[3] || '\u2014') + ' \u00b7 DISCHARGES TO ' + mtaEsc(wb).toUpperCase() + '</span>'
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">NYS DEC \u00b7 COMBINED SEWER' + (plant ? ' \u00b7 ' + mtaEsc(plant).toUpperCase() : '') + '</span>'
         + '<button id="cw-cso-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button></div>'
@@ -57515,7 +57521,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }
       /* the CSO OUTFALLS (user 2026-09-01): the sewage runoff stains in the
          bake pour from these 435 permitted pipes (NYS DEC data). Drawn as a
-         pipe reads from above — a red rectangle jutting from the coast into
+         pipe reads from above — a green rectangle jutting from the coast into
          the water along each outfall's baked water-facing angle (sampled
          from the basemap at bake time). No glow. Always on. */
       if (window._cwCSO && cwMapMode() && !cw.rock){   /* no outfall pipes on the geology view (user 2026-09-07) */
@@ -57524,7 +57530,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            leaves the land. Ink outline so it stays crisp on orange land and
            dark water alike (user 2026-09-01: cleaner, less generic) */
         var live = !!cwLiveRain;
-        var body = live ? '#ff2016' : '#e4483c';
+        /* GREEN, NOT RED (user 2026-09-07: "dont use red anymore"). The
+           canvas sits under #cw-bm-ghost, so a third of the orange city lands
+           on top: a pure, low-red green is what survives that as green. The
+           slick in the floods tiles is the same family. */
+        var body = live ? '#a8ff2e' : '#3ae81c';
         /* SLIMMER (user 2026-09-02: "are they too fat?" — they were). The
            barrel ran 9 long by 4.6 across at the mouth, barely 2:1, which
            reads as a stub rather than a pipe; a real outfall is far longer
