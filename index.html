@@ -54440,9 +54440,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             the earliest moment the settlement is partly known. */
       if (T.six_max != null){
         var sixAhead = (T.obs_so_far != null && T.six_max > T.obs_so_far + 0.05);
+        /* the group's closing clock follows the city and the group on show:
+           the 12-18Z group is 1:51 PM ET / 12:51 PM CT / 10:51 AM PT, and the
+           18-00Z group six hours later (the "1:51 PM" here was New York's
+           midday group, printed for every city and every hour) */
+        var sw6 = T.six_window, sixClose = (sw6 && sw6.length === 2) ? t12(((sw6[1] - 1 + 24) % 24) + ':51') : null;
         qcL.push(qcRow(QCG, 'SIX-HOURLY', T1(T.six_max) + '\u00B0 FROM THE ASOS MAX GROUP'
           + (sixAhead ? ' \u00B7 ABOVE THE HOURLY HIGH' : ''),
-          'closes at 1:51 PM local; the day cannot settle below it'));
+          (sixClose ? 'closed at ' + sixClose + ' local' : 'the latest group') + '; the day cannot settle below it'));
       }
       /* 4b. THE ARBITER ITSELF. weather.com/kalshi is the page the rules name,
             and it marks each station-day no report / preliminary / official.

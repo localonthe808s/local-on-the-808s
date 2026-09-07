@@ -2413,11 +2413,19 @@ def compose_review(cfg, hist, obh, cli, fills_by_day, now, record=None):
     hrs = obh.get(k) or {}
     hmax = max(hrs.values()) if hrs else None
     six_txt = ''
+    # the six-hourly group is the 17:51Z observation everywhere, so its local
+    # clock follows the city's zone: 1:51 PM ET, 12:51 PM CT, 10:51 AM PT
+    try:
+        _off = int(round(now.utcoffset().total_seconds() / 3600)) if now.utcoffset() is not None else -4
+    except Exception:
+        _off = -4
+    six_h = (17 + _off) % 24
+    six_lbl = '%d:51 %s' % ((six_h % 12) or 12, 'AM' if six_h < 12 else 'PM')
     if at:
         try:
             t = datetime.datetime.strptime(str(at).replace(' ', ''), '%I:%M%p')
-            late = (t.hour * 60 + t.minute) > (13 * 60 + 51)
-            six_txt = ' \u2014 after the 1:51 PM six-hour group' if late else ' \u2014 inside the 1:51 PM six-hour group'
+            late = (t.hour * 60 + t.minute) > (six_h * 60 + 51)
+            six_txt = (' \u2014 after the %s six-hour group' if late else ' \u2014 inside the %s six-hour group') % six_lbl
         except ValueError:
             pass
     if hmax is not None:
