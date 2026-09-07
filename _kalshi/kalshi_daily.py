@@ -2483,24 +2483,30 @@ def compose_run_review(cfg, record):
     R = []
     bt = record.get('backtest') or {}
     lv = record.get('live') or {}
-    if bt.get('n'):
-        R.append('Over <b>%d settled days</b> the top range held %d times (%d%%)%s; the mean miss is %.2f\u00B0%s.' % (
-            bt['n'], bt.get('hits', 0), round(100.0 * bt.get('hits', 0) / bt['n']),
-            (', %d%% on the hard interior ranges' % round(100.0 * bt['interior_hits'] / bt['interior_n'])) if bt.get('interior_n') else '',
-            bt.get('mae') or 0,
-            (' and the runs read <b>%.2f\u00B0 %s</b> on average, which the bias window takes out' % (abs(bt['bias']), 'warm' if bt['bias'] > 0 else 'cold')) if abs(bt.get('bias') or 0) >= 0.2 else ''))
-    if lv.get('n'):
-        R.append('Live, since the first real lock: <b>%d of %d</b> days right, mean miss %.2f\u00B0.' % (lv.get('hits', 0), lv['n'], lv.get('mae') or 0))
+    # the tiles already carry the hit counts; these lines say what the counts
+    # do not: a bias the runs carry, and a live record parting from the backtest
+    if bt.get('n') and abs(bt.get('bias') or 0) >= 0.2:
+        R.append('The runs read <b>%.2f\u00B0 %s</b> on average over %d settled days; the bias window takes it out.' % (
+            abs(bt['bias']), 'warm' if bt['bias'] > 0 else 'cold', bt['n']))
+    if lv.get('n', 0) >= 2 and bt.get('n'):
+        exp = bt.get('hits', 0) / float(bt['n'])
+        got = lv.get('hits', 0) / float(lv['n'])
+        if got < exp - 0.2:
+            R.append('Live is running behind the record: <b>%d of %d</b> right against %d%% expected, mean miss %.2f\u00B0 \u2014 the grade and the stake are cut in half until it recovers.' % (
+                lv.get('hits', 0), lv['n'], round(100 * exp), lv.get('mae') or 0))
+        elif lv['n'] >= 5 and got > exp + 0.15:
+            R.append('Live is running ahead of the record: <b>%d of %d</b> right against %d%% expected.' % (
+                lv.get('hits', 0), lv['n'], round(100 * exp)))
     cal = record.get('calibration') or {}
     bins = cal.get('bins') or []
     if cal.get('gap') is not None and bins:
         tot = sum(b['n'] for b in bins) or 1
         signed = sum(b['n'] * (b['said'] - b['happened']) for b in bins) / tot
-        R.append('Calibration gap <b>%.1f pts</b>: the stated odds run %s%s.' % (
-            100 * cal['gap'],
-            'a little high' if signed > 0.01 else 'a little low' if signed < -0.01 else 'close to true',
-            ' \u2014 confident calls are landing more often than they are priced, so the plan under-sizes them' if signed < -0.01
-            else ' \u2014 the plan sizes on the stated odds, so a high reading is money bet that is not there' if signed > 0.01 else ''))
+        if abs(signed) > 0.01:
+            R.append('The stated odds run <b>%s</b>%s.' % (
+                'a little high' if signed > 0 else 'a little low',
+                ' \u2014 confident calls are landing more often than they are priced, so the plan under-sizes them' if signed < 0
+                else ' \u2014 the plan sizes on the stated odds, so a high reading is money bet that is not there'))
     D = record.get('discipline') or {}
     mn = record.get('money') or {}
     if D.get('days') and D.get('plan_ret') is not None:
@@ -2518,8 +2524,9 @@ def compose_run_review(cfg, record):
         wr = lh[str(worst)]
         # name the weak hour only when the hours actually differ
         weak = (tot and wr[1] and wr[0] < wr[1] and ok > 0 and (wr[0] / wr[1]) < (ok / tot) - 0.05)
-        R.append('Hour by hour the live lean has been right <b>%d of %d</b> checks%s.' % (
-            ok, tot, (' \u2014 weakest at %d %s (%d/%d), so a bet placed then leans on less' % ((worst % 12) or 12, 'AM' if worst < 12 else 'PM', wr[0], wr[1])) if weak else ''))
+        if weak:
+            R.append('The live lean is weakest at <b>%d %s</b> (%d of %d), so a bet placed then leans on less.' % (
+                (worst % 12) or 12, 'AM' if worst < 12 else 'PM', wr[0], wr[1]))
     pub = record.get('published') or {}
     if pub.get('n', 0) >= 5:
         parts = []

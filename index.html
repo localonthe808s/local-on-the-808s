@@ -53495,7 +53495,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         .then(function(){ cwkPosInflight = null; if (done) done(); });
     }
 
-    var cwKalshiPullAt = 0;
+    var cwKalshiPullAt = 0, cwkPosPollAt = 0;
     /* THE COUNTDOWN.  One second-interval, started the first time the sheet is
        opened and cheap to leave running: it returns immediately unless the
        panel is on screen. The element carries its own deadline as a plain
@@ -53520,6 +53520,24 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (!els.length || document.hidden) return;
       var p = document.getElementById('cw-kalshi-panel');
       if (!p || p.style.display === 'none') return;
+      /* LIVE POSITIONS STAY LIVE. They loaded on open and on a bake landing
+         only, so the profit beside each position could be fifteen minutes
+         old while the sensor block refreshed every minute. Every 60 s the
+         account is re-read; if anything moved, the sheet is redrawn in place
+         (a redraw is ~10 ms and keeps the scroll) (2026-09-06). */
+      if (Date.now() - cwkPosPollAt > 60000 && cwkToken()){
+        cwkPosPollAt = Date.now();
+        var before = JSON.stringify(window._cwPot || null);
+        cwkPositions(true, function(){
+          if (JSON.stringify(window._cwPot || null) === before) return;
+          var p4 = document.getElementById('cw-kalshi-panel');
+          if (!p4 || p4.style.display === 'none') return;
+          var sc4 = p4.scrollTop;
+          try { cwKalshiTap(); } catch (e){ return; }
+          var p5 = document.getElementById('cw-kalshi-panel');
+          if (p5) p5.scrollTop = sc4;
+        });
+      }
       var el = els[0];
       var left = (+el.getAttribute('data-due') || 0) - Date.now();
       var put = function(txt){
@@ -53751,7 +53769,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         else                           { txt = 'CLOSED'; col = '#f2833f'; }
         return '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.08em;color:' + col
           + ';border:1px solid ' + col + '33;background:' + col + '14;border-radius:999px;'
-          + 'padding:2px 6px;margin-left:7px;vertical-align:middle;">' + txt + '</span>';
+          + 'padding:2px 6px;margin-left:7px;vertical-align:middle;white-space:nowrap;display:inline-block;">' + txt + '</span>';
       };
       var hdr = function(t){ return '<div style="font:800 8px system-ui,sans-serif;color:#359478;'
         + 'letter-spacing:.09em;margin-top:10px;padding-top:7px;border-top:1px solid rgba(0,210,152,.16);">'
@@ -53838,7 +53856,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (onLine
               ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + NOC
                 + ';">cut 40%, ' + (near.d < 0.05 ? 'sitting on the ' : near.d.toFixed(1) + '\u00B0 off the ')
-                + near.at.toFixed(1) + '\u00B0 line \u2014 a coin flip between two ranges</span>'
+                + near.at.toFixed(1) + '\u00B0 line</span>'
               : (near ? ' <span style="color:#2c7f66;">\u00B7</span> ' + near.d.toFixed(1)
                         + '\u00B0 clear of the nearest line' : ''))
           + (stale ? ' <span style="color:#2c7f66;">\u00B7</span> <span style="color:' + FCC
@@ -54355,6 +54373,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       qcL.push(fAge == null
         ? qcRow(QCR, 'FEED', 'NO TIMESTAMP', 'the file carries no update time')
         : fAge < 75 ? qcRow(QCG, 'FEED', mtaEsc(stamp12(K.updated)) + ' · ' + ageTxt(fAge)
+            + ' · <span style="color:#5b8f7d;">' + (isNY ? 'every 5 min' : 'every 15 min') + ', 8 AM–1 AM</span>'
             + ' · <span class="cwk-next" data-due="'
             + (Date.now() + (cwkDueIn() || 0)) + '" style="color:#45b491;">next in '
             + mmss(cwkDueIn()) + '</span>')
@@ -54413,7 +54432,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var onThis = bookRows.length;
         if (st.state === 'no_token')
           qcL.push(qcRow(QCA, 'ACCOUNT', 'NOT LINKED IN THIS BROWSER',
-            'open the site once with your ?kt= link on this device; the token lives in this browser only'));
+            'open your ?kt= link once on this device'));
         else if (st.state === 'bad_token')
           qcL.push(qcRow(QCR, 'ACCOUNT', 'TOKEN REFUSED', 'the worker rejected it; the panel token may have been rotated'));
         else if (st.state === 'error')
@@ -54445,7 +54464,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         : qcRow(T.cli_final ? QCG : QCA, 'SETTLES',
             T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
               + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
-            T.cli_final ? '' : 'window shuts at 4 PM; the day can still rise'));
+            T.cli_final ? '' : (T.day_decided || etH >= 20 || etH < 7) ? 'the final report comes ~3 AM' : 'window shuts at 4 PM; the day can still rise'));
       /* 4a. THE FIRST HARD NUMBER OF THE DAY. The ASOS appends its own six-hour
             maximum to the observation nearest 00/06/12/18Z, and that group sees
             between the hourly reports the METAR stream throws away: 98.1% exact
@@ -54481,7 +54500,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           (portalTxt(PT) ? 'TODAY ' + portalTxt(PT) : '')
             + (portalTxt(PT) && portalTxt(PY) ? ' \u00B7 ' : '')
             + (portalTxt(PY) ? 'YESTERDAY ' + portalTxt(PY) : ''),
-          'weather.com/kalshi \u2014 official is what pays'));
+          'weather.com/kalshi'));
       }
 
       /* 4c. and the blended feed, kept honestly labelled. It is logged and
@@ -54494,7 +54513,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (T.twc_gap == null ? ''
                : ' \u00B7 STATION ' + (T.twc_gap > 0 ? '\u2212' : '+')
                  + T1(Math.abs(T.twc_gap)) + '\u00B0'),
-            'TWC\u2019s running maximum \u2014 a warning, not a floor; it has read 3\u00B0 high before'));
+            'running maximum \u2014 a warning, not a floor'));
 
       /* 5. the consensus behind the forecast */
       var nMod = T.n_models || 0;
@@ -54704,19 +54723,29 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     o += '<circle cx="' + xx.toFixed(1) + '" cy="' + yOf(p[1]).toFixed(1) + '" r="1.9" fill="#fff"/>';
                   });
                   if (last.cli_at_min != null && xOf(last.cli_at_min) != null){
-                    var xs2 = xOf(last.cli_at_min), a2 = xs2 > OW * 0.7 ? 'end' : 'start';
+                    var lbl2 = dayLabel(last.date) + ' SETTLED ' + T1(last.cli_max) + '° · ' + m12(last.cli_at_min)
+                      + (M.lag_days != null && M.lag_days > 1 ? ' · ARCHIVE RUNS ' + M.lag_days + ' DAYS BEHIND' : '');
+                    /* anchor by the label's own width, not a fixed fraction: on a
+                       phone the strip is narrow and the text ran off the edge */
+                    var xs2 = xOf(last.cli_at_min), wpx = lbl2.length * 5.0;
+                    if (wpx > OW * 0.7){                    /* a phone strip: drop the archive note */
+                      lbl2 = dayLabel(last.date) + ' SETTLED ' + T1(last.cli_max) + '° · ' + m12(last.cli_at_min);
+                      wpx = lbl2.length * 5.0;
+                    }
+                    var a2 = 'start', tx2 = xs2 + 3;
+                    if (xs2 + 4 + wpx > OW){
+                      if (xs2 - 4 - wpx >= 0){ a2 = 'end'; tx2 = xs2 - 3; }
+                      else { tx2 = Math.max(2, OW - wpx - 2); }
+                    }
                     o += '<line x1="' + xs2.toFixed(1) + '" x2="' + xs2.toFixed(1) + '" y1="2" y2="' + (OH - 1)
                       + '" stroke="#f2833f" stroke-width="1"/>'
                       /* the label sits at the FOOT of the strip: the settlement minute
                          is the day's peak, so the line is at the top there and the
                          bottom is clear */
-                      + '<text x="' + (a2 === 'end' ? xs2 - 3 : xs2 + 3).toFixed(1) + '" y="' + (OH - 2) + '" fill="#f2833f" font-size="7.5" '
+                      + '<text x="' + tx2.toFixed(1) + '" y="' + (OH - 2) + '" fill="#f2833f" font-size="7.5" '
                       + 'stroke="#0d1117" stroke-width="3" paint-order="stroke" '
                       + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + a2 + '">'
-                      + dayLabel(last.date) + ' SETTLED ' + T1(last.cli_max) + '° · ' + m12(last.cli_at_min)
-                      /* the one-minute archive (NCEI TD-6405) runs days behind;
-                         say so, or the newest day reads as a stale panel */
-                      + (M.lag_days != null && M.lag_days > 1 ? ' · ARCHIVE RUNS ' + M.lag_days + ' DAYS BEHIND' : '') + '</text>';
+                      + lbl2 + '</text>';
                   }
                   if (tod.length > 1){
                     var dT = tod.map(function(p, i){
@@ -54932,7 +54961,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             ? '<b>' + (mn.pl > 0 ? '+' : '\u2212') + '$' + Math.abs(mn.pl).toFixed(2)
               + '</b> at the printed size \u00B7 '
               + mn.wins + '/' + mn.n + ' bets won'
-              + (mn.roi == null ? '' : ' \u00B7 ' + (mn.roi > 0 ? '+' : '') + mn.roi + '% on money risked')
+              + ((mn.roi == null || mn.n < 5) ? '' : ' \u00B7 ' + (mn.roi > 0 ? '+' : '') + mn.roi + '% on money risked')
             : '<span style="font-weight:600;">not started \u2014 a hit rate is not a return, and no '
               + 'settled day has a recoverable entry price. Scoring begins with the first live bet.</span>')
         + '</div>'
@@ -54973,6 +55002,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var hs = Object.keys(LH).map(Number).sort(function(a, b){ return a - b; });
         if (!hs.length) return;
         var nmax = Math.max.apply(null, hs.map(function(h){ return LH[String(h)][1]; }));
+        if (nmax < 3) return;                 /* 1/1 per hour is not a record yet */
         liveHoursLine = '<div style="font:600 8.5px system-ui,sans-serif;color:#359478;letter-spacing:.02em;'
           + 'margin-top:5px;line-height:1.6;"><b style="color:#45b491;">LIVE, HOUR BY HOUR</b> \u00B7 '
           + hs.map(function(h){
@@ -55418,8 +55448,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + (capped ? ' — <span style="color:#f2833f;">and only ' + $(forSale)
                       + ' is for sale at this price anyway</span>'
              : forSale != null ? ' (' + $(forSale) + ' is for sale at this price)' : '') + '.</span> '
-          + '<span style="color:#f2833f;">Putting ' + $(10 * risk) + ' on it instead does not make it a better bet; '
-          + 'it makes the same loss ten times bigger.</span>'
           + (k.haircut > 0.005
               ? ' <span style="color:#9fd9c4;">Sized as if it were ' + pct(q - k.haircut)
                 + ', because bets we have called ' + pct(q) + ' have won a little less often than that.</span>' : ''))
@@ -55916,8 +55944,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                will produce, so it carries the stale discount by definition */
             + line('CONVICTION', convictionOf(tv.ev, TM.pred, TM.ladder, true))
             + line('EDGE', 'About <b>' + cents(tv.ev) + ' of profit per $1</b> staked, after the '
-                + cents(feeOf(tv.ask)) + ' fee. ' + cents(tv.ask) + ' risked returns '
-                + cents(1 - tv.ask) + ' if it comes in.')
+                + cents(feeOf(tv.ask)) + ' fee. ' + cents(tv.ask + feeOf(tv.ask)) + ' risked, fee in, returns '
+                + cents(1 - tv.ask - feeOf(tv.ask)) + ' if it comes in.')
             + (tmax != null
                 ? line('LIMIT', '<b style="font-size:11px;">' + cents(tv.ask)
                     + '</b> to enter <span style="color:#2c7f66;">\u00B7</span> '
@@ -55964,7 +55992,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + ((tv && tv.ev > 0) ? 'rgba(46,204,113,.11)' : 'rgba(255,255,255,.055)') + ';">'
           + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
           + '<div style="font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:#359478;">'
-          + 'THE PLAN FOR ' + dayfull.toUpperCase() + ' \u00B7 ' + mtaEsc(String(TM.date).slice(5).replace('-', '/')) + chip(TM.state) + '</div>'
+          + 'THE PLAN FOR ' + dayfull.toUpperCase() + ' \u00B7 ' + mtaEsc(String(TM.date).slice(5).replace('-', '/')) + chip(TM.state)
+          /* overnight the plan is a draft off an older run; say so where the
+             state chip is, so the briefing's "nothing to act on" and the box
+             stop arguing (2026-09-06) */
+          + ((clockH != null && (clockH >= 17 || clockH < 8))
+              ? '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.08em;color:' + FCC + ';border:1px solid ' + FCC + '33;background:' + FCC + '14;border-radius:999px;padding:2px 6px;margin-left:5px;vertical-align:middle;white-space:nowrap;display:inline-block;">DRAFT \u00B7 RE-CHECKED AT 8 AM</span>'
+              : '') + '</div>'
           + (TM.link
               ? '<a href="' + mtaEsc(TM.link) + '"' + APPTAB
                 + ' style="color:#4aa3e0;text-decoration:none;font:800 8px system-ui,sans-serif;'
@@ -56335,7 +56369,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         if (settledNow){
           var hitLock = T.locked && (T.locked.pick === T.pick);
           /* one line for a settled day (three said the same thing, 2026-09-06) */
-          out.push('<b>' + dayName(T.date) + ' settled at ' + D1(T.obs_so_far) + '\u00B0</b>, inside ' + deg(T.pick)
+          /* "settled" only once the report is final; before that the day is
+             decided (the six-hour group is in) or merely reached (2026-09-06) */
+          out.push('<b>' + dayName(T.date) + (T.cli_final ? ' settled at ' : T.day_decided ? ' is decided at ' : ' reached ') + D1(T.obs_so_far) + '\u00B0</b>, inside ' + deg(T.pick)
             + (T.locked ? ' \u2014 the noon pick of ' + deg(T.locked.pick)
                 + (hitLock ? ' <b style="color:#2fbfa8;">held</b>.' : ' <b style="color:#f2833f;">missed</b>.') : '.'));
           if (TM){
@@ -56343,8 +56379,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '°, leaning ' + deg(TM.pick)
               + (TM.agree ? ' — and the market agrees.'
                           : ', while the market expects ' + deg(TM.market_pick) + '.'));
-            out.push('Nothing to act on tonight — the morning models are much better, so it is worth '
-              + 'another look after 8 AM.');
+            out.push('Nothing to act on tonight — the plan below is a draft until the 8 AM runs land.');
           }
         } else {
           /* the day, the high so far, the forecast and the lean now live in the
@@ -56640,14 +56675,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + ' \u00B7 ' + ageTxt(fAge).toUpperCase()
         + ' \u00B7 <span class="cwk-next" data-due="' + (Date.now() + (cwkDueIn() || 0))
         + '" style="color:#63dbb6;">NEXT LANDS IN ' + mmss(cwkDueIn()) + '</span></div>'
-        /* WHAT THOSE THREE ARE. "9:20 AM ET · 15 MIN AGO · NEXT IN 13:21" was
-           read as a station clock more than once. A second line names them:
-           the sheet's own clock, not the weather's. */
-        + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.07em;color:#2c7f66;'
-        + 'text-align:right;line-height:1.5;margin-top:2px;">'
-        + (isNY ? 'NEW YORK BAKES EVERY 5 MIN \u00B7 ALL CITIES EVERY 15<br>'
-                : CITY.tab + ' BAKES EVERY 15 MIN \u00B7 NEW YORK EVERY 5<br>')
-        + '8 AM \u2013 1 AM \u00B7 LANDS ~' + Math.round(cwkLatency / 60000) + ' MIN AFTER ITS SLOT</div>';
+        /* the two static lines that sat under this (bake cadence, slot
+           latency) moved to the FEED row of SYSTEM (2026-09-06) */
+        ;
 
       /* IN THE INTRO, because it changes how everything below it should be
          read. A recommendation means one thing on an empty account and quite
@@ -56887,9 +56917,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + ' <span style="color:#45b491;">as of ' + mtaEsc(stamp12(K.updated).replace(/^\d{4}-\d{2}-\d{2}\s*/, '')) + '</span>'
               + '</div>'
               + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:2px;">'
-              + (isNY ? 'The field that showed Saturday\u2019s 79 twenty minutes before the market did. ' : 'TWC\u2019s running maximum at the settlement station. ')
-              + 'A blended product, not the sensor itself: '
-              + 'it has read 3\u00B0 high before, so it is a warning, never a floor. Refreshed every bake.</div>'
+              + (T.twc_corroborated
+                  ? 'A blended field, not the sensor; an airport at the same figure is what makes it a floor.'
+                  : 'A blended field, not the sensor: a warning until an airport reaches the same figure.') + '</div>'
             : '<div style="margin-top:4px;font:600 9px system-ui,sans-serif;color:#9fd9c4;">TWC, ' + mtaEsc(CITY.station) + ' \u2014 no reading yet'
               + (etH < 7 ? ' (its since-7 AM field holds yesterday until 7 AM)' : '') + '</div>')
         + '<div id="bv-apt5-top"></div>'
