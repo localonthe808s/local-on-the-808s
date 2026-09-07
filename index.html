@@ -56818,9 +56818,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
            One column on a phone, where two would give each range about 25px
            and the labels would collide. */
-        + '<div style="display:grid;gap:0 18px;margin-top:2px;'
-        + 'grid-template-columns:' + (NARROW ? '1fr' : '1fr 1fr') + ';'
-        + (NARROW ? '' : 'grid-auto-flow:column;grid-template-rows:auto auto auto auto;') + '">'
+        /* ONE MARKET AT A TIME, FULL WIDTH (user, 2026-09-06: "make it full
+           width and just one at a time now on, no tomorrow view"). Today's
+           market while the day is live; once it is settled, the next day's
+           market takes the same full-width slot -- never both side by side. */
+        + '<div style="display:block;margin-top:2px;">'
         /* Each day's bet sits UNDER ITS OWN CHART. Today's box used to live
            above the whole layout while tomorrow's plan sat beneath tomorrow's
            columns, so the two recommendations were a screen apart and the left
@@ -56850,8 +56852,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               rows, play];
             var R4 = tmParts || [tomorrow, '', '', ''];
             var cell = function(x){ return '<div style="min-width:0;">' + (x || '') + '</div>'; };
-            if (NARROW) return L4.concat(R4).map(cell).join('') + '</div>';
-            return '<div style="display:contents;">' + L4.concat(R4).map(cell).join('') + '</div></div>';
+            /* the one market on show: today until it is settled, then tomorrow */
+            var ONE = (settledNow && (tmParts || tomorrow)) ? R4 : L4;
+            return ONE.map(cell).join('') + '</div>';
           })()
         + cities
 
