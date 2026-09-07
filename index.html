@@ -56633,6 +56633,63 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     else if (!yes && r.hi != null) bail = 'the high is still under <b>' + T1(r.hi + 1) + '\u00B0</b> at 3 PM';
                     else if (yes && r.hi != null) bail = 'any reading reaches <b>' + T1(r.hi + 1) + '\u00B0</b>';
                     else if (yes && r.lo != null) bail = 'the high is still under <b>' + T1(r.lo) + '\u00B0</b> at 3 PM';
+                    /* CONFIDENCE, re-tested every bake (user, 2026-09-06: "if I buy,
+                       continue to test whether that's the best option; if the
+                       market changes, tell me to hold because we know ..."). What
+                       the sensors say, why the price moved, whether this is still
+                       the best line on the board, and the hold rule with its number. */
+                    var conf = (function(){
+                      var L = [];
+                      var rmx = sh.runMax;
+                      var inside = (rmx != null) && (r.lo == null || rmx >= r.lo - 0.5) && (r.hi == null || rmx <= r.hi + 0.5);
+                      var above = (rmx != null) && r.hi != null && rmx > r.hi + 0.5;
+                      /* 1. the readings */
+                      if (rmx != null){
+                        L.push('The station\u2019s high so far is <b>' + T1(rmx) + '\u00B0</b>'
+                          + (T.own5_max != null ? ' on its own 5-minute feed' : T.six_max != null && T.six_max >= rmx - 0.05 ? ' from the six-hour group' : ' from the hourly reports')
+                          + ' \u2014 ' + (inside ? 'inside ' : above ? 'above ' : 'below ') + deg(k)
+                          + (yes ? (inside ? ', where you need it to stay' : above ? ', past your range' : ', still short of your range')
+                                 : (inside ? ', the range you need it to leave' : ', outside the range you bet against')) + '.');
+                      }
+                      if (T.twc_max != null) L.push('TWC\u2019s running maximum reads <b>' + D1(T.twc_max) + '\u00B0</b>'
+                        + (T.twc_corroborated ? ', corroborated by an airport at ' + D1(T.apt_max) + '\u00B0, so it counts.' : ', uncorroborated \u2014 a warning only.'));
+                      /* 2. the clock */
+                      if (T.peak_done && T.peak_done.p != null)
+                        L.push('The peak is <b>' + Math.round(100 * T.peak_done.p) + '% behind us</b> at this hour on the last ' + (T.peak_done.n || 0) + ' days'
+                          + (T.peak_done.cooling ? ', and the readings have turned down' : ', and the readings are still holding') + '.');
+                      /* 3. the odds */
+                      L.push('Odds this wins: ours <b>' + pct(sh.pOurs) + '</b>' + (sh.mWin != null ? ', the market <b>' + pct(sh.mWin) + '</b>' : '')
+                        + (sh.w < 1 ? ', blended for this hour <b>' + pct(sh.pWin) + '</b>' : '') + '.');
+                      /* 4. why the price moved since you bought */
+                      var entry = (h.cost != null && h.n) ? h.cost / h.n : null;
+                      var nowPx = yes ? r.bid : r.nbid;
+                      if (entry != null && nowPx != null){
+                        var lastH = (T.obs_hours || []).length ? T.obs_hours[T.obs_hours.length - 1] : null;
+                        var dip = lastH && rmx != null && lastH[1] <= rmx - 1.0;
+                        L.push('You paid about <b>' + cents(entry) + '</b>; the bid is <b>' + cents(nowPx) + '</b>'
+                          + (Math.abs(nowPx - entry) < 0.03 ? ' \u2014 unchanged.'
+                             : nowPx < entry
+                               ? ' \u2014 lower. ' + (dip ? 'The market is pricing the ' + hr12(lastH[0]) + ' report of ' + D1(lastH[1]) + '\u00B0, a dip under the high, and dips are not information: the report hides about a degree of the true peak.'
+                                                        : 'No reading has crossed your range; a price move without a reading behind it is the market guessing.')
+                               : ' \u2014 higher, in your favour.'));
+                      }
+                      /* 5. still the best line? */
+                      if (vbest && vbest.r){
+                        var same = (vbest.r === r) && ((vbest.dir === 'against') !== yes);
+                        L.push(same
+                          ? 'This is still the best line on the board by the plan\u2019s own rules.'
+                          : 'The plan\u2019s best new line is now ' + (vbest.dir === 'against' ? 'NO' : 'YES') + ' on ' + deg(vbest.r.label) + ' at ' + cents(vbest.ask)
+                            + ' (' + cents(vbest.ev) + ' edge). That is a separate read, not a reason to switch: switching pays the spread twice and forfeits the hold return.');
+                      } else {
+                        L.push('No new line on the board clears the floor; the position you hold is the play.');
+                      }
+                      /* 6. the rule */
+                      L.push('Held to settlement, positions like this returned <b>+0.56 per $1</b> on 215 morning bets; every exit rule returned less. It leaves only on the bail reading below.');
+                      return '<div style="margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08);">'
+                        + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">CONFIDENCE \u00B7 RE-TESTED EVERY BAKE</div>'
+                        + '<ul style="margin:3px 0 0;padding-left:14px;font:600 9px system-ui,sans-serif;color:#dffcf1;line-height:1.5;">'
+                        + L.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul></div>';
+                    })();
                     var exitTxt = 'SELL ' + h.side.toUpperCase() + ' on ' + String(k).replace(/\u00B0/g, '')
                       + ' - $' + sh.sell.toFixed(2) + ' - limit ' + Math.round(100 * sh.out) + 'c ('
                       + (+h.n).toFixed(h.n % 1 ? 2 : 0) + ' contract' + (h.n === 1 ? '' : 's') + ')';
@@ -56653,6 +56710,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                           : 'our ' + pct(sh.pWin) + '. ')
                       + (sh.verdict === 'SELL' ? ''
                           : (sh.runMax != null ? 'The station\u2019s high so far is <b>' + T1(sh.runMax) + '\u00B0</b>' + (sh.peakP ? ', the peak ' + Math.round(100 * sh.peakP) + '% behind us' : '') + '. ' : ''))
+                      + conf
                       + (bail ? '<div style="margin-top:3px;"><b style="color:#f2833f;">BAIL IF</b> ' + bail
                           + ' before the climate report \u2014 on an airport\u2019s 5-minute feed, TWC\u2019s running maximum, or the 1:51 PM six-hour group. '
                           + 'The market reprices the minute that reading prints; get out at whatever bid is left.</div>' : '')
