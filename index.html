@@ -54815,8 +54815,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          and teal. Whole-degree gridlines, the newest value on each line's
          end, the high since 7 AM marked. SVG, drawn from the same payload
          the numbers above come from. */
-      var bvSensChart = function(d, order, own, nowMin){
-        var W = 720, H = 96, L = 24, R = 88, T = 10, B = 16;
+      var SENS_SHORT = { KNYC: 'CENTRAL PARK', KLGA: 'LAGUARDIA', KJFK: 'JFK', KEWR: 'NEWARK', KLAS: 'HARRY REID',
+                         KVGT: 'N. LAS VEGAS', KAUS: 'BERGSTROM', KATT: 'CAMP MABRY' };
+      var bvSensChart = function(d, order, own, nowMin, width){
+        /* drawn at the container's own width so the type is never stretched */
+        var W = Math.max(420, Math.round(width || 720)), H = 96, L = 26, R = 92, T = 10, B = 16;
         var ser = order.map(function(k){ var a = d.s[k]; return (a && a.series && a.series.length > 1) ? { k: k, pts: a.series, a: a } : null; }).filter(Boolean);
         if (!ser.length) return '';
         var lo = Infinity, hi = -Infinity, x0 = 6 * 60, x1 = Math.max(nowMin + 5, 8 * 60);
@@ -54828,7 +54831,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var py2 = function(v){ return T + (hi - v) / (hi - lo) * (H - T - B); };
         var h12 = function(m){ var h = Math.floor(m / 60); return ((h % 12) || 12) + (h < 12 ? ' AM' : ' PM'); };
         var g = '';
-        var step = (hi - lo) > 12 ? 2 : 1;
+        /* one degree label per ~9 px, never more */
+        var step = Math.max(1, Math.ceil((hi - lo) / ((H - T - B) / 9)));
         for (var v = lo; v <= hi; v += step)
           g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py2(v).toFixed(1) + '" y2="' + py2(v).toFixed(1) + '" stroke="rgba(99,219,182,.12)" stroke-width="1"/>'
              + '<text x="' + (L - 4) + '" y="' + (py2(v) + 2.5).toFixed(1) + '" text-anchor="end" font-size="7" font-weight="700" fill="#2c7f66" font-family="system-ui,sans-serif">' + v + '°</text>';
@@ -54852,7 +54856,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           /* the high since 7 AM, a tick where it landed */
           if (q.a.max7 != null && q.a.maxAt){ var mm = q.a.maxAt.split(':'); var mx = (+mm[0]) * 60 + (+mm[1]);
             g += '<line x1="' + px2(mx).toFixed(1) + '" x2="' + px2(mx).toFixed(1) + '" y1="' + (py2(q.a.max7) - 5).toFixed(1) + '" y2="' + (py2(q.a.max7) + 5).toFixed(1) + '" stroke="' + col + '" stroke-width="1"' + (isOwn ? '' : ' opacity=".7"') + '/>'; }
-          labels.push({ y: py2(last[1]), col: col, txt: T1(last[1]) + '° ' + (q.k === 'KNYC' ? 'CENTRAL PARK' : q.k === own ? (SENS_NAMES[q.k] || q.k).split(' (')[0].toUpperCase() : (SENS_NAMES[q.k] || q.k).toUpperCase()), own: isOwn });
+          labels.push({ y: py2(last[1]), col: col, txt: T1(last[1]) + '° ' + (SENS_SHORT[q.k] || q.k), own: isOwn });
         });
         /* end labels, nudged apart so they never sit on each other */
         labels.sort(function(a, b2){ return a.y - b2.y; });
@@ -54861,7 +54865,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         labels.forEach(function(lb){
           g += '<text x="' + (W - R + 5) + '" y="' + (lb.y + 2.5).toFixed(1) + '" font-size="7" font-weight="' + (lb.own ? '800' : '700') + '" fill="' + lb.col + '" font-family="system-ui,sans-serif" letter-spacing=".04em">' + lb.txt + '</text>';
         });
-        return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="display:block;width:100%;height:' + H + 'px;margin-top:6px;">' + g + '</svg>';
+        return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="display:block;max-width:100%;height:auto;margin-top:6px;">' + g + '</svg>';
       };
       var bvSensors = function(){
         var el = document.getElementById('bv-apt5-top');
@@ -54906,7 +54910,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     + '</div>';
                 }).join('')
               + '</div>'
-              + bvSensChart(d, rows, own, nowMin)
+              + bvSensChart(d, rows, own, nowMin, el2.clientWidth)
               + '<div style="font:600 7.5px system-ui,sans-serif;color:#2c7f66;letter-spacing:.03em;margin-top:4px;">'
               + (own
                   ? 'These are the settlement station\u2019s own readings \u2014 the number that settles, before the hourly report and before TWC\u2019s blended field. The high since 7 AM here is a floor; the true peak runs about 0.3\u00B0 above the 5-minute samples. The line is every 5-minute reading today; the tick on it is the high since 7 AM.'
