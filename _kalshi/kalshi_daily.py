@@ -2930,13 +2930,26 @@ def _run_market(cfg, ticker_cache=TICKER_CACHE):
     if _mt:
         _cur = obh.setdefault(tkey, {})
         _new = sorted(h for h in _mt if h not in _cur)
+        # IEM PUBLISHES WHOLE DEGREES F, AND max() TREATS ITS ROUNDING AS A
+        # HIGHER READING. Both feeds carry the same observation -- the ASOS's
+        # Celsius tenth -- but IEM rounds it first, so on 2026-09-08 hour 13
+        # IEM's 79.00 beat the METAR's exact 78.98 and the panel printed a
+        # settled-looking 79. When the two are within half a degree they ARE
+        # the same reading and the unrounded one is the true value; only a
+        # genuinely higher IEM figure (a different or later observation) still
+        # wins. The running peak can still only rise on new information.
         for _h, _v in _mt.items():
-            _cur[_h] = max(_cur.get(_h, -99.0), _v)
+            _old = _cur.get(_h)
+            if _old is None or _v > _old or abs(_old - _v) < 0.5:
+                _cur[_h] = _v
         # and the reading the panel prints as "now": prefer the newer one
         _lh = max(_mt)
         _iem_h = int(ob_last[0][0][11:13]) if ob_last else -1
         _iem_d = ob_last[0][0][:10] if ob_last else None
-        if not ob_last or _iem_d != tkey or _lh > _iem_h:
+        # same rule for the reading printed as "now": the METAR wins its own
+        # hour outright, not only when it is an hour IEM has not reached
+        if (not ob_last or _iem_d != tkey or _lh > _iem_h
+                or (_lh == _iem_h and abs(ob_last[0][1] - _mt[_lh]) < 0.5)):
             ob_last[:] = [('%s %02d:51' % (tkey, _lh), _mt[_lh])]
         print('%s metar: %d hours, %s ahead of IEM%s'
               % (cfg['key'], len(_mt),
