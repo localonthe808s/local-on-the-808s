@@ -53121,7 +53121,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + mtaEsc(f.n ? f.n : ((f.t === 'thrust' ? 'THRUST' : 'FAULT') + (f.loc ? ' UNDER ' + f.loc : ''))).toUpperCase() + '</span>'
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">'
         + (f.t === 'thrust' ? 'THRUST' : f.r === 3 ? 'MAJOR' : f.r === 2 ? 'FAULT' : 'MINOR')
-        + ' \u00b7 ' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' TRACED' : '')
+        + ' \u00b7 ' + (f.k === 'certain' ? 'MAPPED' : 'APPROXIMATELY LOCATED') + (km ? ' \u00b7 ' + km + ' LONG' : '')
         + (f.n ? '' : ' \u00b7 UNNAMED ON THE SHEET')
         + (f.n && f.loc ? ' \u00b7 UNDER ' + mtaEsc(f.loc).toUpperCase() : '') + '</span>'
         + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">USGS ' + mtaEsc(f.src || '') + '</span>'
@@ -53132,7 +53132,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             : f.n === 'Dyckman Street fault' ? 'A northwest-trending cross fault through Inwood; the valley it made is filled with glacial-lake silt below sea level.'
             : f.n === "Cameron's Line" ? 'The Taconic suture: a thrust that carried the Hartland schists westward over the Manhattan Formation about 450 million years ago. The sheets follow it from the Bronx down the east side of Manhattan to the Upper Bay; in City Water Tunnel No. 3 it is a shear zone less than six inches wide.'
             : f.n === 'Inwood Hill thrust' ? 'A thrust with open teeth on the sheet, lying several hundred feet below Cameron\u2019s Line through Inwood and Washington Heights, so the two draw almost on top of each other.'
-            : 'Traced from the bedrock sheet: high-angle faults here mostly show a few inches of offset, many with a right-lateral sense; no movement has been observed since the Mesozoic.')
+            : 'High-angle faults here mostly show a few inches of offset, many with a right-lateral sense; no movement has been observed since the Mesozoic.')
         + '</div>';
       var xb = document.getElementById('cw-fault-x');
       if (xb) xb.onclick = function(e){ e.stopPropagation(); cwInfoDefault(); };
