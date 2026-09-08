@@ -1014,9 +1014,14 @@ var ROMAN_C = '#ffcf9a';
    station in early October would have told the scrub two months of fiction. */
 var ROMAN_ARRIVE = Date.UTC(2026, 10, 30, 11, 26);
 var gRomanEl = document.getElementById('gRoman');
+/* NON-SCALING STROKE, like every other dashed ring on this map (user
+   2026-09-07). Without it the dash pattern lives in MAP units: zoomed to the
+   telescope, each 3-unit dash covered a thirtieth of the frame and the route
+   stopped reading as a dashed line and became a row of lozenges. */
 var romanPath = mk('path', {fill:'none', stroke:ROMAN_C, 'stroke-width':0.9,
                             'stroke-opacity':.5, 'stroke-dasharray':'3 3',
-                            'stroke-linecap':'round', 'pointer-events':'none'}, gRomanEl);
+                            'stroke-linecap':'round', 'vector-effect':'non-scaling-stroke',
+                            'pointer-events':'none'}, gRomanEl);
 var romanG = mk('g', {'pointer-events':'none'}, gRomanEl);
 mk('rect', {x:-2.6, y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
 mk('rect', {x:1.0,  y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
@@ -1078,9 +1083,25 @@ function renderRoman(ms, s){
   romanPath.setAttribute('d', d);
   romanG.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')');
   romanImg.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')');
-  var lr = Math.hypot(p[0], p[1]) || 1, off = spritesOn ? 13 : 9;
+  /* LABELS GROW WITH THE ZOOM (user 2026-09-07: the caption read tiny beside a
+     telescope filling the frame). Every text on this map is counter-scaled to a
+     constant SCREEN size by applyView's root font, while the sprite is drawn in
+     map units and magnifies -- so the deeper you go, the smaller the writing
+     gets relative to the thing it names. These two take back part of that: the
+     square root of the magnification, capped, which grows the caption at depth
+     without letting it swallow the stage. Roman's labels only; the rest of the
+     map keeps the constant-size rule. */
+  var zk = Math.min(4.2, Math.pow(BASE_VB.w / Math.max(view.w, 1), 0.5));
+  romanLab.style.fontSize = (0.5625 * zk).toFixed(3) + 'em';
+  romanCd.style.fontSize  = (0.4688 * zk).toFixed(3) + 'em';
+  romanCd.setAttribute('y', (-2.6 * Math.min(zk, 2.4)).toFixed(2));
+  /* the sprite does NOT grow with the zoom (it is 12 units wherever you are),
+     so the label's stand-off only has to clear the bigger text, not the craft:
+     it grows far less than the type does */
+  var ok = Math.min(zk, 1.7);
+  var lr = Math.hypot(p[0], p[1]) || 1, off = (spritesOn ? 13 : 9) * ok;
   romanLab.setAttribute('x', (p[0] + p[0] / lr * off).toFixed(1));
-  romanLab.setAttribute('y', (p[1] + p[1] / lr * off + 3).toFixed(1));
+  romanLab.setAttribute('y', (p[1] + p[1] / lr * off + 3 * ok).toFixed(1));
 
   /* THE COUNTDOWN, ON THE LINE ITSELF (user 2026-09-07). Set a little way back
      along the flown route and turned to lie along it, so it reads as a caption
