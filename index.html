@@ -50628,7 +50628,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            the trees along with everything else and the colour is simply true,
            the same solve airfields and beaches got. z:1 puts them over the
            core; the sort below already honours it. */
-        if (cw.trees) (function(bb, uu){
+        /* THE PAINT STANDS DOWN WHERE THE POINTS TAKE OVER (user 2026-09-08:
+           "its still very hard to see"). Close in, the baked canopy is a green
+           line down every block and the census discs drawn on top of it are
+           lost in their own colour. Past the depth where the points load, the
+           raster is simply not composed: one representation of the trees at a
+           time, the picture far out and the trees themselves near in. */
+        if (cw.trees && (v.X1 - v.X0) > 7000) (function(bb, uu){
           jobs.push(_cityTile(uu).then(function(im){ return { im: im, b: bb, z: 1 }; },
                                        function(){ return null; }));
         })(tb, '/nyc-basemap-trees' + suffix + '.png?v=8');
@@ -58150,10 +58156,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var rm = Math.max(1.3, (t._d || 4) * 0.22);
           var rScreen = Math.max(1.6, Math.min(7, rm / mppScreen));
           var rr = rScreen * dpr / zk;
+          /* a pale ring first: the census green on the map's orange needs a
+             separation the way the ferry routes needed one on navy */
           g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2);
-          g.fillStyle = cwTreeColor(t); g.globalAlpha = 0.82; g.fill();
-          g.globalAlpha = 1;
-          g.lineWidth = 0.7 * dpr; g.strokeStyle = 'rgba(20,40,25,.55)'; g.stroke();
+          g.lineWidth = Math.max(0.8, rr * 0.45); g.strokeStyle = 'rgba(255,252,246,.85)'; g.stroke();
+          g.fillStyle = cwTreeColor(t); g.fill();
+          g.lineWidth = Math.max(0.5, rr * 0.18); g.strokeStyle = 'rgba(18,42,24,.75)'; g.stroke();
         });
       })();
       /* the CSO OUTFALLS (user 2026-09-01): the sewage runoff stains in the
