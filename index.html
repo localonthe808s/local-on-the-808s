@@ -53171,7 +53171,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var ageOf = function(x){
             return (x.b_int_name && x.t_int_name)
               ? (x.b_int_name === x.t_int_name ? x.b_int_name : x.b_int_name + ' – ' + x.t_int_name)
-                + (x.b_int_age && x.t_int_age ? ' (' + Math.round(x.b_int_age) + '–' + Math.round(x.t_int_age) + ' Ma)' : '')
+                + (x.b_int_age && x.t_int_age ? ' (' + bvMa(x.b_int_age) + '–' + bvMa(x.t_int_age) + ' Ma)' : '')
               : '';
           };
           var x = '<button id="cw-rock-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">✕</button>';
@@ -53511,6 +53511,18 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        colours are. The rock key is baked from the tiles themselves
        (city_rock_legend.json: each tile colour, the unit it stands for, its
        age and its share of the city), so the chips match what is painted. */
+    /* MILLIONS OF YEARS, written the way the timescale writes them. The
+       interval bounds carry a decimal where the chart does (100.5, 538.8,
+       471.3) and rounding those to whole millions prints ages nobody cites;
+       under ten a decimal matters more, not less (2.58 -> 2.6). */
+    function bvMa(v){
+      if (v == null || isNaN(+v)) return '';
+      v = +v;
+      if (v === 0) return '0';
+      if (v < 1) return v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      if (v < 10) return v.toFixed(1).replace(/\.0$/, '');
+      return String(Math.round(v * 10) / 10);
+    }
     function cwRockLegend(el){
       el.style.display = '';
       if (!window._cwRockLegend && !window._cwRockLegendReq){
@@ -53535,14 +53547,24 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:4px;">'
         + (L.length ? L.filter(function(u){ return u.share >= 0.02; }).slice(0, 9).map(function(u){
             var age = u.age ? (u.age === u.age_t || !u.age_t ? u.age : u.age + ' \u2013 ' + u.age_t) : '';
+            /* the same bounds in numbers -- Macrostrat carries them on every
+               unit, and the tap readout has always shown them */
+            var ma = (u.b_age != null && u.t_age != null)
+              ? bvMa(u.b_age) + '\u2013' + bvMa(u.t_age) + ' Ma' : '';
             return '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">'
               + '<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:' + mtaEsc(u.c) + ';border:1px solid rgba(27,35,64,.3);"></span>'
               + '<span style="font:700 8.5px system-ui,sans-serif;color:#1b2340;">' + mtaEsc(u.n) + '</span>'
               + (age ? '<span style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;text-transform:uppercase;">' + mtaEsc(age) + '</span>' : '')
+              + (ma ? '<span style="font:700 7.5px system-ui,sans-serif;color:#3b4460;letter-spacing:.03em;font-variant-numeric:tabular-nums;">' + mtaEsc(ma) + '</span>' : '')
               + '<span style="font:600 7.5px system-ui,sans-serif;color:#8a91a5;">' + Math.round(100 * u.share) + '%</span></span>';
           }).join('') : '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;">READING THE KEY\u2026</span>')
         + '</div>'
-        + '<div style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">TAP THE MAP FOR THE ROCK AND THE BEDROCK BENEATH IT \u00b7 TAP A FAULT FOR ITS RECORD</div>';
+        + '<div style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">TAP THE MAP FOR THE ROCK AND THE BEDROCK BENEATH IT \u00b7 TAP A FAULT FOR ITS RECORD'
+        /* Fordham Gneiss reads 4031\u20131000 Ma because Macrostrat puts its
+           lower bound at the base of the Precambrian -- that is the interval,
+           not a date for the rock, and the line says so rather than letting
+           the map imply New York has the oldest stone on earth. */
+        + ' \u00b7 AGES ARE THE NAMED INTERVALS\u2019 BOUNDS, NOT DATED ROCK</div>';
       el.innerHTML = '<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,2fr);gap:6px 22px;align-items:start;">'
         + '<div>' + faults + '</div><div style="min-width:0;">' + rock + '</div></div>';
     }
