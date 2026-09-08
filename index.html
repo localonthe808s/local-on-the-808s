@@ -53179,10 +53179,70 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             el2.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">NO MAPPED UNIT HERE</span>'
               + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">MACROSTRAT</span>' + x + '</div>';
           } else {
-            var lith = String(u.lith || '').replace(/^Major:\{|\}$/g, '').replace(/\},?\s*Minor:\{/g, '; minor ').replace(/[{}]/g, '');
+            /* THE SUBTEXTS, IN THE HAZARD VIEW'S GRAMMAR (user 2026-09-07:
+               "make these individual subtexts stronger, weve improved these in
+               the earthquake hazard macrostrat info already"). That readout
+               already turns Macrostrat's raw fields into sentences; this one
+               was printing them as they arrive. The helpers are shared where
+               they are reachable and re-implemented inline where they are not
+               -- the same typeof-guard the hazard dash needs across renders. */
+            var lith = (function(){
+              var t = (typeof geoLithReadable === 'function')
+                ? geoLithReadable(u.lith)
+                : String(u.lith || '').replace(/^Major:\{|\}$/g, '').replace(/\},?\s*Minor:\{/g, '; minor ').replace(/[{}]/g, '');
+              /* the API packs its lists with no space after the comma */
+              t = String(t || '').replace(/,(?=\S)/g, ', ').replace(/\s+/g, ' ').trim();
+              return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+            })();
             var age = ageOf(u);
-            var desc = String(u.descrip || '').replace(/\s+/g, ' ');
-            if (desc.length > 220) desc = desc.slice(0, 217).replace(/\s\S*$/, '') + '…';
+            /* when it formed, in words, and what the world was doing then */
+            var formed = (function(){
+              /* THE SAME NUMBERS THE HEADER PRINTS. Macrostrat carries two
+                 age pairs per unit: its own model (t_age/b_age) and the bounds
+                 of the named intervals (t_int_age/b_int_age). For Manhattan
+                 Formation they disagree -- 533.5-550.4 against 458.2-538.8 --
+                 and the header, the legend and the caption are all on the
+                 interval bounds, so this sentence is too. One basis per strip;
+                 a readout that contradicts its own title line is worse than a
+                 less precise one. */
+              var t0 = (u.t_int_age != null ? +u.t_int_age : +u.t_age);
+              var b0 = (u.b_int_age != null ? +u.b_int_age : +u.b_age);
+              if (!isFinite(t0) || !isFinite(b0) || typeof geoAgeSentence !== 'function') return '';
+              var out = 'Formed ' + geoAgeSentence(t0, b0);
+              if (typeof geoSpanSentence === 'function'){
+                var sp = geoSpanSentence(t0, b0);
+                if (sp) out += ', ' + sp;
+              }
+              if (typeof GEO_PERIODS !== 'undefined'){
+                var mid = (t0 + b0) / 2;
+                for (var gp = 0; gp < GEO_PERIODS.length; gp++){
+                  if (mid >= GEO_PERIODS[gp][1] && mid < GEO_PERIODS[gp][2]){
+                    if (GEO_PERIODS[gp][3]) out += ' \u2014 a time of ' + GEO_PERIODS[gp][3];
+                    break;
+                  }
+                }
+              }
+              return out + '.';
+            })();
+            /* THE SURVEY PROSE IS WRITTEN FOR SOMEONE HOLDING THE SHEET.
+               Manhattan Formation's reads "Pelitic schists, amphibolite; Units
+               ?Omb, ?Omc, and ?Omd may be Cambrian eugeosynclinal rocks thrust
+               upon Oma; ?Omd - sillimanite-garnet-..." -- three of those four
+               clauses turn on map-unit codes that name nothing without the
+               map they came from, and the old 220-character cut landed inside
+               them. Clauses carrying a code are dropped; if that would empty
+               the line, the original stands. */
+            var desc = (function(){
+              var raw = String(u.descrip || '').replace(/\s+/g, ' ').trim();
+              if (!raw) return '';
+              var CODE = /(^|[\s(])\??[A-Z][a-z]{1,3}(?=[\s,;.)-]|$)/;
+              var keep = raw.split(/;\s*/).filter(function(c){ return c && !CODE.test(c); });
+              var t = keep.length ? keep.join('; ') : raw;
+              if (t.length > 200) t = t.slice(0, 197).replace(/\s\S*$/, '') + '\u2026';
+              if (!/[.!?\u2026]$/.test(t)) t += '.';
+              return t.charAt(0).toUpperCase() + t.slice(1);
+            })();
+            var subLab = function(t){ return '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.1em;color:#8a91a5;margin-right:6px;">' + t + '</span>'; };
             /* the chip takes the TILE's colour for this unit where the baked
                legend knows it, so the readout matches the paint */
             var chip = (function(){ var L = window._cwRockLegend || []; var nm = (u.strat_name || u.name || '').toLowerCase();
@@ -53193,12 +53253,13 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(u.strat_name || u.name).toUpperCase() + '</span>'
               + (age ? '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + mtaEsc(age).toUpperCase() + '</span>' : '')
               + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">MACROSTRAT</span>' + x + '</div>'
-              + (lith ? '<div style="font:700 10px system-ui,sans-serif;margin-top:3px;">' + mtaEsc(lith) + '</div>' : '')
-              + (desc ? '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:2px;line-height:1.45;">' + mtaEsc(desc) + '</div>' : '')
+              + (lith ? '<div style="font:700 10px system-ui,sans-serif;margin-top:3px;">' + subLab('MADE OF') + mtaEsc(lith) + '</div>' : '')
+              + (formed ? '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:2px;line-height:1.45;">' + subLab('FORMED') + mtaEsc(formed) + '</div>' : '')
+              + (desc ? '<div style="font:500 9.5px system-ui,sans-serif;color:#5b647a;margin-top:2px;line-height:1.45;">' + subLab('SURVEY') + mtaEsc(desc) + '</div>' : '')
               + (cover
                   ? '<div style="font:600 9px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">COVER ON TOP: '
                     + '<b style="color:#1b2340;">' + mtaEsc(cover.strat_name || cover.name) + '</b>' + (ageOf(cover) ? ' · ' + mtaEsc(ageOf(cover)) : '')
-                    + (String(cover.lith || '').indexOf('{') >= 0 ? ' · ' + mtaEsc(String(cover.lith).replace(/^Major:\{|\}$/g, '').replace(/[{}]/g, '')) : '') + '</div>'
+                    + (cover.lith ? ' \u00b7 ' + mtaEsc((function(){ var t = (typeof geoLithReadable === 'function') ? geoLithReadable(cover.lith) : String(cover.lith).replace(/^Major:\{|\}$/g, '').replace(/[{}]/g, ''); return String(t || '').replace(/,(?=\S)/g, ', ').trim(); })()) : '') + '</div>'
                   : '');
           }
           var xb = document.getElementById('cw-rock-x');
