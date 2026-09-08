@@ -54412,8 +54412,24 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       /* ONE DECIMAL, ALWAYS, for numbers that carry one at the source: the
          station's running high, the consensus, the NWS grid. "74°" beside
          "72.7°" read as a different kind of number. TWC's forecast is a whole
-         degree at the source and stays one; a fake .0 there is a lie. */
-      var D1 = function(x){ return (x == null || isNaN(x)) ? '\u2014' : (+x).toFixed(1); };
+         degree at the source and stays one; a fake .0 there is a lie.
+         EVERY STATION READING GOES THROUGH D1, never T1. The ASOS reports
+         Celsius tenths, so a reading almost never lands on a whole °F:
+         2026-09-08 the park's peak was 26.1 C = 78.98 F, and T1 printed it
+         "79" beside a settled "79" -- indistinguishable, and it hid that the
+         80 bracket needed 26.4 C, three tenths away. Readings (now_temp,
+         obs_so_far, obs_peak_read, six_max, hourly_max, the sensor trace and
+         its per-station highs) are measured and keep the tenth; only values
+         published as whole degrees -- the CLI settled max, the portal max,
+         TWC's own max7 field, the forecasts, the bracket edges -- use T1. */
+      var D1 = function(x){
+        if (x == null || isNaN(x)) return '\u2014';
+        /* up to a hundredth, never a fake one: a Celsius tenth converts to an
+           exact hundredth of a degree F (26.1 C = 78.98 F), so the second
+           decimal is measured, not invented. Sources that are already whole
+           or a tenth keep their own shape -- 78.10 prints 78.1, 80 prints 80.0. */
+        return (+x).toFixed(2).replace(/(\.\d)0$/, '$1');
+      };
       var dayLabel2 = function(iso){
         var dt = new Date(iso + 'T12:00:00');
         return (isNaN(dt) ? '' : dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() + ' ') + String(iso).slice(5).replace('-', '/');
@@ -54887,8 +54903,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   + ks.map(function(k){
                       var a = A[k];
                       return '<span><b style="color:' + (lead1(k) ? '#fff' : '#63dbb6') + ';">' + (shortOf[k] || names[k] || k) + '</b> '
-                        + (a.last != null ? '<span style="color:#fff;">' + T1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '') + '</span>' : '\u2014')
-                        + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + T1(a.max7) + '\u00B0</b>' : '')
+                        + (a.last != null ? '<span style="color:#fff;">' + D1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '') + '</span>' : '\u2014')
+                        + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + D1(a.max7) + '\u00B0</b>' : '')
                         + '</span>';
                     }).join('')
                   + '</div>'
@@ -54897,8 +54913,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               }
               var parts = Object.keys(A).map(function(k){
                 var a = A[k];
-                return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : T1(a.max7) + '\u00B0') + '</b>'
-                  + (a.last != null ? ' <span style="opacity:.7;">(' + T1(a.last) + '\u00B0 at ' + mtaEsc(a.at || '') + ')</span>' : '');
+                return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : D1(a.max7) + '\u00B0') + '</b>'
+                  + (a.last != null ? ' <span style="opacity:.7;">(' + D1(a.last) + '\u00B0 at ' + mtaEsc(a.at || '') + ')</span>' : '');
               });
               /* the airports row carries four stations and their times: it is
                  several times longer than a lead row and takes the full width
@@ -55004,11 +55020,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (dead) why = 'the climate report reads ' + T1(rep0) + '\u00B0, ' + (inR ? 'inside' : 'outside') + ' ' + deg(r.label);
         } else if (rm != null){
           if (yes){
-            if (hi != null && rm >= hi + 0.5){ dead = true; why = 'the station has already reached ' + T1(rm) + '\u00B0, past the top of ' + deg(r.label); }
-            else if (lo != null && rm < lo - 0.5 && PDp >= 0.85){ dead = true; why = 'the high so far is ' + T1(rm) + '\u00B0, under ' + deg(r.label) + ', and the peak is ' + Math.round(100 * PDp) + '% behind us'; }
+            if (hi != null && rm >= hi + 0.5){ dead = true; why = 'the station has already reached ' + D1(rm) + '\u00B0, past the top of ' + deg(r.label); }
+            else if (lo != null && rm < lo - 0.5 && PDp >= 0.85){ dead = true; why = 'the high so far is ' + D1(rm) + '\u00B0, under ' + deg(r.label) + ', and the peak is ' + Math.round(100 * PDp) + '% behind us'; }
           } else {
             var inside = (lo == null || rm >= lo - 0.5) && (hi == null || rm <= hi + 0.5);
-            if (inside && (hi == null || PDp >= 0.85)){ dead = true; why = 'the high so far is ' + T1(rm) + '\u00B0, inside ' + deg(r.label) + (hi == null ? '' : ', and the peak is ' + Math.round(100 * PDp) + '% behind us'); }
+            if (inside && (hi == null || PDp >= 0.85)){ dead = true; why = 'the high so far is ' + D1(rm) + '\u00B0, inside ' + deg(r.label) + (hi == null ? '' : ', and the peak is ' + Math.round(100 * PDp) + '% behind us'); }
           }
         }
         return { pWin: pWin, pOurs: pOurs, mWin: mWin, w: w, out: out, fee: fee, sell: sell, hold: hold,
@@ -55096,7 +55112,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       qcL.push(T.now_temp == null
         ? qcRow(QCA, 'STATION', 'NO CURRENT READING', mtaEsc(CITY.station) + ' has not reported')
         : qcRow((oAge != null && oAge < 80) ? QCG : QCA, 'STATION',
-            T1(T.now_temp) + '° AT ' + t12(T.now_at) + ' · ' + ageTxt(oAge),
+            D1(T.now_temp) + '° AT ' + t12(T.now_at) + ' · ' + ageTxt(oAge),
             (oAge != null && oAge >= 80) ? 'it reports hourly at :51' : ''));
       /* the account feed, so an empty sheet says why it is empty */
       (function(){
@@ -55150,7 +55166,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            18-00Z group six hours later (the "1:51 PM" here was New York's
            midday group, printed for every city and every hour) */
         var sw6 = T.six_window, sixClose = (sw6 && sw6.length === 2) ? t12(((sw6[1] - 1 + 24) % 24) + ':51') : null;
-        qcL.push(qcRow(QCG, 'SIX-HOURLY', T1(T.six_max) + '\u00B0 FROM THE ASOS MAX GROUP'
+        qcL.push(qcRow(QCG, 'SIX-HOURLY', D1(T.six_max) + '\u00B0 FROM THE ASOS MAX GROUP'
           + (sixAhead ? ' \u00B7 ABOVE THE HOURLY HIGH' : ''),
           (sixClose ? 'closed at ' + sixClose + ' local' : 'the latest group') + '; the day cannot settle below it'));
       }
@@ -55287,7 +55303,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           /* the high since 7 AM, a tick where it landed */
           if (q.a.max7 != null && q.a.maxAt){ var mm = q.a.maxAt.split(':'); var mx = (+mm[0]) * 60 + (+mm[1]);
             g += '<line x1="' + px2(mx).toFixed(1) + '" x2="' + px2(mx).toFixed(1) + '" y1="' + (py2(q.a.max7) - 5).toFixed(1) + '" y2="' + (py2(q.a.max7) + 5).toFixed(1) + '" stroke="' + col + '" stroke-width="1"' + (isOwn ? '' : ' opacity=".7"') + '/>'; }
-          labels.push({ y: py2(last[1]), col: col, txt: T1(last[1]) + '° ' + (SENS_SHORT[q.k] || q.k), own: isOwn });
+          labels.push({ y: py2(last[1]), col: col, txt: D1(last[1]) + '° ' + (SENS_SHORT[q.k] || q.k), own: isOwn });
         });
         /* end labels, nudged apart so they never sit on each other */
         labels.sort(function(a, b2){ return a.y - b2.y; });
@@ -55340,9 +55356,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 return (best && Math.abs(best[0] - se.m) <= 35) ? best : null; };
               var me = at(se.k); if (!me) return '';
               var hm = function(m){ return t12(('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2)); };
-              var others = rows.filter(function(k){ return k !== se.k; }).map(function(k){ var p = at(k); return p ? '<span style="color:#63dbb6;">' + (SENS_SHORT[k] || k) + '</span> ' + T1(p[1]) + '\u00B0' : null; }).filter(Boolean);
+              var others = rows.filter(function(k){ return k !== se.k; }).map(function(k){ var p = at(k); return p ? '<span style="color:#63dbb6;">' + (SENS_SHORT[k] || k) + '</span> ' + D1(p[1]) + '\u00B0' : null; }).filter(Boolean);
               return '<div style="margin-top:4px;font:700 9px system-ui,sans-serif;color:#fff;">'
-                + '<span style="color:' + ((se.k === own || se.k === 'KNYC') ? '#fff' : '#63dbb6') + ';">' + (SENS_SHORT[se.k] || se.k) + '</span> <b>' + T1(me[1]) + '\u00B0</b> at ' + hm(me[0])
+                + '<span style="color:' + ((se.k === own || se.k === 'KNYC') ? '#fff' : '#63dbb6') + ';">' + (SENS_SHORT[se.k] || se.k) + '</span> <b>' + D1(me[1]) + '\u00B0</b> at ' + hm(me[0])
                 + (me[0] !== se.m ? ' <span style="color:#45b491;">(nearest sample)</span>' : '')
                 + (others.length ? ' <span style="color:#2c7f66;">\u00B7 at that minute</span> ' + others.join(' <span style="color:#2c7f66;">\u00B7</span> ') : '')
                 + '</div>';
@@ -55356,9 +55372,9 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   var newHigh = (pv != null && a.max7 != null && a.max7 > pv + 0.05);
                   var big = (k === own || k === 'KNYC');
                   return '<span><b style="color:' + (big ? '#fff' : '#63dbb6') + ';">' + (SENS_SHORT[k] || k) + '</b> '
-                    + (a.last != null ? '<span style="color:#fff;">' + T1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '')
+                    + (a.last != null ? '<span style="color:#fff;">' + D1(a.last) + '\u00B0</span> <span style="color:#45b491;">' + t12(a.at || '')
                         + (age != null ? ' \u00B7 ' + (age < 1 ? 'just now' : age + ' min ago') : '') + '</span>' : '\u2014')
-                    + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + T1(a.max7) + '\u00B0</b>' + (a.maxAt ? ' ' + t12(a.maxAt) : '') : '')
+                    + (a.max7 != null ? ' \u00B7 high <b style="color:#fff;">' + D1(a.max7) + '\u00B0</b>' + (a.maxAt ? ' ' + t12(a.maxAt) : '') : '')
                     + (newHigh ? ' <b style="color:#f2833f;">\u25B2 NEW HIGH</b>' : '')
                     + '</span>';
                 }).join('')
@@ -55384,7 +55400,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                read sooner */
             if (own && d.s[own] && d.s[own].last != null){
               var hn = document.getElementById('cwk-now-live');
-              if (hn) hn.innerHTML = T1(d.s[own].last) + '\u00B0'
+              if (hn) hn.innerHTML = D1(d.s[own].last) + '\u00B0'
                 + (d.s[own].at ? ' <span style="color:#45b491;font-weight:600;">' + t12(d.s[own].at) + ' \u00B7 5-MIN</span>' : '');
             }
             var np = {}; rows.forEach(function(k){ np[k] = d.s[k].max7; });
@@ -55442,20 +55458,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 + (last.cli_at_min != null ? ' at <b>' + m12(last.cli_at_min) + '</b>' : ''));
               if (last.hourly_max != null){
                 bits.push((last.hidden >= 1)
-                  ? '<span style="color:#f2833f;">the hourly reports never went above ' + T1(last.hourly_max)
+                  ? '<span style="color:#f2833f;">the hourly reports never went above ' + D1(last.hourly_max)
                     + '° — the settled number was invisible until the climate report</span>'
-                  : 'the hourly reports showed ' + T1(last.hourly_max) + '°');
+                  : 'the hourly reports showed ' + D1(last.hourly_max) + '°');
               }
               if (last.six_max != null){
                 var sg = last.cli_max - last.six_max;
-                bits.push('the 1:51 PM six-hour group saw ' + T1(last.six_max) + '°'
+                bits.push('the 1:51 PM six-hour group saw ' + D1(last.six_max) + '°'
                   + (sg >= 1 ? ', <span style="color:#f2833f;">' + T1(sg) + '° short</span>' : ' — it had it'));
               }
               var A = last.airports || {};
               Object.keys(A).forEach(function(k){
                 var a = A[k];
                 if (a.lead_min == null) return;
-                bits.push(names[k] + ' reached its own high (' + T1(a.max) + '°) '
+                bits.push(names[k] + ' reached its own high (' + D1(a.max) + '°) '
                   + (a.lead_min > 0 ? '<b style="color:#63dbb6;">' + dur(a.lead_min) + ' before</b>'
                      : a.lead_min < 0 ? dur(a.lead_min) + ' after' : 'the same minute as')
                   + ' ' + mtaEsc(parkName));
@@ -55536,7 +55552,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                     o += '<text x="' + (la === 'end' ? lx - 4 : lx + 4).toFixed(1) + '" y="' + (yOf(lp[1]) + 3).toFixed(1)
                       + '" fill="#2fbfa8" font-size="7.5" stroke="#0d1117" stroke-width="3" paint-order="stroke" '
                       + 'font-family="system-ui,sans-serif" font-weight="800" text-anchor="' + la + '">TODAY '
-                      + T1(lp[1]) + '°</text>';
+                      + D1(lp[1]) + '°</text>';
                   }
                   ov.innerHTML = o + '</svg>';
                 }
@@ -55570,7 +55586,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                   svg += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(last.hourly_max).toFixed(1)
                     + '" y2="' + Y(last.hourly_max).toFixed(1) + '" stroke="rgba(255,255,255,.28)" stroke-width="1" stroke-dasharray="3 3"/>'
                     + '<text x="' + (PL - 3) + '" y="' + (Y(last.hourly_max) + 2.5).toFixed(1) + '" fill="#9fd9c4" font-size="8" '
-                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="end">' + T1(last.hourly_max) + '°</text>';
+                    + 'font-family="system-ui,sans-serif" font-weight="700" text-anchor="end">' + D1(last.hourly_max) + '°</text>';
                 }
                 svg += '<path d="' + path + '" fill="none" stroke="#63dbb6" stroke-width="1.4" stroke-linejoin="round"/>';
                 (last.hourly || []).forEach(function(p){
@@ -55614,7 +55630,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          what the market settles on, but "how warm is it out" is the question a
          person actually asks first. A fresh climate day has no peak yet. */
       var nowBit = (T.now_temp == null) ? ''
-        : ' \u00B7 <span style="color:#2fbfa8;">now ' + T1(T.now_temp) + '\u00B0'
+        : ' \u00B7 <span style="color:#2fbfa8;">now ' + D1(T.now_temp) + '\u00B0'
           /* "now 76 at 10:51" was read as the page's update time twice in one
              morning, by the person who built it. It is the STATION's clock:
              Central Park reports hourly at :51, so this number is up to an
@@ -55622,7 +55638,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              fresh. Naming it as a measurement is the whole fix. */
           + (T.now_at ? ' \u2014 last measured ' + t12(T.now_at) : '') + '</span>';
       var obs = ((T.obs_so_far == null) ? ''
-        : ' \u00B7 warmest so far ' + T1(T.obs_so_far) + '\u00B0 through '
+        : ' \u00B7 warmest so far ' + D1(T.obs_so_far) + '\u00B0 through '
           + t12((T.obs_through || 0) + ':00')) + nowBit;
 
       /* ---- the tally: one square per settled day, oldest first ---- */
@@ -55815,7 +55831,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (T.final) lset.push(((T.final_hour || 18) % 12 || 12) + ' PM ' + deg(T.final.pick)
         + ' at ' + pct(T.final.p));
       if (T.obs_so_far != null && T.p != null && T.p >= 0.95)
-        lset.push('reached ' + T1(T.obs_so_far) + '\u00B0 \u2014 <b style="color:'
+        lset.push('reached ' + D1(T.obs_so_far) + '\u00B0 \u2014 <b style="color:'
           + ((T.locked && T.locked.pick === T.pick) ? YESC + ';">noon was right' : NOC + ';">noon missed')
           + '</b>');
       /* ---- the record as TILES, not a sentence ---------------------------
@@ -56040,14 +56056,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
            time of the peak; overnight highs made that plainly wrong. */
         var peakTime = (T.obs_peak_hour != null) ? t12(T.obs_peak_hour + ':00')
                      + (T.obs_peak_read != null && Math.abs(T.obs_peak_read - T.obs_so_far) > 0.2
-                          ? ' · ' + T1(T.obs_peak_read) + '° READ' : '')
+                          ? ' · ' + D1(T.obs_peak_read) + '° READ' : '')
                      : (T.obs_through != null) ? 'THROUGH ' + t12(T.obs_through + ':00') : '';
         var nowTime = T.now_at ? t12(T.now_at) : '';
         var fcTime = (T.peak_hour != null && !dayDone) ? 'PEAK ~' + ((T.peak_hour % 12) || 12) + (T.peak_hour < 12 ? ' AM' : ' PM') : '';
         var omark = '', nmark = '';
         if (xo != null) omark = tick(xo, '#2fbfa8', 2, 21);
         if (xn != null){
-          nmark = '<div title="' + T1(T.now_temp) + '° right now" style="position:absolute;'
+          nmark = '<div title="' + D1(T.now_temp) + '° right now" style="position:absolute;'
             + 'left:' + xn.toFixed(1) + '%;top:8px;width:9px;height:9px;margin-left:-4.5px;'
             + 'border-radius:50%;background:#0d1117;border:2px solid #2fbfa8;"></div>';
         }
@@ -56056,14 +56072,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              the peak on the line above by its tick -- one run-on label read
              as a single fact */
           if (Math.abs(T.now_temp - T.obs_so_far) < 0.25)
-            nmark += label((xn + xo) / 2, '#2fbfa8', [T1(T.now_temp) + '° NOW &amp; PEAK', nowTime]);
+            nmark += label((xn + xo) / 2, '#2fbfa8', [D1(T.now_temp) + '° NOW &amp; PEAK', nowTime]);
           else {
-            nmark += label(xn, '#2fbfa8', [T1(T.now_temp) + '° NOW', nowTime]);
-            omark += label(xo, '#2fbfa8', [T1(T.obs_so_far) + '° PEAK', peakTime], -2 * LBL_H);
+            nmark += label(xn, '#2fbfa8', [D1(T.now_temp) + '° NOW', nowTime]);
+            omark += label(xo, '#2fbfa8', [D1(T.obs_so_far) + '° PEAK', peakTime], -2 * LBL_H);
           }
         } else {
-          if (xn != null) nmark += label(xn, '#2fbfa8', [T1(T.now_temp) + '° NOW', nowTime]);
-          if (xo != null) omark += label(xo, '#2fbfa8', [T1(T.obs_so_far) + '° PEAK', peakTime]);
+          if (xn != null) nmark += label(xn, '#2fbfa8', [D1(T.now_temp) + '° NOW', nowTime]);
+          if (xo != null) omark += label(xo, '#2fbfa8', [D1(T.obs_so_far) + '° PEAK', peakTime]);
         }
         /* the forecast, labelled with the hour the runs put its peak -- above
            the axis unless the NOW/PEAK labels are already there */
@@ -56089,7 +56105,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           var sw = T.six_window;
           var swTxt = (sw && sw.length === 2)
             ? t12(sw[0] + ':00').replace(':00', '') + '–' + t12(sw[1] + ':00').replace(':00', '') : '';
-          under.push([[T1(T.six_max) + '° 6-HR MAX', swTxt], T.six_max, '#2fbfa8']);
+          under.push([[D1(T.six_max) + '° 6-HR MAX', swTxt], T.six_max, '#2fbfa8']);
         }
         if (T.twc_max != null && T.obs_so_far != null && T.twc_max > T.obs_so_far + 0.3 && !dayDone)
           under.push([[D1(T.twc_max) + '° TWC', 'RUNNING MAX'], T.twc_max, '#f2833f']);

@@ -608,7 +608,13 @@ def metar_today(cfg, day):
         loc = utc.astimezone(ZoneInfo(cfg.get('tz', 'America/New_York')))
         if loc.date() != day:
             continue
-        f = round(float(t) * 9.0 / 5.0 + 32.0, 1)
+        # TWO DECIMALS, AND THEY ARE EXACT. The ASOS reports Celsius to a
+        # tenth, and a tenth of a C is 0.18 F -- so every reading lands on a
+        # hundredth of a degree F and never on a whole one. Rounding to a
+        # tenth here printed 2026-09-08's peak 26.1 C as 79.0 when it was
+        # 78.98, and the panel then showed it as "79" -- a settled-looking
+        # number that hid how far the 80 bracket really was (26.4 C).
+        f = round(float(t) * 9.0 / 5.0 + 32.0, 2)
         out[loc.hour] = max(out.get(loc.hour, -99.0), f)
         # the day's latest report also gives the regime the trail logs (2026-09-07):
         # wind, present weather, sky cover -- the rain-day blind spot's raw material
@@ -1045,7 +1051,7 @@ def metar_six_max(cfg, day):
         if not (st.astimezone(z) >= lo and end.astimezone(z) <= hi):
             continue
         c = (int(g.group(2)) / 10.0) * (-1 if g.group(1) == '1' else 1)
-        f = round(c * 9.0 / 5.0 + 32.0, 1)
+        f = round(c * 9.0 / 5.0 + 32.0, 2)   # exact; see the hourly reader
         if best is None or f > best:
             best = f
             # the window that carried it, in local hours, so the panel can say
@@ -3971,7 +3977,7 @@ def _run_market(cfg, ticker_cache=TICKER_CACHE):
             'obs_peak_hour': obs_peak_hour, 'obs_peak_read': obs_peak_read,
             # today's hourly readings so far, [hour, degF], for the panel to draw
             # beside the replayed day's curve
-            'obs_hours': [[h, round(v, 1)] for h, v in sorted(_day_obs.items())],
+            'obs_hours': [[h, round(v, 2)] for h, v in sorted(_day_obs.items())],
             # WHAT THE EXCHANGE IS SETTLING ON, next to what the station read.
             # The panel shows both, because the gap is the thing worth seeing
             # and it is not small: Chicago ran +4.0 the day this was wired in,
@@ -4005,7 +4011,7 @@ def _run_market(cfg, ticker_cache=TICKER_CACHE):
             # on a day that has already happened, however the arithmetic looks.
             'day_over': bool(binding_now),
             # the temperature right now, as opposed to the day's peak so far
-            'now_temp': round(ob_last[0][1], 1) if ob_last else None,
+            'now_temp': round(ob_last[0][1], 2) if ob_last else None,
             'now_at': ob_last[0][0][11:16] if ob_last else None,
             'fc_peak': round(fpeak, 2) if fpeak is not None else None,
             'peak_hour': peak_hour,
