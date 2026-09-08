@@ -1140,6 +1140,48 @@ def _cli_parse(text):
             'final': not re.search(r'VALID.{0,12}AS OF', text)}
 
 
+def cli_fast(cfg, limit=3):
+    """The newest CLI products straight off the NOAAPort ingest, parsed.
+
+    THE POINT IS LATENCY, NOT CONTENT. forecast.weather.gov is a CMS in front
+    of the product; Iowa State takes the same bytes off LDM within seconds of
+    transmission. On 2026-09-08 New York's 4 PM preliminary carried WMO stamp
+    082034 and the market had already repriced at 20:17Z -- so the CMS was
+    never the leak, but it is still the slowest link we control, and on a day
+    the day-decided flag flips a few minutes early it is a few minutes of
+    exposure removed.
+
+    One URL shape covers every market: the PIL is cfg['cli'] (CLINYC, CLIMDW,
+    CLIMIA, CLIAUS, CLIDEN, CLILAX, CLIPHL -- all verified present). Products
+    come back newest-first, concatenated, each starting on its WMO header line.
+    Returns [] on any failure: this is a fast path, never a precondition.
+    """
+    pil = cfg.get('cli')
+    if not pil:
+        return []
+    try:
+        raw = get('https://mesonet.agron.iastate.edu/cgi-bin/afos/retrieve.py'
+                  '?pil=%s&limit=%d&fmt=text' % (pil, limit),
+                  timeout=30).decode('utf-8', 'replace')
+    except Exception as e:
+        print('cli fast: %s unavailable (%s)' % (pil, e))
+        return []
+    out = []
+    # split on the WMO header so each product is parsed on its own, exactly as
+    # the versioned CMS pages are
+    parts = re.split(r'(?m)^(?=CDUS\d+ K[A-Z]{3} \d{6}\s*$)', raw)
+    for part in parts:
+        if not part.strip():
+            continue
+        try:
+            q = _cli_parse(part)
+        except Exception:
+            continue
+        if q and q.get('max') is not None:
+            out.append(q)
+    return out
+
+
 def cli_read(cfg, deep=False):
     """{'YYYY-MM-DD': {'max': degF, 'final': bool}} for this market's station.
 
@@ -1162,21 +1204,30 @@ def cli_read(cfg, deep=False):
     # or three newest products are all that can have appeared since last run
     n = 40 if (deep or len(mine) < 10) else 4
     fresh = 0
-    for v in range(1, n + 1):
-        try:
-            h = get('https://forecast.weather.gov/product.php?site=%s&issuedby=%s'
-                    '&product=CLI&format=CI&version=%d&glossary=0'
-                    % (wfo, cfg['cli'][3:], v), timeout=45).decode('utf-8', 'replace')
-        except Exception:
-            break
-        m = re.search(r'<pre[^>]*>(.*?)</pre>', h, re.S)
-        if not m:
-            break
-        p = _cli_parse(re.sub(r'<[^>]*>', '', m.group(1)))
-        if not p or p['max'] is None:
-            continue
-        old = mine.get(p['day'])
-        # KEEP THE *FIRST* NON-PRELIMINARY REPORT, NOT THE NEWEST ONE.
+    # THE FAST CHANNEL FIRST. Same products, same merge rule below -- it just
+    # arrives off LDM instead of through a CMS. Never a precondition: an empty
+    # list simply falls through to the versioned pages.
+    _pending = list(cli_fast(cfg))
+    for v in range(0, n + 1):
+        if v == 0:
+            if not _pending:
+                continue
+            _batch = _pending
+        else:
+            try:
+                h = get('https://forecast.weather.gov/product.php?site=%s&issuedby=%s'
+                        '&product=CLI&format=CI&version=%d&glossary=0'
+                        % (wfo, cfg['cli'][3:], v), timeout=45).decode('utf-8', 'replace')
+            except Exception:
+                break
+            m = re.search(r'<pre[^>]*>(.*?)</pre>', h, re.S)
+            if not m:
+                break
+            q = _cli_parse(re.sub(r'<[^>]*>', '', m.group(1)))
+            _batch = [q] if (q and q['max'] is not None) else []
+        for p in _batch:
+            old = mine.get(p['day'])
+            # KEEP THE *FIRST* NON-PRELIMINARY REPORT, NOT THE NEWEST ONE.
         #
         # Kalshi settles on "the first official non-preliminary report" and
         # explicitly ignores later revisions. The NWS does revise, sometimes
@@ -1198,16 +1249,16 @@ def cli_read(cfg, deep=False):
         # Versions come back newest-first, so an older product is seen later;
         # the issuance stamp is compared rather than trusting iteration order,
         # because an incremental run only fetches the newest few.
-        better = old is None
-        if not better and p['final'] and not old.get('final'):
-            better = True                       # any final beats a preliminary
-        elif not better and p['final'] and old.get('final'):
-            oi, ni = old.get('issued'), p.get('issued')
-            better = bool(oi and ni and ni < oi)  # an EARLIER final wins
-        if better:
-            mine[p['day']] = {'max': p['max'], 'final': p['final'],
-                              'issued': p.get('issued'), 'at': p.get('at')}
-            fresh += 1
+            better = old is None
+            if not better and p['final'] and not old.get('final'):
+                better = True                   # any final beats a preliminary
+            elif not better and p['final'] and old.get('final'):
+                oi, ni = old.get('issued'), p.get('issued')
+                better = bool(oi and ni and ni < oi)  # an EARLIER final wins
+            if better:
+                mine[p['day']] = {'max': p['max'], 'final': p['final'],
+                                  'issued': p.get('issued'), 'at': p.get('at')}
+                fresh += 1
     if fresh:
         try:
             with CLI_LOCK:
