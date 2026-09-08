@@ -1004,6 +1004,15 @@ var _junkTick = 0;
    nearly where it already was. The out-of-plane component is dropped, exactly
    as it is for every other object on this top-down stage. */
 var ROMAN_C = '#ffcf9a';
+/* WHEN IT GETS THERE. Horizons publishes no arrival: its delivered trajectory
+   simply stops on 2 Oct. NASA's launch release states the journey plainly --
+   "a three-month, million-mile journey to its final orbit" -- so the arrival
+   here is launch + three months, and the readout says APPROX because that is
+   a stated duration, not a published date. It matters that this is NOT the end
+   of the ephemeris: the telescope is near L2's DISTANCE within a month, but
+   the capture into the halo orbit is what takes three, and parking it on
+   station in early October would have told the scrub two months of fiction. */
+var ROMAN_ARRIVE = Date.UTC(2026, 10, 30, 11, 26);
 var gRomanEl = document.getElementById('gRoman');
 var romanPath = mk('path', {fill:'none', stroke:ROMAN_C, 'stroke-width':0.9,
                             'stroke-opacity':.5, 'stroke-dasharray':'3 3',
@@ -1019,6 +1028,8 @@ mk('rect', {x:-0.9, y:-0.7, width:1.8, height:1.4, rx:0.3, fill:ROMAN_C}, romanG
 var romanImg = mk('image', {'data-src':'sprites/roman.png', x:-6, y:-4.05,
                             width:12, height:8.1, preserveAspectRatio:'xMidYMid meet',
                             'pointer-events':'none'}, document.getElementById('gSprites'));
+var romanCd = mk('text', {x:0, y:-2.6, 'text-anchor':'end', display:'none',
+  style:'font-size:0.4688em;font-weight:800;letter-spacing:.14em;fill:' + ROMAN_C + ';opacity:.85;pointer-events:none;'}, gRomanEl);
 var romanLab = mk('text', {x:0, y:0, 'text-anchor':'middle',
   style:'font-size:0.5625em;font-weight:800;letter-spacing:.12em;fill:' + ROMAN_C + ';pointer-events:none;'}, gRomanEl);
 romanLab.textContent = 'ROMAN';
@@ -1044,7 +1055,14 @@ function renderRoman(ms, s){
   gRomanEl.setAttribute('display', '');
   var at = romanAt(ms), p, onStation = false;
   if (at) p = dirXY(at.lon, rKm(at.km));
-  else { p = dirXY(s.lon + Math.PI, R_L); onStation = true; }
+  else if (ms >= ROMAN_ARRIVE){ p = dirXY(s.lon + Math.PI, R_L); onStation = true; }
+  else {
+    /* between the end of the delivered trajectory and arrival it holds at the
+       last real fix -- which is already out at 1.42 million km, so it reads as
+       what it is: nearly there, still closing */
+    var lastP = R.p[R.n - 1];
+    p = dirXY(lastP[0] * Math.PI / 180, rKm(lastP[1]));
+  }
   /* the flown route, resampled every few hours so the path stays cheap */
   var d = '', lim = Math.min(R.n - 1, Math.max(1, (ms - R.t0) / R.step));
   for (var i = 0; i <= lim; i += 3){
@@ -1063,6 +1081,30 @@ function renderRoman(ms, s){
   var lr = Math.hypot(p[0], p[1]) || 1, off = spritesOn ? 13 : 9;
   romanLab.setAttribute('x', (p[0] + p[0] / lr * off).toFixed(1));
   romanLab.setAttribute('y', (p[1] + p[1] / lr * off + 3).toFixed(1));
+
+  /* THE COUNTDOWN, ON THE LINE ITSELF (user 2026-09-07). Set a little way back
+     along the flown route and turned to lie along it, so it reads as a caption
+     on the trajectory rather than another floating label. Flipped when the
+     tangent points left, or the text hangs upside down on the return half of
+     the arc -- the same trap the curved ring titles have. */
+  var days = Math.ceil((ROMAN_ARRIVE - ms) / 86400000);
+  if (onStation || days <= 0){
+    romanCd.setAttribute('display', 'none');
+  } else {
+    var iC = Math.max(0, Math.min(R.n - 1, Math.round(Math.min(R.n - 1, (ms - R.t0) / R.step))));
+    var iB = Math.max(0, iC - Math.max(6, Math.round(iC * 0.10)));
+    var A = dirXY(R.p[iB][0] * Math.PI / 180, rKm(R.p[iB][1]));
+    var Bp = dirXY(R.p[iC][0] * Math.PI / 180, rKm(R.p[iC][1]));
+    var ang = Math.atan2(Bp[1] - A[1], Bp[0] - A[0]) * 180 / Math.PI, flip = false;
+    if (ang > 90 || ang < -90){ ang += 180; flip = true; }
+    /* the caption TRAILS the craft: anchored at the far end so it runs back
+       down the route it has flown instead of printing over the telescope */
+    romanCd.setAttribute('text-anchor', flip ? 'start' : 'end');
+    romanCd.textContent = 'L2 IN ' + days + (days === 1 ? ' DAY' : ' DAYS') + ' · APPROX';
+    romanCd.setAttribute('display', '');
+    romanCd.setAttribute('transform', 'translate(' + A[0].toFixed(1) + ',' + A[1].toFixed(1) +
+                         ') rotate(' + ang.toFixed(1) + ')');
+  }
 }
 function renderJunk(ms){
   /* hardware silhouettes cost ~2x the old streaks — while PLAYING, rebuild
@@ -1258,7 +1300,8 @@ function openAboutPopup(){
     _row('JUNK LEDGER', 'CELESTRAK SATCAT') +
     _row('RADIATION BELTS', 'VAN ALLEN ZONES · SCHEMATIC SPANS') +
     _row('LUNAR ORBITERS', 'LRO · DANURI · CHANDRAYAAN‑2 · REAL CRAFT, SCHEMATIC RINGS') +
-    _row('ROMAN CRUISE', 'JPL HORIZONS · REAL TRAJECTORY, LAUNCH TO 2 OCT 2026 · ON STATION AT L2 AFTER') +
+    _row('ROMAN CRUISE', 'JPL HORIZONS · REAL TRAJECTORY, LAUNCH TO 2 OCT 2026 · HOLDS AT THE LAST FIX AFTER') +
+    _row('ROMAN ARRIVAL', 'NASA STATES A THREE-MONTH JOURNEY · NO EXACT DATE PUBLISHED') +
     _row('SPACECRAFT RENDERS', 'NASA ILLUSTRATIONS · PUBLIC DOMAIN') +
     _row('ECLIPSES', 'PHASE + NODE GEOMETRY · CLASSICAL LIMITS, APPROXIMATE TIMES') +
     _row('GRAVEYARD RING', '~190 MI ABOVE GEO · DRAWN A STEP OUT TO BE SEEN') +
