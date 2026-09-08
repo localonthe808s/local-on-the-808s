@@ -58510,7 +58510,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + '<span style="flex:1;min-width:0;font:700 8.5px system-ui,sans-serif;letter-spacing:.06em;color:rgba(43,34,244,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
         + (cwFerryOn ? '' : teaser) + '</span>'
         + '<span style="flex:none;font:800 8px system-ui,sans-serif;letter-spacing:.09em;color:rgba(43,34,244,.6);white-space:nowrap;">'
-        + (cwFerryOn ? 'SUBWAY TIMES ▴' : 'OPEN ▾') + '</span></span>';
+        /* the control names where it takes you, both ways (user 2026-09-07) */
+        + (cwFerryOn ? 'SUBWAY TIMES ▴' : 'NYC FERRY ARRIVALS ▾') + '</span></span>';
     }
     /* the tap: flip the flag, redraw the board the ferry has taken over, and
        pull both halves in if this is the first open */
