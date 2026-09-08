@@ -425,6 +425,7 @@
     <g id="gStars"></g>
     <g id="gSun"></g>
     <g id="gRings"></g>
+    <g id="gRoman"></g>
     <g id="gJunk"></g>
     <g id="gSats"></g>
     <g id="gSprites" display="none"></g>
@@ -468,6 +469,7 @@
 <script src="_planetcore.js"></script>
 <script src="_starfield.js"></script>
 <script src="_tle.js"></script>
+<script src="_roman.js"></script>
 <script>
 var LOCATION = { lat: 40.744, lon: -73.9213, tz: 'America/New_York', name: 'NYC' };
 var DEG = Math.PI/180;
@@ -985,6 +987,75 @@ function junkXY(s, ms){
   return [R*Math.cos(ang), -R*Math.sin(ang)];
 }
 var _junkTick = 0;
+/* ── NANCY GRACE ROMAN, ON ITS WAY OUT (user 2026-09-07: "roman is currently
+   flying to L2, can we make a visual of that") ──────────────────────────────
+   This is the one thing on the stage that is neither a Kepler propagation nor
+   a dot on a shell: a real delivered trajectory. JPL Horizons carries the
+   telescope as target -211 (launched 2026-Aug-30 11:26:04 UTC on a Falcon
+   Heavy from LC-39A), and `_roman.js` is its geocentric ecliptic vectors,
+   hourly, from launch to the end of the delivered solution on 2026-Oct-02 --
+   which is the SAME frame the rest of this map draws in, so the cruise needs
+   no reprojection: ecliptic longitude and range straight into dirXY/rKm.
+
+   The route is drawn only as far as the clock has flown it, so scrubbing the
+   date actually flies the mission. Before launch nothing is drawn, because
+   nothing was there. Past the end of the solution it parks at L2 with JWST,
+   which is where it goes and, at 1.42 million km on the last sample, very
+   nearly where it already was. The out-of-plane component is dropped, exactly
+   as it is for every other object on this top-down stage. */
+var ROMAN_C = '#ffcf9a';
+var gRomanEl = document.getElementById('gRoman');
+var romanPath = mk('path', {fill:'none', stroke:ROMAN_C, 'stroke-width':0.9,
+                            'stroke-opacity':.5, 'stroke-dasharray':'3 3',
+                            'stroke-linecap':'round', 'pointer-events':'none'}, gRomanEl);
+var romanG = mk('g', {'pointer-events':'none'}, gRomanEl);
+mk('rect', {x:-2.6, y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
+mk('rect', {x:1.0,  y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
+mk('rect', {x:-0.9, y:-0.7, width:1.8, height:1.4, rx:0.3, fill:ROMAN_C}, romanG);
+var romanLab = mk('text', {x:0, y:0, 'text-anchor':'middle',
+  style:'font-size:0.5625em;font-weight:800;letter-spacing:.12em;fill:' + ROMAN_C + ';pointer-events:none;'}, gRomanEl);
+romanLab.textContent = 'ROMAN';
+
+/* position at any instant: linear between the hourly samples, on the SHORT
+   way round in longitude (the first hours swing it most of the way round the
+   Earth, and interpolating the long way would fling the craft backwards) */
+function romanAt(ms){
+  var R = window.ROMAN;
+  if (!R) return null;
+  var f = (ms - R.t0) / R.step;
+  if (f <= 0) return {lon: R.p[0][0] * Math.PI / 180, km: R.p[0][1], cruising: true};
+  if (f >= R.n - 1) return null;                       /* past the solution: on station */
+  var i = Math.floor(f), t = f - i;
+  var a = R.p[i], b = R.p[i + 1];
+  var dl = ((b[0] - a[0] + 540) % 360) - 180;
+  return {lon: (a[0] + dl * t) * Math.PI / 180, km: a[1] + (b[1] - a[1]) * t, cruising: true};
+}
+function renderRoman(ms, s){
+  var R = window.ROMAN;
+  if (!R){ gRomanEl.setAttribute('display', 'none'); return; }
+  if (ms < R.launch){ gRomanEl.setAttribute('display', 'none'); return; }
+  gRomanEl.setAttribute('display', '');
+  var at = romanAt(ms), p, onStation = false;
+  if (at) p = dirXY(at.lon, rKm(at.km));
+  else { p = dirXY(s.lon + Math.PI, R_L); onStation = true; }
+  /* the flown route, resampled every few hours so the path stays cheap */
+  var d = '', lim = Math.min(R.n - 1, Math.max(1, (ms - R.t0) / R.step));
+  for (var i = 0; i <= lim; i += 3){
+    var q = dirXY(R.p[i][0] * Math.PI / 180, rKm(R.p[i][1]));
+    d += (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1);
+  }
+  /* THE ROUTE STOPS WHERE THE DATA STOPS. L2 travels with the sun, about a
+     degree a day, so joining the last delivered sample to today's L2 drew a
+     long straight chord across the sky -- a flight path the telescope never
+     took. On station the craft sits at L2 and the drawn route simply ends at
+     the last real fix. */
+  if (!onStation) d += 'L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+  romanPath.setAttribute('d', d);
+  romanG.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')');
+  var lr = Math.hypot(p[0], p[1]) || 1;
+  romanLab.setAttribute('x', (p[0] + p[0] / lr * 9).toFixed(1));
+  romanLab.setAttribute('y', (p[1] + p[1] / lr * 9 + 3).toFixed(1));
+}
 function renderJunk(ms){
   /* hardware silhouettes cost ~2x the old streaks — while PLAYING, rebuild
      the cloud every other frame (a 2-frame hold is invisible at time-lapse
@@ -1179,6 +1250,7 @@ function openAboutPopup(){
     _row('JUNK LEDGER', 'CELESTRAK SATCAT') +
     _row('RADIATION BELTS', 'VAN ALLEN ZONES · SCHEMATIC SPANS') +
     _row('LUNAR ORBITERS', 'LRO · DANURI · CHANDRAYAAN‑2 · REAL CRAFT, SCHEMATIC RINGS') +
+    _row('ROMAN CRUISE', 'JPL HORIZONS · REAL TRAJECTORY, LAUNCH TO 2 OCT 2026 · ON STATION AT L2 AFTER') +
     _row('ECLIPSES', 'PHASE + NODE GEOMETRY · CLASSICAL LIMITS, APPROXIMATE TIMES') +
     _row('GRAVEYARD RING', '~190 MI ABOVE GEO · DRAWN A STEP OUT TO BE SEEN') +
     _row('CARD RAILS', 'ALTITUDE ON THE MAP&#8217;S OWN LOG SCALE · EARTH SURFACE TO PAST GEO') +
@@ -1949,6 +2021,8 @@ function render(){
     mo.tp.setAttribute('startOffset', (frac * 100).toFixed(1) + '%');
     mo.lab.setAttribute('display', spritesOn ? '' : 'none');
   }
+
+  renderRoman(curMs, s);
 
   LPTS.forEach(function(L){
     var a = L.toSun === 1 ? s.lon : s.lon + Math.PI;
