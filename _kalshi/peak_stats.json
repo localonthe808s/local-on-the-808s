@@ -1,159 +1,159 @@
 {
- "built": "2026-09-07T14:24Z",
+ "built": "2026-09-08T13:02Z",
  "days": 60,
  "cool_deg": 1.0,
  "cities": {
   "ny_high": {
-   "n_days": 22,
+   "n_days": 25,
    "by_hour": {
     "10": {
      "p_done": 0.0,
      "p_done_cooling": 0.0,
-     "n_cooling": 5
+     "n_cooling": 8
     },
     "11": {
      "p_done": 0.0,
      "p_done_cooling": 0.0,
-     "n_cooling": 12
+     "n_cooling": 15
     },
     "12": {
-     "p_done": 0.136,
+     "p_done": 0.08,
+     "p_done_cooling": 0.111,
+     "n_cooling": 18
+    },
+    "13": {
+     "p_done": 0.16,
+     "p_done_cooling": 0.2,
+     "n_cooling": 20
+    },
+    "14": {
+     "p_done": 0.48,
+     "p_done_cooling": 0.476,
+     "n_cooling": 21
+    },
+    "15": {
+     "p_done": 0.64,
+     "p_done_cooling": 0.667,
+     "n_cooling": 24
+    },
+    "16": {
+     "p_done": 0.8,
+     "p_done_cooling": 0.87,
+     "n_cooling": 23
+    },
+    "17": {
+     "p_done": 0.92,
+     "p_done_cooling": 1.0,
+     "n_cooling": 23
+    },
+    "18": {
+     "p_done": 1.0,
+     "p_done_cooling": 1.0,
+     "n_cooling": 24
+    },
+    "19": {
+     "p_done": 1.0,
+     "p_done_cooling": 1.0,
+     "n_cooling": 25
+    },
+    "20": {
+     "p_done": 1.0,
+     "p_done_cooling": 1.0,
+     "n_cooling": 25
+    },
+    "21": {
+     "p_done": 1.0,
+     "p_done_cooling": 1.0,
+     "n_cooling": 25
+    }
+   },
+   "gap5_mean": 0.32,
+   "gap5_sd": 0.47
+  },
+  "las_high": {
+   "n_days": 23,
+   "by_hour": {
+    "10": {
+     "p_done": 0.043,
+     "p_done_cooling": 0.1,
+     "n_cooling": 10
+    },
+    "11": {
+     "p_done": 0.043,
+     "p_done_cooling": 0.1,
+     "n_cooling": 10
+    },
+    "12": {
+     "p_done": 0.087,
+     "p_done_cooling": 0.125,
+     "n_cooling": 16
+    },
+    "13": {
+     "p_done": 0.13,
      "p_done_cooling": 0.188,
      "n_cooling": 16
     },
-    "13": {
-     "p_done": 0.182,
-     "p_done_cooling": 0.235,
-     "n_cooling": 17
-    },
     "14": {
-     "p_done": 0.545,
-     "p_done_cooling": 0.556,
-     "n_cooling": 18
+     "p_done": 0.261,
+     "p_done_cooling": 0.261,
+     "n_cooling": 23
     },
     "15": {
-     "p_done": 0.682,
-     "p_done_cooling": 0.714,
-     "n_cooling": 21
+     "p_done": 0.652,
+     "p_done_cooling": 0.75,
+     "n_cooling": 20
     },
     "16": {
-     "p_done": 0.864,
-     "p_done_cooling": 0.905,
-     "n_cooling": 21
-    },
-    "17": {
-     "p_done": 0.955,
-     "p_done_cooling": 1.0,
-     "n_cooling": 21
-    },
-    "18": {
-     "p_done": 1.0,
-     "p_done_cooling": 1.0,
-     "n_cooling": 21
-    },
-    "19": {
-     "p_done": 1.0,
-     "p_done_cooling": 1.0,
-     "n_cooling": 22
-    },
-    "20": {
-     "p_done": 1.0,
-     "p_done_cooling": 1.0,
-     "n_cooling": 22
-    },
-    "21": {
-     "p_done": 1.0,
-     "p_done_cooling": 1.0,
-     "n_cooling": 22
-    }
-   },
-   "gap5_mean": 0.36,
-   "gap5_sd": 0.48
-  },
-  "las_high": {
-   "n_days": 21,
-   "by_hour": {
-    "10": {
-     "p_done": 0.0,
-     "p_done_cooling": 0.0,
-     "n_cooling": 7
-    },
-    "11": {
-     "p_done": 0.0,
-     "p_done_cooling": 0.0,
-     "n_cooling": 10
-    },
-    "12": {
-     "p_done": 0.048,
-     "p_done_cooling": 0.062,
-     "n_cooling": 16
-    },
-    "13": {
-     "p_done": 0.095,
-     "p_done_cooling": 0.143,
-     "n_cooling": 14
-    },
-    "14": {
-     "p_done": 0.238,
-     "p_done_cooling": 0.238,
-     "n_cooling": 21
-    },
-    "15": {
-     "p_done": 0.571,
-     "p_done_cooling": 0.706,
-     "n_cooling": 17
-    },
-    "16": {
-     "p_done": 0.857,
-     "p_done_cooling": 0.833,
-     "n_cooling": 18
+     "p_done": 0.87,
+     "p_done_cooling": 0.85,
+     "n_cooling": 20
     },
     "17": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 20
+     "n_cooling": 22
     },
     "18": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 20
+     "n_cooling": 22
     },
     "19": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 21
+     "n_cooling": 23
     },
     "20": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 21
+     "n_cooling": 23
     },
     "21": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 21
+     "n_cooling": 23
     }
    },
-   "gap5_mean": 0.38,
+   "gap5_mean": 0.39,
    "gap5_sd": 0.49
   },
   "aus_high": {
-   "n_days": 11,
+   "n_days": 12,
    "by_hour": {
     "10": {
      "p_done": 0.0,
      "p_done_cooling": 0.0,
-     "n_cooling": 3
+     "n_cooling": 4
     },
     "11": {
      "p_done": 0.0,
      "p_done_cooling": 0.0,
-     "n_cooling": 5
+     "n_cooling": 4
     },
     "12": {
      "p_done": 0.0,
      "p_done_cooling": 0.0,
-     "n_cooling": 7
+     "n_cooling": 8
     },
     "13": {
      "p_done": 0.0,
@@ -161,48 +161,48 @@
      "n_cooling": 10
     },
     "14": {
-     "p_done": 0.091,
+     "p_done": 0.083,
      "p_done_cooling": 0.0,
-     "n_cooling": 7
+     "n_cooling": 8
     },
     "15": {
-     "p_done": 0.182,
-     "p_done_cooling": 0.222,
-     "n_cooling": 9
+     "p_done": 0.167,
+     "p_done_cooling": 0.2,
+     "n_cooling": 10
     },
     "16": {
-     "p_done": 0.545,
-     "p_done_cooling": 0.667,
-     "n_cooling": 9
+     "p_done": 0.5,
+     "p_done_cooling": 0.6,
+     "n_cooling": 10
     },
     "17": {
-     "p_done": 0.909,
-     "p_done_cooling": 0.909,
-     "n_cooling": 11
+     "p_done": 0.917,
+     "p_done_cooling": 0.917,
+     "n_cooling": 12
     },
     "18": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 11
+     "n_cooling": 12
     },
     "19": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 10
+     "n_cooling": 11
     },
     "20": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 11
+     "n_cooling": 12
     },
     "21": {
      "p_done": 1.0,
      "p_done_cooling": 1.0,
-     "n_cooling": 9
+     "n_cooling": 10
     }
    },
-   "gap5_mean": 0.09,
-   "gap5_sd": 0.29
+   "gap5_mean": 0.08,
+   "gap5_sd": 0.28
   }
  }
 }

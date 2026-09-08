@@ -1,0 +1,159 @@
+{
+ "built": "2026-09-08T13:02Z",
+ "source": "https://cdn.bluishvoid.com/kalshi/trail/",
+ "cities": {
+  "ny_high": {
+   "summary": {
+    "n_days": 1,
+    "bakes_per_day": 129,
+    "stable_to_11": [
+     0,
+     0
+    ],
+    "stable_to_lock": [
+     0,
+     1
+    ],
+    "depth_contracts_median": null,
+    "lead_twc": {
+     "n": 1,
+     "median_min": -80,
+     "led_n": 0
+    },
+    "lead_six": {
+     "n": 1,
+     "median_min": 0,
+     "led_n": 0
+    }
+   },
+   "days": [
+    {
+     "date": "2026-09-07",
+     "bakes": 129,
+     "first": [
+      "against",
+      "79\u00b0 to 80\u00b0"
+     ],
+     "first_at": "13:25",
+     "at11": null,
+     "lock": [
+      "for",
+      "77\u00b0 to 78\u00b0"
+     ],
+     "stable_11": null,
+     "stable_lock": false,
+     "depth_med": null,
+     "depth_first": null,
+     "lead_min": {
+      "twc": -80,
+      "six": 0
+     },
+     "hit": false
+    }
+   ]
+  },
+  "las_high": {
+   "summary": {
+    "n_days": 1,
+    "bakes_per_day": 140,
+    "stable_to_11": [
+     1,
+     1
+    ],
+    "stable_to_lock": [
+     0,
+     1
+    ],
+    "depth_contracts_median": 19.0,
+    "lead_own5": {
+     "n": 1,
+     "median_min": 0,
+     "led_n": 0
+    },
+    "lead_six": {
+     "n": 1,
+     "median_min": -105,
+     "led_n": 0
+    }
+   },
+   "days": [
+    {
+     "date": "2026-09-07",
+     "bakes": 140,
+     "first": [
+      "against",
+      "95\u00b0 to 96\u00b0"
+     ],
+     "first_at": "10:25",
+     "at11": [
+      "against",
+      "95\u00b0 to 96\u00b0"
+     ],
+     "lock": [
+      "for",
+      "93\u00b0 to 94\u00b0"
+     ],
+     "stable_11": true,
+     "stable_lock": false,
+     "depth_med": 19.0,
+     "depth_first": 28.59,
+     "lead_min": {
+      "own5": 0,
+      "six": -105
+     },
+     "hit": false
+    }
+   ]
+  },
+  "aus_high": {
+   "summary": {
+    "n_days": 1,
+    "bakes_per_day": 141,
+    "stable_to_11": [
+     0,
+     0
+    ],
+    "stable_to_lock": [
+     0,
+     1
+    ],
+    "depth_contracts_median": 29.5,
+    "lead_own5": {
+     "n": 1,
+     "median_min": 0,
+     "led_n": 0
+    },
+    "lead_six": {
+     "n": 1,
+     "median_min": -120,
+     "led_n": 0
+    }
+   },
+   "days": [
+    {
+     "date": "2026-09-07",
+     "bakes": 141,
+     "first": [
+      "for",
+      "97\u00b0 to 98\u00b0"
+     ],
+     "first_at": "12:45",
+     "at11": null,
+     "lock": [
+      "for",
+      "99\u00b0 to 100\u00b0"
+     ],
+     "stable_11": null,
+     "stable_lock": false,
+     "depth_med": 29.5,
+     "depth_first": 20.0,
+     "lead_min": {
+      "own5": 0,
+      "six": -120
+     },
+     "hit": false
+    }
+   ]
+  }
+ }
+}
