@@ -17415,24 +17415,82 @@ if (illum <= 2) illum = 0;
     { date:"2029-12-20", type:"Lunar (Total)", note:"Totality for the Americas, Europe, Africa and Asia.", visible:true, utcPeak:"22:43", duration:"Totality: 54 min" }
   ];
 
-  function nextEclipse(now){
-    /* when the table is exhausted this returns null and the card disappears
-       with no other symptom -- which is how it went unnoticed for ten days.
-       Say it once in the console so the next stale run is findable. */
-    var _last = ECLIPSES.length && new Date(ECLIPSES[ECLIPSES.length - 1].date + 'T00:00:00');
-    if (_last && _last < now && !window._bvEclipseStale){
-      window._bvEclipseStale = 1;
-      try { console.warn('[bv] ECLIPSES table ends ' + ECLIPSES[ECLIPSES.length - 1].date + ' — extend it from eclipse.gsfc.nasa.gov'); } catch (e){}
+  /* ── ECLIPSES, COMPUTED (2026-09-07) ─────────────────────────────────
+     The table above is real data: exact greatest-eclipse times, central
+     durations, and whether the path reaches here. But it is hand-maintained,
+     and when it ran out on 28 Aug 2026 the card vanished with no other
+     symptom. So the two are joined. Geometry decides WHICH eclipse is next
+     and can never run out -- the same syzygy-near-a-node test the earth view
+     uses, off the same Schlyter moon this file already computes phases from.
+     The table stays the source of detail wherever it still reaches, because
+     an hourly scan gives the day and not the minute, and it cannot know a
+     total from an annular or whether the shadow crosses your roof. A
+     computed-only eclipse therefore says only what geometry knows. */
+  function bvElong(date){ return fixAngle(moonEcl(date).lon - sunLonDeg(daysSinceJ2000(date))); }
+  function bvEclipseKind(date){
+    var e = bvElong(date), b = Math.abs(moonEcl(date).lat);
+    if (Math.min(e, 360 - e) < 1.9 && b < 1.6) return 'solar';   /* classical limits */
+    if (Math.abs(e - 180) < 1.2 && b < 1.1) return 'lunar';
+    return null;
+  }
+  function bvNextSyzygy(fromMs, target){          /* 0 = new moon, 180 = full */
+    var prev = bvElong(new Date(fromMs));
+    for (var h = 1; h <= 31 * 24; h++){
+      var ms = fromMs + h * 3600000, e = bvElong(new Date(ms));
+      if (target === 180 ? (prev < 180 && e >= 180) : (prev > e)) return ms;
+      prev = e;
     }
+    return null;
+  }
+  function bvNextEclipseComputed(now){
+    var best = null;
+    ['solar', 'lunar'].forEach(function(kind){
+      var t = now.getTime();
+      for (var i = 0; i < 26; i++){                 /* ~2 years of syzygies */
+        t = bvNextSyzygy(t + 3600000, kind === 'solar' ? 0 : 180);
+        if (t === null) return;
+        if (bvEclipseKind(new Date(t)) === kind){
+          if (!best || t < best.ms) best = { ms: t, kind: kind };
+          return;
+        }
+      }
+    });
+    return best;
+  }
+  function nextEclipse(now){
+    var tbl = null;
     for (var i=0;i<ECLIPSES.length;i++){
       var d = new Date(ECLIPSES[i].date + "T00:00:00");
       if (isFinite(d.getTime()) && d >= now){
         var e = ECLIPSES[i];
-        return { d:d, type:e.type, note:e.note, utcPeak:e.utcPeak, duration:e.duration, visible:e.visible, penStart:e.penStart, penEnd:e.penEnd, totalStart:e.totalStart, totalEnd:e.totalEnd };
+        tbl = { d:d, type:e.type, note:e.note, utcPeak:e.utcPeak, duration:e.duration, visible:e.visible, penStart:e.penStart, penEnd:e.penEnd, totalStart:e.totalStart, totalEnd:e.totalEnd };
+        break;
       }
     }
-    return null;
+    var geo = bvNextEclipseComputed(now);
+    /* the two disagreeing by more than a couple of days means the table has a
+       wrong date in it, which is worth knowing -- geometry cannot be edited */
+    if (tbl && geo && Math.abs(tbl.d.getTime() - geo.ms) > 3 * 86400000 && !window._bvEclipseOdd){
+      window._bvEclipseOdd = 1;
+      try { console.warn('[bv] next eclipse: table says ' + tbl.d.toISOString().slice(0,10)
+        + ', geometry says ' + new Date(geo.ms).toISOString().slice(0,10)); } catch (e2){}
+    }
+    if (tbl) return tbl;
+    if (!geo) return null;
+    /* the table has run out. Geometry still knows the date and whether the
+       moon or the sun is being covered; it does not know the rest, so it does
+       not pretend to. */
+    var gd = new Date(geo.ms);
+    var hh = String(gd.getUTCHours()).padStart(2, '0') + ':' + String(gd.getUTCMinutes()).padStart(2, '0');
+    return { d: gd, type: geo.kind === 'solar' ? 'Solar' : 'Lunar',
+             note: 'Computed here from the moon\u2019s node crossing \u2014 the type and the path are not known.',
+             utcPeak: hh, duration: 'Time approximate', visible: undefined, computed: true };
   }
+  /* harness hooks (the same idea as window._cwLtgText): both halves of the
+     join, so a capture script can check the geometry against the published
+     canon without the table in the way */
+  window._bvNextEclipse = nextEclipse;
+  window._bvNextEclipseComputed = bvNextEclipseComputed;
 
   // Planetary conjunctions 2026 (within 1° or notable)
   var CONJUNCTIONS = [
