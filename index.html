@@ -55104,6 +55104,31 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           if (oAge < -60) oAge += 1440;      /* stamped before midnight */
         }
       }
+      /* 3a. THE REPORT THE DAY IS SETTLED ON -- FIRST, BECAUSE EVERY NUMBER
+            BELOW IT IS AN ESTIMATE OF IT. It sat under STATION and SIX-HOURLY
+            until 2026-09-08, which read as though the station's own figure were
+            the answer and the climate report a footnote. That day the panel
+            showed 78.98 from the ASOS above a CLINYC preliminary of 80, and
+            78.98 is not a published number at all -- it is 26.1 C converted.
+            The settled figure leads; the derived ones follow.
+            This row used to be labelled SETTLES and show The Weather Company's
+            number, which was wrong twice over. TWC governs Kalshi's HOURLY
+            temperature markets; the daily high pays on the FIRST non-preliminary
+            NWS climate report, verified against the exchange's own settled value
+            on 112 of 112 days. And TWC's figure is a blended spatial product,
+            not a thermometer -- on 2026-09-05 it read 86 for Chicago-Midway,
+            which is the peak at an airport twenty miles away, while Midway's own
+            report said 83.
+            So the climate report leads, and everything else here is an estimate
+            of it. PRELIMINARY is called out because its window shuts at 4 PM
+            local and New York peaks later about one day in three. */
+      qcL.push(T.cli_max == null
+        ? qcRow(QCN, 'SETTLES', 'NO CLIMATE REPORT YET',
+                'first issue is mid-afternoon local')
+        : qcRow(T.cli_final ? QCG : QCA, 'SETTLES',
+            T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
+              + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
+            T.cli_final ? '' : (T.day_decided || etH >= 20 || etH < 7) ? 'the final report comes ~3 AM' : 'window shuts at 4 PM; the day can still rise'));
       /* 80 minutes, not 95. That ceiling was sized for a :50 bake missing the
          :51 report by a minute and carrying an hour-old reading -- the very
          thing the cron move to :56 retired. With slots at :05/:20/:35/:56 the
@@ -55134,25 +55159,6 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           qcL.push(qcRow(QCN, 'ACCOUNT', 'NOT FETCHED YET', 'press refresh'));
       })();
 
-      /* 4b. THE REPORT THE DAY IS SETTLED ON.
-            This row used to be labelled SETTLES and show The Weather Company's
-            number, which was wrong twice over. TWC governs Kalshi's HOURLY
-            temperature markets; the daily high pays on the FIRST non-preliminary
-            NWS climate report, verified against the exchange's own settled value
-            on 112 of 112 days. And TWC's figure is a blended spatial product,
-            not a thermometer -- on 2026-09-05 it read 86 for Chicago-Midway,
-            which is the peak at an airport twenty miles away, while Midway's own
-            report said 83.
-            So the climate report leads, and everything else here is an estimate
-            of it. PRELIMINARY is called out because its window shuts at 4 PM
-            local and New York peaks later about one day in three. */
-      qcL.push(T.cli_max == null
-        ? qcRow(QCN, 'SETTLES', 'NO CLIMATE REPORT YET',
-                'first issue is mid-afternoon local')
-        : qcRow(T.cli_final ? QCG : QCA, 'SETTLES',
-            T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
-              + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
-            T.cli_final ? '' : (T.day_decided || etH >= 20 || etH < 7) ? 'the final report comes ~3 AM' : 'window shuts at 4 PM; the day can still rise'));
       /* 4a. THE FIRST HARD NUMBER OF THE DAY. The ASOS appends its own six-hour
             maximum to the observation nearest 00/06/12/18Z, and that group sees
             between the hourly reports the METAR stream throws away: 98.1% exact
