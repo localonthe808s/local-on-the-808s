@@ -53776,11 +53776,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         + 'background:' + (on ? 'rgba(0,210,152,.16)' : 'transparent') + ';'
         + 'border:1px solid ' + (on ? 'rgba(0,210,152,.6)' : 'rgba(0,210,152,.22)') + ';';
     }
+    /* NEW YORK EVERY TIME IT OPENS (user 2026-09-07: "should always open on
+       NYC, not vegas or austin"). The choice used to live in localStorage, so
+       a look at Las Vegas last night was still the sheet you got this morning.
+       It is a session value now, and cwKalshiTap resets it whenever the sheet
+       is opened from closed -- switching tabs while it is open is untouched. */
+    var cwkCityKey = 'ny';
     function cwkCity(){
-      try {
-        var c = localStorage.getItem('bv_kalshi_city');
-        return CWK_CITIES.some(function(x){ return x.key === c; }) ? c : 'ny';
-      } catch (e){ return 'ny'; }
+      return CWK_CITIES.some(function(x){ return x.key === cwkCityKey; }) ? cwkCityKey : 'ny';
     }
     function cwkCityDef(){
       var k = cwkCity();
@@ -53790,7 +53793,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        file stays in _cwKalshiHead for the all-cities board. A failed fetch
        falls back to New York rather than leaving a blank sheet. */
     function cwKalshiSwitch(key, after){
-      try { localStorage.setItem('bv_kalshi_city', key); } catch (e){}
+      cwkCityKey = key;
       var def = cwkCityDef();
       var done = function(){ cwKalshiTap(); if (after) try { after(); } catch (e){} };
       if (def.key === 'ny'){
@@ -53801,11 +53804,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(j){
           if (j && j.today && String(j.today.event || '').indexOf(def.ev) === 0) window._cwKalshi = j;
-          else { try { localStorage.setItem('bv_kalshi_city', 'ny'); } catch (e){} if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead; }
+          else { cwkCityKey = 'ny'; if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead; }
           done();
         })
         .catch(function(){
-          try { localStorage.setItem('bv_kalshi_city', 'ny'); } catch (e){}
+          cwkCityKey = 'ny';
           if (window._cwKalshiHead) window._cwKalshi = window._cwKalshiHead;
           done();
         });
@@ -53993,6 +53996,10 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        says so rather than hiding behind the average. */
     function cwKalshiTap(){
       var K = window._cwKalshi; if (!K || !K.today) return;
+      /* opening from closed always lands on New York; a redraw while the sheet
+         is up (a switch, a bake landing, the positions poll) leaves it alone */
+      var _pOpen = document.getElementById('cw-kalshi-panel');
+      if (!_pOpen || _pOpen.style.display === 'none') cwkCityKey = 'ny';
       var CITY = cwkCityDef(), isNY = (CITY.key === 'ny');
       var Tmain = null;   /* the real today, so a swapped-in tomorrow can be told apart */
       if (String(K.today.event || '').indexOf(CITY.ev) !== 0){
@@ -57161,8 +57168,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               ? '<div style="font:800 8px system-ui,sans-serif;margin-top:3px;color:' + (bookPL >= 0 ? YESC : NOC) + ';">'
                 + 'BOOK ' + (bookPL >= 0 ? '+' : '\u2212') + '$' + Math.abs(bookPL).toFixed(2) + '</div>'
               : '')
-          + '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
-          + (bookKnown ? 'AT THE BID \u00B7 WHAT YOU WOULD KEEP CLOSING NOW' : 'THE BOOK IS ON ANOTHER TAB \u00B7 TAP A ROW TO OPEN IT') + '</div>'
+          /* the "at the bid" caption is gone from the header (user 2026-09-07):
+             the box below says it once, with the numbers attached. The other
+             line stays -- it tells you where the book actually is. */
+          + (bookKnown ? ''
+              : '<div style="font:600 6.5px system-ui,sans-serif;letter-spacing:.06em;color:#2c7f66;margin-top:2px;">'
+                + 'THE BOOK IS ON ANOTHER TAB \u00B7 TAP A ROW TO OPEN IT</div>')
           + '</div>';
       }
       /* IN THE MIDDLE OF THE TOP, not tucked under the clock: the date line on
