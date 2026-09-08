@@ -1297,6 +1297,15 @@ def cli_read(cfg, deep=False):
         # the issuance stamp is compared rather than trusting iteration order,
         # because an incremental run only fetches the newest few.
             better = old is None
+            # THE SAME PRODUCT, RE-PARSED, REFRESHES ITS OWN FIELDS. Without
+            # this a cached row is frozen at whatever the parser understood the
+            # first time it was read: 2026-09-08's preliminary was stored with
+            # at='1:26PM' before _cli_local_time() existed, and no later run
+            # would ever correct it, because a preliminary never beats itself
+            # under the rules below. Same issuance stamp = same immutable
+            # product, so taking the newer parse is always right.
+            if not better and old is not None and old.get('issued') and old.get('issued') == p.get('issued'):
+                better = True
             if not better and p['final'] and not old.get('final'):
                 better = True                   # any final beats a preliminary
             elif not better and p['final'] and old.get('final'):

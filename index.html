@@ -54422,6 +54422,17 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          its per-station highs) are measured and keep the tenth; only values
          published as whole degrees -- the CLI settled max, the portal max,
          TWC's own max7 field, the forecasts, the bracket edges -- use T1. */
+      /* WHERE A NUMBER CAME FROM, IN THE SAME BREATH AS THE NUMBER.
+         The ASOS reports Celsius tenths; every degF we print off it is our own
+         conversion, exact but NOT published by anyone. On 2026-09-08 the panel
+         showed 78.98 beside CLINYC's 80 with nothing to say which was a reading
+         and which was arithmetic, and 78.98 -- carrying two more decimals --
+         read as the more precise of the two when it carried less authority.
+         The map rule (surveyed crisp, estimated soft) applies to numbers too. */
+      var cvt = function(f){
+        if (f == null || isNaN(f)) return '';
+        return ' \u00B7 ' + ((f - 32) * 5 / 9).toFixed(1) + '\u00B0C converted';
+      };
       var D1 = function(x){
         if (x == null || isNaN(x)) return '\u2014';
         /* up to a hundredth, never a fake one: a Celsius tenth converts to an
@@ -55128,7 +55139,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         : qcRow(T.cli_final ? QCG : QCA, 'SETTLES',
             T1(T.cli_max) + '\u00B0' + (T.cli_at ? ' AT ' + mtaEsc(T.cli_at) : '')
               + (T.cli_final ? ' \u00B7 FINAL' : ' \u00B7 PRELIMINARY'),
-            T.cli_final ? '' : (T.day_decided || etH >= 20 || etH < 7) ? 'the final report comes ~3 AM' : 'window shuts at 4 PM; the day can still rise'));
+            'as published by the NWS, whole degrees'
+              + (T.cli_final ? '' : ' \u00B7 ' + ((T.day_decided || etH >= 20 || etH < 7) ? 'the final report comes ~3 AM' : 'window shuts at 4 PM; the day can still rise'))));
       /* 80 minutes, not 95. That ceiling was sized for a :50 bake missing the
          :51 report by a minute and carrying an hour-old reading -- the very
          thing the cron move to :56 retired. With slots at :05/:20/:35/:56 the
@@ -55138,7 +55150,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         ? qcRow(QCA, 'STATION', 'NO CURRENT READING', mtaEsc(CITY.station) + ' has not reported')
         : qcRow((oAge != null && oAge < 80) ? QCG : QCA, 'STATION',
             D1(T.now_temp) + '° AT ' + t12(T.now_at) + ' · ' + ageTxt(oAge),
-            (oAge != null && oAge >= 80) ? 'it reports hourly at :51' : ''));
+            'our conversion of the station' + '\u2019' + 's Celsius' + cvt(T.now_temp)
+              + ((oAge != null && oAge >= 80) ? ' \u00B7 it reports hourly at :51' : '')));
       /* the account feed, so an empty sheet says why it is empty */
       (function(){
         var st = window._cwPotStatus || {};
@@ -55174,7 +55187,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var sw6 = T.six_window, sixClose = (sw6 && sw6.length === 2) ? t12(((sw6[1] - 1 + 24) % 24) + ':51') : null;
         qcL.push(qcRow(QCG, 'SIX-HOURLY', D1(T.six_max) + '\u00B0 FROM THE ASOS MAX GROUP'
           + (sixAhead ? ' \u00B7 ABOVE THE HOURLY HIGH' : ''),
-          (sixClose ? 'closed at ' + sixClose + ' local' : 'the latest group') + '; the day cannot settle below it'));
+          (sixClose ? 'closed at ' + sixClose + ' local' : 'the latest group')
+            + '; the day cannot settle below it' + cvt(T.six_max)));
       }
       /* 4b. THE ARBITER ITSELF. weather.com/kalshi is the page the rules name,
             and it marks each station-day no report / preliminary / official.
