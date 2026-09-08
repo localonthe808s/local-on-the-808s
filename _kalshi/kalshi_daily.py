@@ -1098,6 +1098,48 @@ CLI_CACHE = os.path.join(HERE, 'cli_cache.json')
 CLI_LOCK = threading.Lock()
 
 
+def _cli_local_time(at, day_iso, tz):
+    """A CLI time stamp -> the market's wall clock.
+
+    THE CLIMATE REPORT STAMPS TIMES IN LOCAL *STANDARD* TIME, ALL YEAR. The
+    column header says so -- "TIME (LST)" -- and the NWS makes no daylight
+    adjustment, so from March to November every time in the product is an hour
+    behind the clock everyone is reading.
+
+    This is not cosmetic. On 2026-09-08 New York's preliminary said MAXIMUM 80
+    at "126 PM". Taken literally that sits inside the 8 AM-1:51 PM six-hourly
+    group, which reported 26.1 C = 78.98 F and therefore appeared to CONTRADICT
+    the climate report -- the condition Kalshi names for delaying settlement.
+    It was 2:26 PM EDT: outside that window, six minutes after TWC's max7 rose
+    to 80, and consistent with every instrument. The whole apparent conflict
+    was a timezone error in the panel's favour, which is the dangerous
+    direction for one to point.
+
+    (The CLI's day boundary is midnight-to-midnight LST too, i.e. 1 AM to 1 AM
+    daylight time. Left alone here: it only matters for an extremum in that
+    first hour, and the day key comes from the product's own header.)
+    """
+    if not at:
+        return at
+    m = re.match(r'^(\d{1,2}):(\d{2})(AM|PM)$', at)
+    if not m:
+        return at
+    h = int(m.group(1)) % 12 + (12 if m.group(3) == 'PM' else 0)
+    try:
+        from zoneinfo import ZoneInfo         # imported locally, as elsewhere here
+        d = datetime.date.fromisoformat(day_iso)
+        off = datetime.datetime(d.year, d.month, d.day, 12,
+                                tzinfo=ZoneInfo(tz)).dst()
+    except Exception as e:
+        print('cli time: %s left as LST (%s)' % (at, e))
+        return at
+    if not off:
+        return at                               # standard time: already local
+    t = datetime.datetime(d.year, d.month, d.day, h, int(m.group(2))) + off
+    return '%d:%02d%s' % ((t.hour % 12) or 12, t.minute,
+                          'AM' if t.hour < 12 else 'PM')
+
+
 def _cli_parse(text):
     """One CLI product -> {'day','max','final'} or None.
 
@@ -1178,6 +1220,8 @@ def cli_fast(cfg, limit=3):
         except Exception:
             continue
         if q and q.get('max') is not None:
+            q['at'] = _cli_local_time(q.get('at'), q['day'],
+                                      cfg.get('tz', 'America/New_York'))
             out.append(q)
     return out
 
@@ -1224,6 +1268,9 @@ def cli_read(cfg, deep=False):
             if not m:
                 break
             q = _cli_parse(re.sub(r'<[^>]*>', '', m.group(1)))
+            if q and q['max'] is not None:
+                q['at'] = _cli_local_time(q.get('at'), q['day'],
+                                          cfg.get('tz', 'America/New_York'))
             _batch = [q] if (q and q['max'] is not None) else []
         for p in _batch:
             old = mine.get(p['day'])
