@@ -1012,6 +1012,13 @@ var romanG = mk('g', {'pointer-events':'none'}, gRomanEl);
 mk('rect', {x:-2.6, y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
 mk('rect', {x:1.0,  y:-0.5, width:1.6, height:1.0, fill:shade(ROMAN_C, -0.34), opacity:.92}, romanG);
 mk('rect', {x:-0.9, y:-0.7, width:1.8, height:1.4, rx:0.3, fill:ROMAN_C}, romanG);
+/* the zoom render: NASA's official deployed illustration of the observatory
+   (assets.science.nasa.gov, public domain, already transparent — no keying),
+   the same treatment JWST and DSCOVR get one ring out. 12 x 8.1 units against
+   JWST's 15 x 11.3, because Roman's mirror is 2.4 m to Webb's 6.5. */
+var romanImg = mk('image', {'data-src':'sprites/roman.png', x:-6, y:-4.05,
+                            width:12, height:8.1, preserveAspectRatio:'xMidYMid meet',
+                            'pointer-events':'none'}, document.getElementById('gSprites'));
 var romanLab = mk('text', {x:0, y:0, 'text-anchor':'middle',
   style:'font-size:0.5625em;font-weight:800;letter-spacing:.12em;fill:' + ROMAN_C + ';pointer-events:none;'}, gRomanEl);
 romanLab.textContent = 'ROMAN';
@@ -1052,9 +1059,10 @@ function renderRoman(ms, s){
   if (!onStation) d += 'L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1);
   romanPath.setAttribute('d', d);
   romanG.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')');
-  var lr = Math.hypot(p[0], p[1]) || 1;
-  romanLab.setAttribute('x', (p[0] + p[0] / lr * 9).toFixed(1));
-  romanLab.setAttribute('y', (p[1] + p[1] / lr * 9 + 3).toFixed(1));
+  romanImg.setAttribute('transform', 'translate(' + p[0].toFixed(1) + ',' + p[1].toFixed(1) + ')');
+  var lr = Math.hypot(p[0], p[1]) || 1, off = spritesOn ? 13 : 9;
+  romanLab.setAttribute('x', (p[0] + p[0] / lr * off).toFixed(1));
+  romanLab.setAttribute('y', (p[1] + p[1] / lr * off + 3).toFixed(1));
 }
 function renderJunk(ms){
   /* hardware silhouettes cost ~2x the old streaks — while PLAYING, rebuild
@@ -1251,6 +1259,7 @@ function openAboutPopup(){
     _row('RADIATION BELTS', 'VAN ALLEN ZONES · SCHEMATIC SPANS') +
     _row('LUNAR ORBITERS', 'LRO · DANURI · CHANDRAYAAN‑2 · REAL CRAFT, SCHEMATIC RINGS') +
     _row('ROMAN CRUISE', 'JPL HORIZONS · REAL TRAJECTORY, LAUNCH TO 2 OCT 2026 · ON STATION AT L2 AFTER') +
+    _row('SPACECRAFT RENDERS', 'NASA ILLUSTRATIONS · PUBLIC DOMAIN') +
     _row('ECLIPSES', 'PHASE + NODE GEOMETRY · CLASSICAL LIMITS, APPROXIMATE TIMES') +
     _row('GRAVEYARD RING', '~190 MI ABOVE GEO · DRAWN A STEP OUT TO BE SEEN') +
     _row('CARD RAILS', 'ALTITUDE ON THE MAP&#8217;S OWN LOG SCALE · EARTH SURFACE TO PAST GEO') +
@@ -1854,6 +1863,7 @@ function syncSprites(){
   /* the base dot/glyph would peek through the cutout's transparent parts */
   fleet.forEach(function(f){ if (f.spr) f.el.setAttribute('display', on ? 'none' : ''); });
   LPTS.forEach(function(L){ if (L.img) L.node.setAttribute('display', on ? 'none' : ''); });
+  romanG.setAttribute('display', on ? 'none' : '');
   if (_locLab) _locLab.setAttribute('display', on ? '' : 'none');
   if (on) renderFleet(curMs);
 }

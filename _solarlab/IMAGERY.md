@@ -36,6 +36,18 @@ credits in code comments + visible where license requires).
   hotlinked from `sdo.gsfc.nasa.gov/assets/img/latest/latest_512_0171.jpg`, clipped
   into the sun disc with the procedural glow kept as halo + onerror fallback.
 
+## Spacecraft sprites in use (`_solarlab/sprites/`)
+
+All public domain NASA work, alpha-cut and rehosted in the repo. `roman.png`
+needed no keying — NASA publishes that illustration with transparency already.
+
+| File | Source | Notes |
+|---|---|---|
+| `roman.png` | NASA, `assets.science.nasa.gov/.../rst/spacecraft-illustrations/Roman-transparent.png` (also Commons) | Official deployed illustration, 7680×4320 RGBA, trimmed on its own alpha to 520×351 |
+| `jwst.png`, `dscovr.png`, `chandra.png`, `hst.png`, `iss.png`, `goes.png`, `gps.png`, `tiangong.png` | NASA spacecraft-model series via Commons | PD |
+| `vanguard.png` | PD Commons photo | chroma-keyed |
+| `agena.png` | NASA s66-46124 (Gemini X Agena) | luminance-keyed + manual erasers |
+
 ## For the widget build-out (per body / feature)
 
 - **Sun**: SDO latest frames, several wavelengths: `latest_512_0171.jpg` (gold corona),
