@@ -17389,10 +17389,41 @@ if (illum <= 2) illum = 0;
     { date:"2026-02-17", type:"Solar (Annular)", note:"Path crosses Antarctica. Not visible from North America.", visible:false, utcPeak:"12:00", duration:"Annular: 2m 20s" },
     { date:"2026-03-03", type:"Lunar (Total)", note:"Visible from Americas, Europe, Africa.", visible:true, utcPeak:"00:58", duration:"Totality: 58 min", penStart:"22:25 UTC Mar 2", penEnd:"03:31 UTC Mar 3", totalStart:"00:28 UTC", totalEnd:"01:27 UTC" },
     { date:"2026-08-12", type:"Solar (Total)", note:"Path crosses Arctic, Greenland, Iceland, Spain. Partial visible from NE USA at sunrise.", visible:"partial", utcPeak:"07:46", duration:"Totality: 2m 18s" },
-    { date:"2026-08-28", type:"Lunar (Partial)", note:"Visible from Pacific, Americas, Europe, Africa.", visible:true, utcPeak:"04:13", duration:"Partial: 3h 24m", penStart:"01:22 UTC", penEnd:"07:04 UTC" }
+    { date:"2026-08-28", type:"Lunar (Partial)", note:"Visible from Pacific, Americas, Europe, Africa.", visible:true, utcPeak:"04:13", duration:"Partial: 3h 24m", penStart:"01:22 UTC", penEnd:"07:04 UTC" },
+    /* THE TABLE RAN OUT (fixed 2026-09-07). Every entry above was in the past
+       by 28 Aug 2026, so nextEclipse() returned null and the ECLIPSE card
+       simply vanished from the space strip -- a hardcoded list going stale
+       looks exactly like a broken feature. Extended through 2029 from NASA's
+       decade canon (eclipse.gsfc.nasa.gov SEdecade2021 / LEdecade2021):
+       dates, types, greatest-eclipse UTC and central durations are theirs;
+       `visible` is for THIS site's location, New York. */
+    { date:"2027-02-06", type:"Solar (Annular)", note:"Ring of fire across Chile and Argentina, then the Atlantic. Not visible from North America.", visible:false, utcPeak:"16:01", duration:"Annularity: 7m 51s" },
+    { date:"2027-02-20", type:"Lunar (Penumbral)", note:"A faint shading only \u2014 the moon never reaches the dark umbra. Americas, Europe, Africa, Asia.", visible:true, utcPeak:"23:14", duration:"Penumbral: 4h 20m" },
+    { date:"2027-07-18", type:"Lunar (Penumbral)", note:"East Africa, Asia, Australia and the Pacific. Below the horizon from New York.", visible:false, utcPeak:"16:04", duration:"Penumbral: 2h 6m" },
+    { date:"2027-08-02", type:"Solar (Total)", note:"The long one: 6m 23s of totality across Morocco, Spain, Libya and Egypt. Not visible from North America.", visible:false, utcPeak:"10:08", duration:"Totality: 6m 23s" },
+    { date:"2027-08-17", type:"Lunar (Penumbral)", note:"A faint shading over the Pacific and the Americas, before dawn.", visible:true, utcPeak:"07:15", duration:"Penumbral: 3h 18m" },
+    { date:"2028-01-12", type:"Lunar (Partial)", note:"The moon clips the umbra late on the 11th, local time. Americas, Europe, Africa.", visible:true, utcPeak:"04:14", duration:"Partial: 56 min" },
+    { date:"2028-01-26", type:"Solar (Annular)", note:"Ring of fire across Ecuador, Peru, Brazil, then Spain and Portugal. Partial from the eastern USA.", visible:"partial", utcPeak:"15:09", duration:"Annularity: 10m 27s" },
+    { date:"2028-07-06", type:"Lunar (Partial)", note:"Europe, Africa, Asia and Australia. Daylight in New York.", visible:false, utcPeak:"18:21", duration:"Partial: 2h 21m" },
+    { date:"2028-07-22", type:"Solar (Total)", note:"Totality crosses Australia and New Zealand. Not visible from North America.", visible:false, utcPeak:"02:57", duration:"Totality: 5m 10s" },
+    { date:"2028-12-31", type:"Lunar (Total)", note:"A New Year's Eve total eclipse for Europe, Africa, Asia and Australia. Daylight in New York.", visible:false, utcPeak:"16:53", duration:"Totality: 1h 11m" },
+    { date:"2029-01-14", type:"Solar (Partial)", note:"A partial bite out of the sun across North and Central America.", visible:"partial", utcPeak:"17:14", duration:"Partial only" },
+    { date:"2029-06-12", type:"Solar (Partial)", note:"Arctic, Scandinavia, Alaska and northern Canada.", visible:false, utcPeak:"04:06", duration:"Partial only" },
+    { date:"2029-06-26", type:"Lunar (Total)", note:"A long totality \u2014 1h 42m \u2014 for the Americas, Europe and Africa.", visible:true, utcPeak:"03:23", duration:"Totality: 1h 42m" },
+    { date:"2029-07-11", type:"Solar (Partial)", note:"Southern Chile and southern Argentina only.", visible:false, utcPeak:"15:37", duration:"Partial only" },
+    { date:"2029-12-05", type:"Solar (Partial)", note:"Southern Argentina, southern Chile and Antarctica.", visible:false, utcPeak:"15:04", duration:"Partial only" },
+    { date:"2029-12-20", type:"Lunar (Total)", note:"Totality for the Americas, Europe, Africa and Asia.", visible:true, utcPeak:"22:43", duration:"Totality: 54 min" }
   ];
 
   function nextEclipse(now){
+    /* when the table is exhausted this returns null and the card disappears
+       with no other symptom -- which is how it went unnoticed for ten days.
+       Say it once in the console so the next stale run is findable. */
+    var _last = ECLIPSES.length && new Date(ECLIPSES[ECLIPSES.length - 1].date + 'T00:00:00');
+    if (_last && _last < now && !window._bvEclipseStale){
+      window._bvEclipseStale = 1;
+      try { console.warn('[bv] ECLIPSES table ends ' + ECLIPSES[ECLIPSES.length - 1].date + ' — extend it from eclipse.gsfc.nasa.gov'); } catch (e){}
+    }
     for (var i=0;i<ECLIPSES.length;i++){
       var d = new Date(ECLIPSES[i].date + "T00:00:00");
       if (isFinite(d.getTime()) && d >= now){
@@ -40492,10 +40523,37 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               var billions = (currentMiles / 1e9).toFixed(2);
               seCards.push({
                 sortDate: new Date(9999,0,1),
-                icon: '<svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="rgba(43,34,244,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:6px auto;">'
-                     + '<circle cx="20" cy="20" r="7.5"/><path d="M20 12.5v-5M20 27.5v5M12.5 20h-5M27.5 20h5"/>'
-                     + '<path d="M25.5 25.5 L41 41"/><path d="M37 37 l7 -3 3 7 -7 3 z"/>'
-                     + '<path d="M9 34 l7 -7 4 4 -7 7 z"/></svg>',
+                /* A DRAWN VOYAGER, not a wireframe (user 2026-09-07: "the
+                   voyager icon is missing"). It was rendering -- a circle with
+                   four ticks and two diagonals -- but beside the ISS card's
+                   built spacecraft it read as a placeholder. This is the real
+                   machine: the 3.7 m high-gain dish it still speaks through,
+                   the ten-sided bus under it, the RTG boom on one side and the
+                   science boom with its scan platform on the other, and the
+                   long magnetometer boom. Same blue ink as the rest of the
+                   strip. */
+                icon: '<svg width="78" height="78" viewBox="0 0 100 100" style="display:block;margin:2px auto;">'
+                     + '<g fill="none" stroke="rgba(43,34,244,.9)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
+                     /* magnetometer boom, the long thin one */
+                     + '<path d="M56 44 L96 20" stroke-width="1.3"/>'
+                     /* RTG boom and its three generators */
+                     + '<path d="M40 56 L12 78" stroke-width="2"/>'
+                     + '<g fill="rgba(43,34,244,.55)" stroke-width="1.5">'
+                     + '<rect x="8" y="72" width="9" height="6" rx="2.5" transform="rotate(-38 12.5 75)"/>'
+                     + '<rect x="17" y="65" width="9" height="6" rx="2.5" transform="rotate(-38 21.5 68)"/>'
+                     + '</g>'
+                     /* science boom and the scan platform */
+                     + '<path d="M60 58 L84 72" stroke-width="2"/>'
+                     + '<rect x="80" y="66" width="12" height="11" rx="2" fill="rgba(43,34,244,.55)" stroke-width="1.5"/>'
+                     /* the high-gain dish, edge-lit */
+                     + '<ellipse cx="48" cy="36" rx="30" ry="27" fill="rgba(43,34,244,.14)"/>'
+                     + '<ellipse cx="48" cy="36" rx="19" ry="17" fill="rgba(43,34,244,.20)" stroke-width="1.5"/>'
+                     /* feed horn on its struts */
+                     + '<path d="M34 26 L48 36 M62 26 L48 36 M48 14 L48 36" stroke-width="1.3"/>'
+                     + '<circle cx="48" cy="36" r="4" fill="rgba(43,34,244,.85)" stroke="none"/>'
+                     /* the ten-sided bus */
+                     + '<path d="M40 60 L56 60 L60 68 L54 75 L42 75 L36 68 Z" fill="rgba(43,34,244,.65)" stroke-width="1.8"/>'
+                     + '</g></svg>',
                 name: 'VOYAGER 1',
                 date: '<span id="voyager-miles" style="font-size:.78rem">' + milesFormatted + '</span>',
                 countdown: 'MILES',
