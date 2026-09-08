@@ -50350,7 +50350,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        so even the OLD limit was drawn 2x upscaled, which is what made it look
        soft. A z4 level at 8.81 m/px now backs the ladder, so 8x is both
        reachable and sharp. Raising this alone would only have blurred more. */
-    var CW_ZMAX = 8;
+    /* 8 -> 16 (user 2026-09-08: "we need to be able to zoom in further").
+       The baked pyramid stops at z4, so past 8 the backdrop is an upscale and
+       goes soft -- but the vector layers (trees, faults, pipes, ferries,
+       stations) are drawn per painted view and stay crisp, which is where the
+       detail at this depth actually lives. */
+    var CW_ZMAX = 16;
     cw.view = CW_VIEW;
     var PRODUCTS = [
       ['bref','KOKX UPTON \u00b7 NEXT HALF HOUR'], ['bvel','VELOCITY'], ['bdhc','HYDRO'],
@@ -51253,6 +51258,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             if (d < bsd){ bsd = d; bs = st; }
           });
           if (bs) offer(bsd / mpp, 14, mtaPanelOpen, bs);
+        }
+        if (cw.trees && cwMapMode() && !cw.rock && cwTrees.length){
+          var bt = null, btd = Infinity;
+          cwTrees.forEach(function(t){
+            var d = Math.hypot(toX(t._lon) - X, toY(t._lat) - Y);
+            if (d < btd){ btd = d; bt = t; }
+          });
+          if (bt) offer(btd / mpp, 11, cwTreeTap, bt);
         }
         if (cw.floods && typeof fnRows !== 'undefined' && fnRows.length){
           var bf = null, bfd = Infinity;
@@ -53013,6 +53026,94 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       if (!cw.rock) return;
       cw.rock = false;
       cwRockDraw();
+    }
+    /* ---- THE TREES, AS TREES (user 2026-09-08: "the tree info looks like
+       lines at this height and nothing is distinguishable, this should let you
+       click on a tree and see its info") ------------------------------------
+       The baked overlay is 652,173 trees painted into a raster, which is the
+       right call for the whole city and useless at street level: zoomed in it
+       is a green line down each block. The census itself is on NYC Open Data
+       (2015 Street Tree Census, `uvpi-gqnh`, CORS-open and keyless), so the
+       points are fetched for the visible box once it is small enough for a
+       tree to be a tree, cached per box, and drawn over the raster. No bulk
+       load: the full table is 80 MB and this asks for a block at a time.
+       NOTE the dataset has NO geometry column -- `latitude`/`longitude` are
+       plain numbers, so the query is a bounding box, not within_circle. */
+    var CW_TREE_URL = 'https://data.cityofnewyork.us/resource/uvpi-gqnh.json';
+    var cwTreeBoxes = {}, cwTrees = [];
+    function cwTreeKey(a, b, c2, d2){ return [a, b, c2, d2].map(function(x){ return x.toFixed(3); }).join(','); }
+    function cwTreesFetch(v, mppScreen){
+      /* below about a metre and a half per pixel a street tree is a disc
+         rather than a speck; above it the raster still reads better */
+      if (!(cw.trees && cwMapMode() && !cw.rock) || !(mppScreen < 1.6)) return;
+      var R2 = 6378137;
+      var lon0 = v.X0 / R2 * 180 / Math.PI, lon1 = v.X1 / R2 * 180 / Math.PI;
+      var lat0 = (2 * Math.atan(Math.exp(v.Y0 / R2)) - Math.PI / 2) * 180 / Math.PI;
+      var lat1 = (2 * Math.atan(Math.exp(v.Y1 / R2)) - Math.PI / 2) * 180 / Math.PI;
+      /* snap to a grid so panning re-uses what is already in hand */
+      var g = 0.004;
+      var a = Math.floor(lat0 / g) * g, b = Math.ceil(lat1 / g) * g;
+      var c2 = Math.floor(lon0 / g) * g, d2 = Math.ceil(lon1 / g) * g;
+      if ((b - a) > 0.05 || (d2 - c2) > 0.05) return;      /* too much ground to ask for */
+      var key = cwTreeKey(a, b, c2, d2);
+      if (cwTreeBoxes[key]) return;
+      cwTreeBoxes[key] = 1;
+      var q = CW_TREE_URL + '?$limit=2000&$select=tree_id,spc_common,spc_latin,tree_dbh,status,health,address,latitude,longitude,steward,sidewalk,problems,curb_loc'
+        + '&$where=' + encodeURIComponent('latitude between ' + a.toFixed(5) + ' and ' + b.toFixed(5)
+          + ' and longitude between ' + c2.toFixed(5) + ' and ' + d2.toFixed(5));
+      fetch(q).then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (!j || !j.length) return;
+          var seen = {};
+          cwTrees.forEach(function(t){ seen[t.tree_id] = 1; });
+          j.forEach(function(t){
+            if (seen[t.tree_id] || t.latitude == null || t.longitude == null) return;
+            t._lon = +t.longitude; t._lat = +t.latitude; t._d = +t.tree_dbh || 0;
+            cwTrees.push(t);
+          });
+          if (cwTrees.length > 6000) cwTrees.splice(0, cwTrees.length - 6000);
+          cwDrawSensors();
+        })
+        .catch(function(){ delete cwTreeBoxes[key]; });
+    }
+    /* alive and in good health is the common case and gets the plain canopy
+       colour; the census's own words carry the rest */
+    function cwTreeColor(t){
+      if (String(t.status || '').toLowerCase() !== 'alive') return '#8a7a63';
+      var h = String(t.health || '').toLowerCase();
+      return h === 'poor' ? '#c98a2e' : h === 'fair' ? '#7fa93f' : '#2f8f3e';
+    }
+    function cwTreeTap(t){
+      var el = document.getElementById('cw-info');
+      if (!el) return;
+      var cap = function(x){ x = String(x || '').trim(); return x ? x.charAt(0).toUpperCase() + x.slice(1) : ''; };
+      var dbh = t._d ? t._d + '\u2033 TRUNK' : '';
+      var alive = String(t.status || '').toLowerCase() === 'alive';
+      var stew = { 'None': 'no steward on record', '1or2': '1 or 2 stewards', '3or4': '3 or 4 stewards', '4orMore': '4 or more stewards' }[t.steward] || '';
+      var probs = String(t.problems || '').replace(/([a-z])([A-Z])/g, '$1, $2');
+      var bits = [];
+      if (stew) bits.push(stew);
+      if (t.sidewalk && t.sidewalk !== 'NoDamage') bits.push('sidewalk damage recorded');
+      if (t.curb_loc === 'OffsetFromCurb') bits.push('set back from the curb');
+      if (probs && probs.toLowerCase() !== 'none') bits.push('noted: ' + probs.toLowerCase());
+      var x = '<button id="cw-tree-x" style="margin-left:auto;background:none;border:none;font:700 13px system-ui,sans-serif;color:#1b2340;cursor:pointer;padding:0 2px;">\u2715</button>';
+      el.style.display = '';
+      el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        + '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + cwTreeColor(t) + ';border:1px solid rgba(27,35,64,.25);"></span>'
+        + '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.1em;color:#5b647a;">STREET TREE</span>'
+        + '<span style="font:800 12px system-ui,sans-serif;letter-spacing:.03em;">' + mtaEsc(cap(t.spc_common) || 'UNIDENTIFIED').toUpperCase() + '</span>'
+        + (t.spc_latin ? '<span style="font:600 9px system-ui,sans-serif;font-style:italic;color:#3b4460;">' + mtaEsc(t.spc_latin) + '</span>' : '')
+        + (dbh ? '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">' + dbh + '</span>' : '')
+        + '<span style="font:600 8px system-ui,sans-serif;color:#5b647a;letter-spacing:.08em;">NYC STREET TREE CENSUS 2015</span>' + x + '</div>'
+        + (t.address ? '<div style="font:700 10px system-ui,sans-serif;margin-top:3px;">' + mtaEsc(cap(t.address.toLowerCase())) + '</div>' : '')
+        + '<div style="font:500 9.5px system-ui,sans-serif;color:#3b4460;margin-top:2px;line-height:1.45;">'
+        + (alive ? 'Alive, health recorded as <b>' + mtaEsc((t.health || 'unrecorded').toLowerCase()) + '</b>'
+                 : '<b>' + mtaEsc(cap(t.status)) + '</b> at the last census')
+        + (bits.length ? ' \u00b7 ' + mtaEsc(bits.join(' \u00b7 ')) : '') + '.</div>'
+        + '<div style="font:600 7.5px system-ui,sans-serif;color:#5b647a;letter-spacing:.04em;margin-top:3px;">'
+        + 'COUNTED IN 2015 BY VOLUNTEERS AND PARKS STAFF \u00b7 THE TRUNK IS MEASURED AT BREAST HEIGHT</div>';
+      var xb = document.getElementById('cw-tree-x');
+      if (xb) xb.onclick = function(e){ e.stopPropagation(); cwInfoDefault(); };
     }
     /* ---- GEOLOGY: Macrostrat carto tiles under the city (2026-09-07) ----
        Tiles for the painted view at the zoom whose resolution best matches
@@ -57966,6 +58067,29 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         g.setLineDash([]);
         g.restore();
       }
+      /* THE TREES AS DISCS, once the ground is close enough (2026-09-08).
+         Sized to the crown rather than to the screen, so they grow with the
+         zoom exactly as the outfall pipes do, and drawn under the pipes and
+         the station dots -- a tree should never take a tap meant for those. */
+      (function(){
+        var zk = (typeof z !== 'undefined' && z && z.k) ? z.k : 1;
+        var mppScreen = (v.X1 - v.X0) / r.width / zk;      /* metres per CSS pixel */
+        cwTreesFetch(v, mppScreen);
+        if (!(cw.trees && cwMapMode() && !cw.rock) || mppScreen >= 1.6 || !cwTrees.length) return;
+        var mppT = (v.X1 - v.X0) / cvs.width;
+        cwTrees.forEach(function(t){
+          var x = px([t._lon, t._lat]), y = py([t._lon, t._lat]);
+          if (x < -20 || y < -20 || x > cvs.width + 20 || y > cvs.height + 20) return;
+          /* a crown radius from the trunk: a 20-inch street tree carries
+             roughly a 4 m spread, and the floor keeps a sapling tappable */
+          var rm = Math.max(1.3, (t._d || 4) * 0.22);
+          var rr = Math.max(1.6 * dpr, rm / mppT);
+          g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2);
+          g.fillStyle = cwTreeColor(t); g.globalAlpha = 0.82; g.fill();
+          g.globalAlpha = 1;
+          g.lineWidth = 0.7 * dpr; g.strokeStyle = 'rgba(20,40,25,.55)'; g.stroke();
+        });
+      })();
       /* the CSO OUTFALLS (user 2026-09-01): the sewage runoff stains in the
          bake pour from these 435 permitted pipes (NYS DEC data). Drawn as a
          pipe reads from above — a green rectangle jutting from the coast into
