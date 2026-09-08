@@ -50355,7 +50355,14 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
        goes soft -- but the vector layers (trees, faults, pipes, ferries,
        stations) are drawn per painted view and stay crisp, which is where the
        detail at this depth actually lives. */
-    var CW_ZMAX = 16;
+    /* 16 -> 56 (2026-09-08). Measured, 16 bottomed the map out at 4.3 metres
+       per pixel, where a street tree's crown is ONE pixel and neighbours on a
+       block are two apart -- so "zoom in to see the trees" was unreachable by
+       construction. 56 lands near 1.2 m/px: a crown is three or four pixels
+       and the trees down a street separate. The cost is the backdrop, which
+       is a bake that stops at z4 and is now a heavy upscale at full depth;
+       everything drawn as vector stays sharp. */
+    var CW_ZMAX = 56;
     cw.view = CW_VIEW;
     var PRODUCTS = [
       ['bref','KOKX UPTON \u00b7 NEXT HALF HOUR'], ['bvel','VELOCITY'], ['bdhc','HYDRO'],
@@ -53088,6 +53095,34 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         })
         .catch(function(){ delete cwTreeBoxes[key]; });
     }
+    /* THE ZOOM HAS TO POKE THE FETCH. The gesture only re-transforms the
+       layers -- it never redraws this canvas and never recomposes, so nothing
+       downstream noticed the map had got closer and the trees were never
+       asked for. A settle after any zoom or pan gesture asks once. */
+    (function(){
+      var t = null;
+      var poke = function(){
+        clearTimeout(t);
+        t = setTimeout(function(){
+          var body = document.getElementById('cw-body');
+          if (!body) return;
+          var r = body.getBoundingClientRect();
+          if (!r.width || typeof cwPainted === 'undefined' || !cwPainted) return;
+          cwTreesFetch(cwPainted, (cwPainted.X1 - cwPainted.X0) / r.width / cwZoomK());
+          try { cwDrawSensors(); } catch (e){}       /* re-size the discs for the new scale */
+        }, 420);
+      };
+      var iv = setInterval(function(){
+        var b = document.getElementById('cw-body');
+        if (!b) return;
+        clearInterval(iv);
+        if (b._cwTreePoke) return;
+        b._cwTreePoke = 1;
+        ['dblclick', 'wheel', 'pointerup', 'pointercancel'].forEach(function(e){
+          b.addEventListener(e, poke, { passive: true });
+        });
+      }, 500);
+    })();
     /* harness hook: the map's own resolution and what the tree layer holds.
        Everything here lives in the widget's closure, so a capture script has
        no other way to ask -- and the fetch threshold has to be set from a
@@ -58105,10 +58140,16 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         cwTrees.forEach(function(t){
           var x = px([t._lon, t._lat]), y = py([t._lon, t._lat]);
           if (x < -20 || y < -20 || x > cvs.width + 20 || y > cvs.height + 20) return;
-          /* a crown radius from the trunk: a 20-inch street tree carries
-             roughly a 4 m spread, and the floor keeps a sapling tappable */
+          /* A SCREEN SIZE, NOT A GROUND SIZE. Ground-true would be right if
+             the map could zoom to a metre a pixel everywhere; at the top of
+             the range a 4 m crown is about three pixels and at the bottom it
+             is a fraction of one. So the crown sets the size and the clamp
+             keeps it between a visible dot and a blob -- and the conversion
+             back to canvas pixels divides by the gesture scale, because this
+             canvas is drawn once and then stretched by it. */
           var rm = Math.max(1.3, (t._d || 4) * 0.22);
-          var rr = Math.max(1.2 * dpr, rm / mppT);
+          var rScreen = Math.max(1.6, Math.min(7, rm / mppScreen));
+          var rr = rScreen * dpr / zk;
           g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2);
           g.fillStyle = cwTreeColor(t); g.globalAlpha = 0.82; g.fill();
           g.globalAlpha = 1;
