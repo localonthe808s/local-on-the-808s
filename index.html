@@ -92167,54 +92167,6 @@ function closeAlertModal(){
       { id:'clouds',  label:'CLOUDS & RADAR',  anchor:'radar-widget-title',
         bg:'linear-gradient(160deg,#5a86b8,#88aed4)',
         html:(window.railCloudIcon ? window.railCloudIcon() : '') },
-      // Golden hour + dawn chorus. Uses the SAME three birds the hourly icons draw
-      // — goldfinch, cardinal, bluebird from _miniFlockBirds — rather than a one-off
-      // drawing, so the rail and the strip stay one visual language.
-      // STATIC: every animation hook is stripped (an-minifly patrol, an-miniw wander,
-      // an-birdbob, an-wingbeat, plus their inline animation-* declarations), so the
-      // formation holds still instead of patrolling a 38px box.
-      // The icon's native viewBox leaves the flock in the middle third, which is
-      // specks at rail size, so it is retargeted to the formation's own bounds.
-      // Measured, not guessed: the flock's ink spans x 30.8-67.5, y 30.2-57.2, so
-      // its centre is (49.1, 43.8) — NOT (50,50). A box centred on 50 left the
-      // birds sitting ~6 units high, obvious once there is no porthole to hide it.
-      // The viewBox below is re-measured for the SPREAD formation, not the raw one.
-      // EXACT anchoring: this section shares a .widget with the radar title, so the
-      // usual closest('.widget') hop would land on CLOUDS & RADAR's target.
-      { id:'goldenbird', label:'GOLDEN HOUR & DAWN CHORUS', anchor:'golden-hour-legend-item', exact:true, bare:true,
-        html:(function(){
-          try{
-            if (typeof miniFlockIcon !== 'function') throw 0;
-            return miniFlockIcon('rail2')
-              .replace(/\sclass="an-[a-z]+"/g, '')
-              .replace(/animation-[a-z-]+:[^;"]*;?/g, '')
-              // Spread the FORMATION without resizing the birds — only the
-              // per-bird placement transform has a rotate() after its translate().
-              // Scaling y harder than x squares up a 36x27 formation, so it stops
-              // leaving vertical slack in a square icon box: 94% x 91% filled,
-              // against 93% x 70% before.
-              .replace(/translate\((-?[\d.]+),(-?[\d.]+)\) rotate\(/g, function(m, x, y){
-                return 'translate(' + (x*1.30).toFixed(2) + ',' + (y*1.95).toFixed(2) + ') rotate(';
-              })
-              .replace('<svg class="ic" viewBox="0 0 100 100"',
-                       '<svg viewBox="26.7 20.6 44.9 44.9" style="width:38px;height:38px;display:block;overflow:visible;"');
-          }catch(e){
-            // the flock helper lives far earlier in the document; if it is ever moved
-            // or renamed, fall back to a plain bird rather than an empty hit-target
-            return '<svg viewBox="0 0 24 24" style="width:34px;height:34px;display:block;">'+
-                   '<path d="M3 13c3.4-.2 6-1.6 8-4 .9-1.1 1.9-1.7 3-1.7 1.6 0 2.5 1 3.1 2 .5.9 1.2 1.5 2.2 1.8l2.2.7-2.2.6c-1 .3-1.8.9-2.4 1.7-1 1.4-2.3 2.5-4 2.5-1.4 0-2.6-.7-3.4-1.8-1.7.6-3.9.5-6.5.2z" fill="#dd7419"/></svg>';
-          }
-        })() },
-      // bare: the triangle IS the icon, no orange disc behind it. Glow is two
-      // stacked drop-shadows — a tight 3px core plus a wider 8px falloff — which
-      // reads as light coming off the sign rather than a flat outline, and costs
-      // nothing on a static 38px glyph. Outline (not filled) so the rail glass
-      // shows through the middle, matching the other bare items.
-      // Sized DOWN to 87% with thinner strokes: measured against its neighbours it
-      // was never bigger (bbox 96.6x84.2% against the flock's 94.5x90.8%) but its
-      // ink covered 29.7% of the slot against the flock's 11.8% — one solid
-      // saturated mass beside three small birds. It read heavy, not large.
-      // Stroke widths are pre-scale: 2.18/2.01 x 0.87 renders as 1.90/1.75.
       { id:'hazards', label:'NATURAL HAZARDS', anchor:'hazard-title', bare:true,
         html:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:38px;height:38px;display:block;overflow:visible;filter:drop-shadow(0 0 3px rgba(255,45,25,.95)) drop-shadow(0 0 8px rgba(255,45,25,.6));"><g transform="translate(12,14.6) scale(0.87) translate(-12,-14.6)"><path d="M12 3.2 L22.4 21H1.6Z" fill="none" stroke="#ee2417" stroke-width="2.18" stroke-linejoin="round"/><path d="M12 9.9v4.6" stroke="#ee2417" stroke-width="2.01" stroke-linecap="round"/><circle cx="12" cy="17.5" r="1.15" fill="#ee2417"/></g></svg>' },
       // Mini solar system, drawn on transparency — `bare` so it gets no porthole
@@ -92241,45 +92193,7 @@ function closeAlertModal(){
              '</g>'+
              '<circle cx="8.49" cy="35.36" r="4.6" fill="#5a86b8"/>'+
              '<circle cx="2.20" cy="14.36" r="2.6" fill="#e08a3c"/>'+
-             '</svg>' },
-      // Solar imager — the GOES SUVI 304 A composite, self-hosted. SWPC only
-      // publishes that composite full-size and every frame is ~1.17 MB, which is
-      // fine for the widget (loads on demand) but absurd for a 32px nav icon on
-      // mobile; .github/workflows/suvi-frame.yml republishes it hourly at 256px
-      // / ~12 KB, 95x smaller, which is ample even at 3x DPR.
-      // scale(1.75): measured off the real frame, SUVI's disc is only 75% of the
-      // image width (SDO's is 91%) and sits ~18px off centre, so 1.32x — right
-      // for an SDO frame — lands exactly on the limb here and still shows a
-      // black ring. 1.5x leaves a dark edge; 1.62x fills the porthole with
-      // chromosphere; 1.75x crops a little tighter still (~68% of the disc
-      // radius), which is the look that was picked.
-      // The bg only shows while the fetch is in flight or if it fails; it is a
-      // dark backdrop behind the image, NOT a ring around the icon.
-      { id:'solar',   label:'SOLAR IMAGER', anchor:'solar-title',
-        bg:'#160a04',
-        html:'<img src="https://cdn.bluishvoid.com/solar/suvi304.jpg" alt="" loading="lazy" decoding="async" style="transform:scale(1.75);">' },
-      // Solar wind — the WSA-ENLIL ecliptic-plane plasma-density plot, the same
-      // model the widget itself credits. SWPC only publishes it inside a 960x600
-      // four-panel dashboard, so the workflow crops the top-left disc out of it
-      // and republishes it at 256px / ~13 KB.
-      // The crop is the disc's INSCRIBED square (radius*2/1.44 about the measured
-      // centre), so the circular porthole never exposes the black background
-      // beyond the disc — no zoom needed here, unlike the SUVI icon. The centre is
-      // measured ignoring x<55, otherwise the colour-bar strip down the left edge
-      // drags it sideways and a black sliver creeps into the top-left corner.
-      { id:'solarwind', label:'SOLAR WIND', anchor:'solarwind-widget',
-        bg:'#04061a',
-        html:'<img src="https://cdn.bluishvoid.com/solar/enlil.jpg" alt="" loading="lazy" decoding="async">' },
-      // Dark sky — a crop of the same Lorenz light-pollution atlas the widget maps
-      // (djlorenz.github.io tiles2024), centred on the Adirondack dark-sky core:
-      // the black/navy zone with green around it and warm city cores at the edges.
-      // Region matters — a crop of the coastal corridor is all orange, which reads
-      // as BRIGHT sky, the opposite of what this button means.
-      // Self-hosted at 256px/24KB, and cached for a week rather than an hour: this
-      // atlas is republished about once a year, unlike the live solar imagery.
-      { id:'darksky', label:'DARK SKY', anchor:'darksky-widget',
-        bg:'#0b1a10',
-        html:'<img src="https://cdn.bluishvoid.com/solar/darksky.jpg" alt="" loading="lazy" decoding="async">' }
+             '</svg>' }
     ];
     function targetY(anchor, exact){
       var el = document.getElementById(anchor);
