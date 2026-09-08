@@ -54461,7 +54461,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
               var moved = Math.max(Date.parse(v.max7.at || 0), Date.parse(v.iem.at || 0));
               (last - moved >= 7.2e6 ? closed : live).push({ id: id, v: v });
             });
-            var rows = [];
+            var rows = [], apRow = '';
             closed.forEach(function(c){
               var lead = (Date.parse(c.v.iem.at) - Date.parse(c.v.max7.at)) / 6e4;
               rows.push(qcRow(Math.abs(lead) < 1 ? QCN : (lead > 0 ? QCG : QCA),
@@ -54527,11 +54527,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
                 return k.replace(/^K/, '') + ' <b>' + (a.max7 == null ? '\u2014' : T1(a.max7) + '\u00B0') + '</b>'
                   + (a.last != null ? ' <span style="opacity:.7;">(' + T1(a.last) + '\u00B0 at ' + mtaEsc(a.at || '') + ')</span>' : '');
               });
-              rows.push(qcRow(QCG, 'AIRPORTS', parts.join(' \u00B7 '),
-                'highest 5-minute reading since 7 AM at LGA, JFK, EWR \u2014 the park\u2019s own is not public'));
+              /* the airports row carries four stations and their times: it is
+                 several times longer than a lead row and takes the full width
+                 under the grid rather than squeezing one column */
+              apRow = qcRow(QCG, 'AIRPORTS', parts.join(' \u00B7 '),
+                'highest 5-minute reading since 7 AM at LGA, JFK, EWR \u2014 the park\u2019s own is not public');
             }
+            /* TWO COLUMNS, like the feed block above (user 2026-09-07). Same
+               grid, same gap, so the two halves of the SYSTEM block read as
+               one instrument instead of a wide table over a narrow list. */
             el.innerHTML = hdr('LEAD STUDY')
-              + '<div style="margin-top:2px;">' + rows.join('') + '</div>';
+              + '<div style="margin-top:2px;display:grid;grid-template-columns:'
+              + (PHONE ? '1fr' : '1fr 1fr') + ';gap:0 22px;align-items:start;">' + rows.join('') + '</div>'
+              + (apRow ? '<div style="margin-top:2px;">' + apRow + '</div>' : '');
           })
           .catch(function(){ /* a study that cannot load must not break the panel */ });
       };
@@ -54722,7 +54730,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         var st = window._cwPotStatus || {};
         var onThis = bookRows.length;
         if (st.state === 'no_token')
-          qcL.push(qcRow(QCA, 'ACCOUNT', 'NOT LINKED IN THIS BROWSER',
+          qcL.push(qcRow(QCA, 'ACCOUNT', 'NOT LINKED TO THIS COMPUTER',
             'open your ?kt= link once on this device'));
         else if (st.state === 'bad_token')
           qcL.push(qcRow(QCR, 'ACCOUNT', 'TOKEN REFUSED', 'the worker rejected it; the panel token may have been rotated'));
@@ -57111,7 +57119,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           + '<div style="font:800 7px system-ui,sans-serif;letter-spacing:.09em;color:#5b8f7d;">LIVE POSITIONS</div>'
           + '<div style="font:700 9px system-ui,sans-serif;color:#7b8496;margin-top:2px;white-space:nowrap;">'
           + (stP.state === 'ok' ? 'NONE OPEN' + (cashP != null ? ' <span style="color:#9fd9c4;">\u00B7 $' + cashP.toFixed(2) + ' cash on hand</span>' : '')
-             : stP.state === 'no_token' ? 'ACCOUNT NOT LINKED IN THIS BROWSER'
+             : stP.state === 'no_token' ? 'ACCOUNT NOT LINKED TO THIS COMPUTER'
              : stP.state === 'error' || stP.state === 'bad_token' ? 'ACCOUNT FEED FAILED'
              : 'CHECKING THE ACCOUNT\u2026')
           + '</div>'
@@ -57501,7 +57509,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
 
         /* bookkeeping lives down here and stays quiet: it is how the forecast
            keeps itself honest, not something to read before betting */
-        + hdr('RECORD')
+        + hdr('NOON LOCK RECORD')
         /* the bar of settled days, bare -- no explainer (user, 2026-09-06) */
         + '<div style="margin-top:5px;line-height:0;display:flex;flex-wrap:wrap;opacity:.75;">'
         + (strip || '') + '</div>'
