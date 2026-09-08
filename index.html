@@ -56378,12 +56378,22 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
          leaving growth on the table: on a six-way ladder there are usually two
          or three cells the market has wrong, and they are not the same bet. */
       var book = [];
+      /* WHAT IS BEHIND THE PLAN (user 2026-09-08: "can i be shown further bet
+         plans once one is in?"). The book holds only lines that clear the
+         floor, so on a day with nothing to take it is empty and the sheet had
+         one sentence to explain a whole board. The queue keeps every tradable
+         line with its edge, cleared or not, so the reader can see what is next
+         and how far short it is -- especially with a position already on,
+         where the question stops being "what do I buy" and becomes "is
+         anything coming". */
+      var queue = [];
       (T.ladder || []).forEach(function(r){
         [['for', r.ask, r.ours || 0], ['against', r.nask, 1 - (r.ours || 0)]]
           .forEach(function(o){
             var px = o[1], q = o[2];
             if (!kTradable(r, o[0], px, q)) return;
             var ev = q - px - feeOf(px);
+            queue.push({ r: r, dir: o[0], ask: px, q: q, ev: ev, ok: kEdgeOk(ev, px) });
             if (!kEdgeOk(ev, px)) return;         // under the measured floor is not a bet
             var k = stakeOf(q, px);
             if (!k) return;
@@ -56392,6 +56402,7 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           });
       });
       book.sort(function(a, b){ return b.ev - a.ev; });
+      queue.sort(function(a, b){ return b.ev - a.ev; });
       /* exact payoff per outcome: the ladder is mutually exclusive, so for each
          range that could settle, each position either pays $1 or expires at 0 */
       /* WHOLE CONTRACTS, OR IT IS NOT A REAL PLAN.  Spreading quarter Kelly
@@ -57216,6 +57227,32 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           /* the TIMING row is gone: the chip beside the headline already says
              IN THE WINDOW / WINDOW HAS PASSED, and a row restating it in a
              sentence was the same fact twice in one box. */
+          /* NEXT IN LINE. What the board has behind whatever the plan says,
+             ranked by edge with the distance to the floor spelled out, so a
+             day that recommends nothing still shows its working and a reader
+             holding a position can see whether anything is closing in. Lines
+             already held are marked rather than offered twice. */
+          + (function(){
+              var q = queue.filter(function(x){ return !pg || x.r.label !== vbest.r.label || x.dir !== vbest.dir; }).slice(0, 3);
+              if (!q.length) return '';
+              return kvLine('NEXT IN LINE', q.map(function(x){
+                var side = x.dir === 'against' ? 'NO' : 'YES';
+                var mine = posOn[x.r.label] && ((posOn[x.r.label].side === 'no') === (x.dir === 'against'));
+                var need = x.ask >= KEF.price ? KEF.priced : KEF.min;
+                var short = need - x.ev;
+                return '<span style="display:inline-block;margin-right:14px;white-space:nowrap;">'
+                  + '<b style="color:' + (x.dir === 'against' ? NOC : YESC) + ';">' + side + '</b> '
+                  + deg(x.r.label) + ' at ' + cents(x.ask)
+                  + ' <span style="color:' + (x.ev >= 0 ? '#63dbb6' : '#7b8496') + ';">'
+                  + (x.ev >= 0 ? '+' : '\u2212') + cents(Math.abs(x.ev)) + '</span>'
+                  + '<span style="color:#5b647a;"> \u00b7 '
+                  + (mine ? 'you hold this'
+                     : x.ok ? 'clears the floor'
+                     : short > 0.30 ? 'far short'
+                     : cents(short) + ' short')
+                  + '</span></span>';
+              }).join(''));
+            })()
 
           + '</div>';
       }
@@ -57589,7 +57626,12 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
              and exit; stacked they ran a screen and a half. A tab per
              position, the chosen one remembered across bakes, the rest
              hidden in place. A single position shows no strip. */
-          + (bookRows.length > 1
+          /* THE TAB SHOWS EVEN FOR ONE (user 2026-09-08: "make my current bet
+             into its tab"). It was hidden below two positions as redundant
+             chrome, but the tab is also where the position's verdict chip
+             lives -- HOLD, HOOOLD, BAIL -- so hiding it took that away from
+             anyone holding exactly one thing, which is most days. */
+          + (bookRows.length >= 1
               ? '<div class="cwk-postabs" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:6px;">'
                 + bookRows.map(function(k, i){
                     var h = posOn[k], yes = (h.side === 'yes'), on = (i === posSel);
