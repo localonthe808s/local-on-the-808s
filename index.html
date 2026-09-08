@@ -53076,6 +53076,19 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
         })
         .catch(function(){ delete cwTreeBoxes[key]; });
     }
+    /* harness hook: the map's own resolution and what the tree layer holds.
+       Everything here lives in the widget's closure, so a capture script has
+       no other way to ask -- and the fetch threshold has to be set from a
+       measurement, not from arithmetic about the box. */
+    window._cwMapState = function(){
+      try {
+        var bd = document.getElementById('cw-body').getBoundingClientRect();
+        var zk = (typeof z !== 'undefined' && z && z.k) ? z.k : 1;
+        return { k: +zk.toFixed(2), mppScreen: +((cwPainted.X1 - cwPainted.X0) / bd.width / zk).toFixed(2),
+                 boxM: Math.round(cwPainted.X1 - cwPainted.X0), trees: cwTrees.length,
+                 boxes: Object.keys(cwTreeBoxes).length, treesOn: !!cw.trees, rock: !!cw.rock };
+      } catch (e){ return String(e).slice(0, 80); }
+    };
     /* alive and in good health is the common case and gets the plain canopy
        colour; the census's own words carry the rest */
     function cwTreeColor(t){
