@@ -57032,10 +57032,20 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
           return h.side.toUpperCase() + ' on ' + deg(k)
             + (h.cost != null ? ' ($' + (+h.cost).toFixed(2) + ' in)' : '');
         });
-        var verb = !pg ? (held.length ? 'NO MORE BETS TODAY' : blocked ? 'NOT A BET \u00B7 THE RULES REFUSE IT' : 'NO BET TODAY')
+        /* NOT YET IS NOT NEVER (user 2026-09-08: "do you really mean dont bet
+           all day? or NO BET YET"). NO BET TODAY was printed at nine in the
+           morning with the window open until one and the body text underneath
+           saying a gap opens on about one day in three -- the headline was
+           closing a day the sheet had not finished reading. It only means the
+           whole day once the window has passed, which is the one case the
+           record actually supports: bets placed after it lost money on every
+           settled day measured. Before and inside the window it is YET. */
+        var pastWin = (clockH != null && clockH > W1);
+        var verb = !pg ? (held.length ? 'NO MORE BETS TODAY' : blocked ? 'NOT A BET \u00B7 THE RULES REFUSE IT'
+                          : pastWin ? 'NO BET TODAY' : 'NO BET YET')
                  : actNow ? 'BET ' + (vbest.dir === 'against' ? 'NO' : 'YES')
                  : 'WAIT · THEN BET ' + (vbest.dir === 'against' ? 'NO' : 'YES');
-        var timeChip = !pg ? ''
+        var timeChip = (!pg && (held.length || blocked || clockH == null)) ? ''
           : '<span style="font:800 7px system-ui,sans-serif;letter-spacing:.07em;'
             + 'color:' + (actNow ? YESC : '#45b491') + ';border:1px solid '
             + (actNow ? YESC : '#45b491') + '55;border-radius:999px;padding:2px 7px;'
@@ -57043,6 +57053,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (actNow ? 'IN THE WINDOW'
                : stale ? 'WAIT FOR 8 AM'
                : (clockH != null && clockH < W0) ? 'OPENS ' + hr12(W0)
+               /* no gap yet, but the window is still open: say how long it has */
+               : (!pg && !pastWin) ? 'WINDOW OPEN TO ' + hr12(W1)
                : 'WINDOW HAS PASSED') + '</span>';
 
         /* the contract drawn to scale: what leaves your pocket, what comes back */
