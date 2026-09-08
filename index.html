@@ -55192,7 +55192,11 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
       }
 
       /* 4c. and the blended feed, kept honestly labelled. It is logged and
-            watched, not trusted -- see _kalshi/obs_log.py. */
+            watched, not trusted -- see _kalshi/obs_log.py. GLOBALTEMPERATURE
+            excludes it in terms: "third-party summaries do not affect
+            resolution", and the airports that used to corroborate it are the
+            other stations inside <area> that the multi-station clause rules
+            out. It came out of the floor on 2026-09-08. */
       qcL.push(T.twc_max == null
         ? qcRow(QCN, 'TWC', 'NO READING', etH < 7
             ? 'its since-7 AM field still holds yesterday until 7 AM'
@@ -55201,7 +55205,8 @@ var dayName = dayDate.toLocaleDateString([], { weekday:"short" }).toUpperCase() 
             + (T.twc_gap == null ? ''
                : ' \u00B7 STATION ' + (T.twc_gap > 0 ? '\u2212' : '+')
                  + T1(Math.abs(T.twc_gap)) + '\u00B0'),
-            'running maximum \u2014 a warning, not a floor'));
+            'running maximum \u2014 a third-party summary, which the rules exclude '
+              + 'from resolution. Leading indicator only; never a floor'));
 
       /* 5. the consensus behind the forecast */
       var nMod = T.n_models || 0;

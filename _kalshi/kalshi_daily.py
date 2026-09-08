@@ -3109,24 +3109,38 @@ def _run_market(cfg, ticker_cache=TICKER_CACHE):
     # the hourly report by up to 55 minutes
     if _own5 is not None:
         live = _own5 if live is None else max(live, _own5)
-    # TWC'S RUNNING MAXIMUM, CORROBORATED. Alone it is a warning (Chicago read
-    # 86 against a settled 83 on 2026-09-05). But on 2026-09-06 it printed 75
-    # for Central Park at 3:05 PM with LaGuardia's 5-minute feed already at
-    # 75.2 since 2:30, and the 3:51 report read 75: two independent sources
-    # agreeing is a different thing from one blended field. When an airport's
-    # own maximum has reached TWC's figure, the figure goes into the floor.
+    # TWC'S RUNNING MAXIMUM IS NOT A FLOOR, AND CANNOT BE MADE ONE.
+    #
+    # It used to enter here when an airport's own maximum had reached it. The
+    # rulebook forbids both halves of that. GLOBALTEMPERATURE:
+    #
+    #   "Contract resolution is based on the full precision reported by the
+    #    Source Agency. Rounding by media outlets, secondary reporting, or
+    #    THIRD-PARTY SUMMARIES does not affect resolution."
+    #   "If multiple weather stations exist within <area> ... the designated
+    #    'official' or 'primary' station ... shall be used."
+    #
+    # max7 is a third-party summary -- TWC's spatial analysis over ASOS plus
+    # 400,000+ personal stations, which took Midway's figure from a station 20
+    # miles away on 2026-09-05. And the corroborating airports are the other
+    # stations inside <area> that the second clause excludes by name. Two things
+    # the contract disqualifies cannot vouch for each other into a lower bound.
+    #
+    # What it cost, 2026-09-08: max7 printed 80 at 2:20 PM against a park that
+    # peaked at 78.98. The floor took it, the ladder printed 0.000 on "79 or
+    # below" -- a rung the market was paying 38c for -- and the panel could not
+    # express the disagreement it existed to measure.
+    #
+    # It stays on the panel as a LEADING INDICATOR, which it has earned: it had
+    # New York's 79 on 2026-09-05 two hours before the CLI. Predicting the
+    # settlement and bounding it are different jobs. This one only predicts.
     _twcmax = (_twc or {}).get('max') if isinstance(_twc, dict) else None
     _aptmax = apt_max(cfg, today) if OWN5.get(cfg['key']) is None else None
-    # and never a spike: the one-minute archive puts the true peak at most 4 F
-    # above the hourly maximum in New York (90th percentile 3); Chicago's bad
-    # 86 sat 3 above its hourly 83. A corroborated figure more than 2 above the
-    # hourly stream is still treated as a warning. Newark runs warm, so the
-    # airport check alone is not enough.
     _twc_corr = (_twcmax is not None and _aptmax is not None and _aptmax >= _twcmax - 1e-9
                  and rmax is not None and _twcmax <= rmax + 2.0 + 1e-9)
     if _twc_corr:
-        live = _twcmax if live is None else max(live, _twcmax)
-        print('%s TWC running max %.0f corroborated by an airport at %.1f: counted as a floor' % (cfg['key'], _twcmax, _aptmax))
+        print('%s TWC running max %.0f corroborated by an airport at %.1f: '
+              'reported, NOT counted as a floor' % (cfg['key'], _twcmax, _aptmax))
     cands_fl = [x for x in (est, live) if x is not None]
     obs_far = max(cands_fl) if cands_fl else None
     obs_hr = max(obh.get(tkey) or {0: 0}) if obh.get(tkey) else None
